@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Woutalma Keur — Carte UX</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #0f1419;
+      --muted: #59616b;
+      --line: #c4cbd4;
+      --paper: #f3f5f7;
+      --surface: #fff;
+      --navy: #0b3b66;
+      --navy-soft: #dce7f2;
+      --green: #0f7b3f;
+      --green-soft: #e1f2e8;
+      --amber: #805b10;
+      --amber-soft: #fff1cc;
+      --red: #9f2418;
+      --red-soft: #fbe1de;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 28px clamp(20px, 5vw, 64px);
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 8px; font-size: clamp(28px, 4vw, 42px); letter-spacing: 0; }
+    h2 { margin-bottom: 18px; font-size: 24px; letter-spacing: 0; }
+    h3 { margin-bottom: 6px; font-size: 16px; letter-spacing: 0; }
+    p { margin-bottom: 0; }
+    main { padding: 28px clamp(20px, 5vw, 64px) 56px; }
+    section { margin: 0 0 40px; }
+    .lede { max-width: 850px; color: var(--muted); font-size: 17px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .legend span, .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .legend .common { background: var(--navy-soft); border-color: var(--navy); }
+    .legend .client { background: var(--green-soft); border-color: var(--green); }
+    .legend .broker { background: var(--amber-soft); border-color: var(--amber); }
+    .legend .overlay { background: var(--red-soft); border-color: var(--red); }
+    .board {
+      overflow-x: auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .lane {
+      display: grid;
+      grid-template-columns: 120px minmax(980px, 1fr);
+      gap: 16px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+    .lane:last-child { margin-bottom: 0; }
+    .lane-label {
+      display: grid;
+      place-items: center;
+      border-right: 3px solid var(--line);
+      font-weight: 800;
+      text-align: center;
+      padding: 12px;
+    }
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 116px;
+    }
+    .node {
+      flex: 0 0 160px;
+      min-height: 96px;
+      border: 2px solid var(--navy);
+      border-radius: 8px;
+      background: var(--navy-soft);
+      padding: 12px;
+    }
+    .node.client { border-color: var(--green); background: var(--green-soft); }
+    .node.broker { border-color: var(--amber); background: var(--amber-soft); }
+    .node.overlay { border-style: dashed; border-color: var(--red); background: var(--red-soft); }
+    .node small { display: block; color: var(--muted); margin-top: 5px; }
+    .arrow { flex: 0 0 26px; color: var(--muted); font-size: 25px; text-align: center; }
+    .branch { display: grid; gap: 8px; flex: 0 0 170px; }
+    .branch .node { min-height: 0; width: 170px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .card ul { padding-left: 20px; margin: 10px 0 0; }
+    .card li + li { margin-top: 5px; }
+    .rules {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .rule { border-left: 5px solid var(--navy); }
+    .rule strong { display: block; margin-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    th, td { border: 1px solid var(--line); padding: 12px; vertical-align: top; text-align: left; }
+    th { background: var(--navy-soft); }
+    code { color: var(--navy); font-weight: 700; }
+    footer { color: var(--muted); font-size: 13px; padding-top: 10px; }
+    @media (max-width: 700px) {
+      .lane { grid-template-columns: 90px minmax(980px, 1fr); }
+      .board { padding: 14px; }
+      th, td { padding: 9px; }
+    }
+    @media print {
+      body { background: white; }
+      .board { overflow: visible; }
+      section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Woutalma Keur — carte UX mobile</h1>
+    <p class="lede">Board de validation avant Flutter. Les rectangles pleins sont des routes ; les
+      rectangles pointillés sont des sheets ou overlays. La spécification détaillée reste
+      <code>UX-FLOWS.md</code>.</p>
+    <div class="legend" aria-label="Légende">
+      <span class="common">Commun</span>
+      <span class="client">Client</span>
+      <span class="broker">Courtier / agence</span>
+      <span class="overlay">Sheet / overlay</span>
+    </div>
+  </header>
+  <main>
+    <section>
+      <h2>Parcours de bout en bout</h2>
+      <div class="board">
+        <div class="lane">
+          <div class="lane-label">Entrée</div>
+          <div class="flow">
+            <div class="node"><h3>G00 · Ouverture</h3><small>Isar, rôle, mode</small></div>
+            <div class="arrow">→</div>
+            <div class="node"><h3>G02 · Usage</h3><small>Je cherche / je propose</small></div>
+            <div class="arrow">→</div>
+            <div class="branch">
+              <div class="node client"><h3>Client invité</h3></div>
+              <div class="node broker"><h3>Courtier identifié</h3></div>
+            </div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-label">Client</div>
+          <div class="flow">
+            <div class="node client"><h3>C01 · Explorer</h3><small>voix/texte, filtres, liste/carte</small></div>
+            <div class="arrow">→</div>
+            <div class="branch">
+              <div class="node client"><h3>C02 · Courtier</h3></div>
+              <div class="node client"><h3>C03 · Bien</h3></div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node overlay"><h3>M04 · Contact</h3><small>appel, SMS, WhatsApp, vocal</small></div>
+            <div class="arrow">→</div>
+            <div class="node overlay"><h3>M05 · Résultat</h3><small>échangé / sans réponse</small></div>
+            <div class="arrow">→</div>
+            <div class="node client"><h3>C04 · Historique</h3></div>
+            <div class="arrow">→</div>
+            <div class="node client"><h3>C05 · Avis</h3></div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-label">Courtier</div>
+          <div class="flow">
+            <div class="node broker"><h3>B01 · Accueil</h3><small>priorités et activité</small></div>
+            <div class="arrow">→</div>
+            <div class="branch">
+              <div class="node broker"><h3>B02 · Biens</h3></div>
+              <div class="node broker"><h3>B05 · Activité</h3></div>
+              <div class="node broker"><h3>B07 · Profil</h3></div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="branch">
+              <div class="node broker"><h3>B03 · Éditeur</h3></div>
+              <div class="node broker"><h3>B06 · Avis</h3></div>
+              <div class="node broker"><h3>B08 · Modifier</h3></div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="branch">
+              <div class="node broker"><h3>B04 · Aperçu</h3></div>
+              <div class="node broker"><h3>B09 · Vérification</h3></div>
+              <div class="node broker"><h3>B10 · Classement</h3></div>
+            </div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-label">Transverse</div>
+          <div class="flow">
+            <div class="node overlay"><h3>M01 · Filtres</h3></div>
+            <div class="node overlay"><h3>M02 · Quartier</h3></div>
+            <div class="node overlay"><h3>M03 · Voix</h3></div>
+            <div class="node"><h3>G03–04 · OTP</h3><small>juste avant action identifiée</small></div>
+            <div class="node"><h3>S01 · Réglages</h3></div>
+            <div class="node overlay"><h3>M10 · Mode démo</h3><small>purge + seed/base vide</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Les décisions qui gardent l'app simple</h2>
+      <div class="rules">
+        <div class="card rule"><strong>Trois écrans jusqu'au contact</strong>C01 → C02/C03 → M04.</div>
+        <div class="card rule"><strong>Pas de messagerie interne</strong>On ouvre le canal installé et on journalise localement.</div>
+        <div class="card rule"><strong>Liste et carte ensemble</strong>Un segmented control change la vue sans perdre filtres ni sélection.</div>
+        <div class="card rule"><strong>Compte juste à temps</strong>L'exploration reste libre ; OTP avant contact, avis ou espace courtier.</div>
+        <div class="card rule"><strong>Une seule base locale</strong>Isar porte données, réglages, mode démo et seed.</div>
+        <div class="card rule"><strong>Voix parallèle</strong>Le même écran est lu/commandé ; aucun arbre vocal séparé.</div>
+        <div class="card rule"><strong>L'app répond</strong>Chaque action significative reçoit un retour visuel, sémantique et sensoriel proportionné.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Composants à valider avant les écrans</h2>
+      <div class="grid">
+        <div class="card"><h3>Structure</h3><ul><li>WkScaffold</li><li>WkTopBar</li><li>WkBottomNav</li><li>WkBottomActionBar</li></ul></div>
+        <div class="card"><h3>Actions et saisie</h3><ul><li>WkButton / WkIconButton</li><li>WkTextField</li><li>WkSelectField + WkOptionSheet</li><li>WkConfirmSheet</li></ul></div>
+        <div class="card"><h3>Recherche</h3><ul><li>WkSearchBar</li><li>WkSegmentedControl</li><li>WkFilterChip</li><li>WkBrokerCard / WkPropertyCard</li></ul></div>
+        <div class="card"><h3>États et voix</h3><ul><li>Loading / Empty / Error</li><li>WkVoiceButton / Overlay</li><li>WkRatingDisplay / Input</li><li>WkFieldStatus / WkLiveStatus</li><li>WkToast accessible</li></ul></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Navigation et retour</h2>
+      <table>
+        <thead><tr><th>Geste</th><th>Comportement</th><th>Protection</th></tr></thead>
+        <tbody>
+          <tr><td>Changer d'onglet</td><td><code>go()</code> dans un shell à état conservé</td><td>scroll et filtres restent</td></tr>
+          <tr><td>Ouvrir un détail/formulaire</td><td><code>push()</code> avec transition plateforme</td><td>Retour retrouve l'origine exacte</td></tr>
+          <tr><td>Choisir/confirmer</td><td>bottom sheet partagée</td><td>saisie/destruction non balayable sans confirmation</td></tr>
+          <tr><td>Quitter un formulaire modifié</td><td>M09 avant <code>pop()</code></td><td>brouillon automatique pour les biens</td></tr>
+          <tr><td>Retour pendant le vocal</td><td>arrête écoute/enregistrement puis ferme</td><td>aucun micro actif en arrière-plan</td></tr>
+          <tr><td>Retour d'appel/WhatsApp</td><td>route conservée + M05</td><td>ContactLog écrit avant de quitter l'app</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Pipeline produit et données</h2>
+      <div class="grid">
+        <div class="card"><span class="tag">1 · Entrées</span><h3>Seed ou parcours réel</h3><p>Profils, biens, avis, positions, contacts et réglages.</p></div>
+        <div class="card"><span class="tag">2 · Services purs</span><h3>Règles testables</h3><p>Distance, classement, éligibilité d'avis, statut et filtres.</p></div>
+        <div class="card"><span class="tag">3 · Provider</span><h3>États explicites</h3><p>loading/data/empty/error et mutations idle/submitting/success/failure.</p></div>
+        <div class="card"><span class="tag">4 · Flutter</span><h3>Écrans sans logique</h3><p>Routes, composants partagés, l10n, semantics et intents externes.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ordre de livraison UX</h2>
+      <div class="grid">
+        <div class="card"><h3>Lot 1</h3><p>Thème, l10n, catalogue et composants structurels.</p></div>
+        <div class="card"><h3>Lot 2</h3><p>Isar, seed, mode démo, shells et onboarding court.</p></div>
+        <div class="card"><h3>Lot 3</h3><p>Explorer → détail → contact → historique → avis.</p></div>
+        <div class="card"><h3>Lot 4</h3><p>Profil courtier, biens, activité, vérification et classement.</p></div>
+        <div class="card"><h3>Lot 5</h3><p>Vocal simulé, permissions, mode léger et audit appareils.</p></div>
+      </div>
+    </section>
+
+    <footer>Document de revue. Toute modification d'un écran ou d'une sortie doit d'abord être
+      répercutée dans UX-FLOWS.md, puis dans cette carte.</footer>
+  </main>
+</body>
+</html>

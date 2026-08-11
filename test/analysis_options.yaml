@@ -1,0 +1,8 @@
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    # Les fichiers de test ne sont pas sous `lib/`, donc pas atteignables par
+    # un import `package:`. Les imports relatifs entre helpers y sont la
+    # pratique normale.
+    always_use_package_imports: false

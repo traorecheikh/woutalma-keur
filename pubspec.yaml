@@ -1,0 +1,56 @@
+name: woutalma_keur
+description: "Annuaire immobilier géolocalisé et vocal-first"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Routes déclaratives et deep links.
+  go_router: ^17.0.1
+  # Injection et état observable de vue.
+  provider: ^6.1.2
+  # Formatage des chaînes générées.
+  intl: any
+  # Ouvre appel, SMS et WhatsApp dans les applications du téléphone.
+  url_launcher: ^6.3.1
+  # Saisie de numéro : indicatif, drapeaux et validation déjà traités.
+  phone_form_field: ^10.0.0
+  # Champ OTP : collage SMS, focus et accessibilité déjà traités.
+  pinput: ^5.0.1
+  # Carte : tuiles OpenStreetMap, sans SDK propriétaire ni clé d'API.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  # Photos de biens : sélection native et compression avant stockage.
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.3.0
+  # Position et permission de localisation.
+  geolocator: ^13.0.2
+  # Base locale unique : données, réglages et seed de démonstration.
+  isar_community: ^3.3.2
+  isar_community_flutter_libs: ^3.3.2
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  isar_community_generator: ^3.3.2
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    # Photos du seed de démonstration : embarquées, compressées en WebP, pour
+    # qu'un premier lancement ne coûte ni réseau ni attente. Crédits et
+    # licences dans assets/seed/photos/CREDITS.md.
+    - assets/seed/photos/

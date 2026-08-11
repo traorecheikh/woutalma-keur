@@ -1,0 +1,35 @@
+{
+    "name": "Woutalma Keur",
+    "short_name": "Woutalma",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0B0F14",
+    "theme_color": "#0B3B66",
+    "description": "Trouvez un courtier immobilier vérifié près de vous au Sénégal.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/woutalma-icon.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "icons/woutalma-icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "icons/woutalma-icon.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/woutalma-icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ]
+}

@@ -1,0 +1,1140 @@
+{
+  "@@locale": "fr",
+
+  "appTitle": "Woutalma Keur",
+  "@appTitle": {
+    "description": "Nom de l'application. Ne se traduit pas."
+  },
+
+  "commonBack": "Retour",
+  "@commonBack": {
+    "description": "Action de revenir à l'écran précédent."
+  },
+  "commonClose": "Fermer",
+  "@commonClose": {
+    "description": "Action de fermer une feuille ou un overlay."
+  },
+  "commonRetry": "Réessayer",
+  "@commonRetry": {
+    "description": "Action de relancer une opération qui a échoué."
+  },
+  "commonCancel": "Annuler",
+  "@commonCancel": {
+    "description": "Abandonne l'action en cours sans rien modifier."
+  },
+  "commonUndo": "Annuler",
+  "@commonUndo": {
+    "description": "Revient sur une action déjà effectuée, depuis un message transitoire."
+  },
+  "commonChoose": "Choisir",
+  "@commonChoose": {
+    "description": "Invite d'un champ de sélection encore vide."
+  },
+  "commonNext": "Suivant",
+  "@commonNext": {
+    "description": "Action de passer à l'étape suivante."
+  },
+  "commonDelete": "Supprimer",
+  "@commonDelete": {
+    "description": "Action destructive courte, dans une ligne de liste."
+  },
+  "commonListen": "Écouter",
+  "@commonListen": {
+    "description": "Action de faire lire l'écran à voix haute."
+  },
+
+  "stateLoading": "Un instant…",
+  "@stateLoading": {
+    "description": "Message pendant un chargement de plus de 300 ms."
+  },
+  "stateEmptyTitle": "Rien à afficher",
+  "@stateEmptyTitle": {
+    "description": "Titre d'un écran sans aucun résultat."
+  },
+  "stateEmptyBody": "Il n'y a encore rien ici.",
+  "@stateEmptyBody": {
+    "description": "Explication courte accompagnant un état vide."
+  },
+  "stateErrorTitle": "Ça n'a pas marché",
+  "@stateErrorTitle": {
+    "description": "Titre d'un état d'erreur récupérable."
+  },
+  "stateErrorBody": "Réessayez dans un instant.",
+  "@stateErrorBody": {
+    "description": "Explication courte accompagnant un état d'erreur."
+  },
+
+  "failureLocalStorage": "Les données de l'application ne s'ouvrent pas.",
+  "@failureLocalStorage": {
+    "description": "Cause d'erreur : la base locale est indisponible ou corrompue. Dit ce qui se passe, pas un code technique."
+  },
+  "failureSeed": "Les données de démonstration sont incomplètes. Réinitialisez le mode démo.",
+  "@failureSeed": {
+    "description": "Cause d'erreur : le jeu de données de démonstration est invalide."
+  },
+  "failurePermission": "Il manque une autorisation. Ouvrez les réglages du téléphone.",
+  "@failurePermission": {
+    "description": "Cause d'erreur : une permission système a été refusée."
+  },
+  "failureNotFound": "Cette fiche n'existe plus.",
+  "@failureNotFound": {
+    "description": "Cause d'erreur : la donnée demandée par un lien a disparu."
+  },
+  "failureUnknown": "Ça n'a pas marché.",
+  "@failureUnknown": {
+    "description": "Cause d'erreur non identifiée. Dernier recours."
+  },
+
+  "voiceSearch": "Chercher en parlant",
+  "@voiceSearch": {
+    "description": "Bouton micro. Décrit le geste, pas la technologie."
+  },
+
+  "exploreSearchHint": "Quartier, courtier ou bien",
+  "@exploreSearchHint": {
+    "description": "Invite du champ de recherche de C01. Nomme ce qu'on peut chercher."
+  },
+  "tabExplore": "Explorer",
+  "@tabExplore": {
+    "description": "Onglet client vers C01. Court : un libellé d'onglet partage la largeur avec ses voisins, et doit tenir à ×1.3 sur 320 dp."
+  },
+  "tabContacts": "Contacts",
+  "@tabContacts": {
+    "description": "Onglet client vers C04. Le titre de l'écran, lui, reste « Mes contacts »."
+  },
+  "tabProfile": "Profil",
+  "@tabProfile": {
+    "description": "Onglet vers le profil. Le titre de l'écran reste « Réglages »."
+  },
+  "tabBrokerProperties": "Biens",
+  "@tabBrokerProperties": {
+    "description": "Onglet courtier vers B02. Le titre de l'écran reste « Mes biens »."
+  },
+
+  "exploreSearchTitle": "Rechercher",
+  "@exploreSearchTitle": {
+    "description": "Titre de l'écran de recherche plein écran ouvert depuis C01."
+  },
+  "exploreSearchOpen": "Rechercher un quartier, un courtier ou un bien",
+  "@exploreSearchOpen": {
+    "description": "Étiquette lue par le lecteur d'écran sur la barre de recherche de C01, qui ouvre l'écran de recherche."
+  },
+  "exploreSearchSubmit": "{count, plural, =0{Aucun résultat} =1{Voir 1 résultat} other{Voir les {count} résultats}}",
+  "@exploreSearchSubmit": {
+    "description": "Action qui ferme l'écran de recherche et revient aux résultats.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "exploreSegmentBrokers": "Courtiers",
+  "@exploreSegmentBrokers": {
+    "description": "Segment de C01 affichant les courtiers."
+  },
+  "exploreSegmentProperties": "Biens",
+  "@exploreSegmentProperties": {
+    "description": "Segment de C01 affichant les biens."
+  },
+  "exploreFilters": "Filtres",
+  "@exploreFilters": {
+    "description": "Ouvre la feuille de filtres M01."
+  },
+  "exploreResults": "{count, plural, =0{Aucun résultat} =1{1 résultat} other{{count} résultats}}",
+  "@exploreResults": {
+    "description": "Nombre de résultats, annoncé à voix haute après une recherche.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "exploreEmptyTitle": "Personne dans cette zone",
+  "@exploreEmptyTitle": {
+    "description": "Titre de l'état vide de C01."
+  },
+  "exploreEmptyBody": "Élargissez la zone ou enlevez un filtre.",
+  "@exploreEmptyBody": {
+    "description": "Explication de l'état vide de C01 : dit quoi faire."
+  },
+  "exploreClearFilters": "Enlever les filtres",
+  "@exploreClearFilters": {
+    "description": "Action de sortie de l'état vide de C01."
+  },
+  "exploreNearYou": "Près de vous",
+  "@exploreNearYou": {
+    "description": "Titre de C01 quand la position exacte n'est pas nommée."
+  },
+
+  "badgeVerified": "Vérifié",
+  "@badgeVerified": {
+    "description": "Le profil du courtier a été contrôlé."
+  },
+  "badgePinned": "Mis en avant",
+  "@badgePinned": {
+    "description": "Profil sponsorisé. Doit être distinguable d'un bon classement."
+  },
+  "statusAvailable": "Disponible",
+  "@statusAvailable": {
+    "description": "Statut d'un bien encore proposé."
+  },
+  "statusReserved": "Réservé",
+  "@statusReserved": {
+    "description": "Statut d'un bien en cours de réservation."
+  },
+  "statusClosed": "Vendu ou loué",
+  "@statusClosed": {
+    "description": "Statut d'un bien qui n'est plus proposé."
+  },
+
+  "distanceMeters": "{meters} m",
+  "@distanceMeters": {
+    "description": "Distance courte, en mètres.",
+    "placeholders": { "meters": { "type": "int" } }
+  },
+  "distanceKilometers": "{km} km",
+  "@distanceKilometers": {
+    "description": "Distance longue, en kilomètres avec une décimale.",
+    "placeholders": { "km": { "type": "String" } }
+  },
+  "reviewCount": "{count, plural, =0{Aucun avis} =1{1 avis} other{{count} avis}}",
+  "@reviewCount": {
+    "description": "Volume d'avis affiché à côté de la note.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "propertyCount": "{count, plural, =0{Aucun bien} =1{1 bien} other{{count} biens}}",
+  "@propertyCount": {
+    "description": "Nombre de biens proposés par un courtier.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "ratingNone": "Pas encore noté",
+  "@ratingNone": {
+    "description": "Remplace la note quand aucun avis public n'existe."
+  },
+
+  "transactionRent": "À louer",
+  "@transactionRent": {
+    "description": "Nature de transaction : location."
+  },
+  "transactionSale": "À vendre",
+  "@transactionSale": {
+    "description": "Nature de transaction : vente."
+  },
+  "kindApartment": "Appartement",
+  "@kindApartment": { "description": "Type de bien." },
+  "kindHouse": "Maison",
+  "@kindHouse": { "description": "Type de bien." },
+  "kindLand": "Terrain",
+  "@kindLand": { "description": "Type de bien." },
+  "kindStudio": "Studio",
+  "@kindStudio": { "description": "Type de bien." },
+  "kindRoom": "Chambre",
+  "@kindRoom": { "description": "Type de bien." },
+
+  "priceRent": "{price} F/mois",
+  "@priceRent": {
+    "description": "Loyer mensuel. L'unité est ici parce qu'elle change avec le pays.",
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "priceSale": "{price} F",
+  "@priceSale": {
+    "description": "Prix de vente.",
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "surfaceValue": "{surface} m²",
+  "@surfaceValue": {
+    "description": "Surface d'un bien.",
+    "placeholders": { "surface": { "type": "int" } }
+  },
+  "roomCount": "{count, plural, =1{1 pièce} other{{count} pièces}}",
+  "@roomCount": {
+    "description": "Nombre de pièces d'un bien.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "brokerCoverage": "Zone couverte",
+  "@brokerCoverage": {
+    "description": "En-tête listant les quartiers où le courtier travaille."
+  },
+  "brokerProperties": "Biens proposés",
+  "@brokerProperties": {
+    "description": "Section de C02 listant les biens disponibles du courtier."
+  },
+  "brokerReviews": "Avis récents",
+  "@brokerReviews": {
+    "description": "Section de C02 listant les avis publiés."
+  },
+  "brokerNoReviews": "Personne n'a encore laissé d'avis.",
+  "@brokerNoReviews": {
+    "description": "Remplace la liste d'avis quand elle est vide."
+  },
+  "brokerNoProperties": "Aucun bien proposé pour le moment.",
+  "@brokerNoProperties": {
+    "description": "Remplace la liste de biens quand elle est vide."
+  },
+  "brokerResponseRate": "Répond à {percent} % des demandes",
+  "@brokerResponseRate": {
+    "description": "Taux de réponse du courtier, en clair.",
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "brokerProfileTitle": "Profil",
+  "@brokerProfileTitle": {
+    "description": "Titre de B07, profil public du courtier."
+  },
+  "brokerReply": "Réponse du courtier",
+  "@brokerReply": {
+    "description": "Introduit la réponse publique d'un courtier à un avis."
+  },
+
+  "contactAction": "Contacter",
+  "@contactAction": {
+    "description": "Action principale de C02 et C03. Ouvre la feuille M04."
+  },
+  "contactSheetTitle": "Comment le joindre ?",
+  "@contactSheetTitle": {
+    "description": "Titre de la feuille de contact M04."
+  },
+  "contactCall": "Appeler",
+  "@contactCall": {
+    "description": "Ouvre le téléphone. Verbe concret, pas « Contacter »."
+  },
+  "contactSms": "Envoyer un SMS",
+  "@contactSms": {
+    "description": "Ouvre la messagerie du téléphone."
+  },
+  "contactWhatsapp": "Écrire sur WhatsApp",
+  "@contactWhatsapp": {
+    "description": "Ouvre WhatsApp. Absent si le courtier n'en a pas."
+  },
+  "contactLogged": "Contact enregistré",
+  "@contactLogged": {
+    "description": "Confirme que la mise en relation est tracée avant l'ouverture du canal externe."
+  },
+
+  "outcomeTitle": "Avez-vous pu lui parler ?",
+  "@outcomeTitle": {
+    "description": "Titre de M05, posé au retour d'une application externe."
+  },
+  "outcomeReached": "Oui, on a échangé",
+  "@outcomeReached": {
+    "description": "Confirme l'échange. C'est la seule porte vers un avis."
+  },
+  "outcomeNoAnswer": "Pas de réponse",
+  "@outcomeNoAnswer": {
+    "description": "Aucune réponse. Ne produit aucun retour d'échec."
+  },
+  "outcomeLater": "Plus tard",
+  "@outcomeLater": {
+    "description": "Ferme M05 sans rien décider."
+  },
+
+  "historyTitle": "Mes contacts",
+  "@historyTitle": {
+    "description": "Titre de C04, le journal des mises en relation."
+  },
+  "historyEmptyTitle": "Aucun contact",
+  "@historyEmptyTitle": {
+    "description": "Titre de l'état vide de C04."
+  },
+  "historyEmptyBody": "Les courtiers que vous joignez apparaîtront ici.",
+  "@historyEmptyBody": {
+    "description": "Explication de l'état vide de C04."
+  },
+  "historySearch": "Chercher un courtier",
+  "@historySearch": {
+    "description": "Action de sortie de l'état vide de C04, vers C01."
+  },
+  "historyChannelCall": "Appel",
+  "@historyChannelCall": { "description": "Canal utilisé : téléphone." },
+  "historyChannelSms": "SMS",
+  "@historyChannelSms": { "description": "Canal utilisé : message texte." },
+  "historyChannelWhatsapp": "WhatsApp",
+  "@historyChannelWhatsapp": { "description": "Canal utilisé : WhatsApp." },
+  "historyChannelVoice": "Message vocal",
+  "@historyChannelVoice": { "description": "Canal utilisé : message vocal." },
+  "historyChannelWhen": "{channel} · {date}",
+  "@historyChannelWhen": {
+    "description": "Canal de contact suivi de sa date.",
+    "placeholders": {
+      "channel": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "historyReviewCta": "Donner un avis",
+  "@historyReviewCta": {
+    "description": "Ouvre C05 depuis une ligne d'historique éligible."
+  },
+  "historyReviewDone": "Avis envoyé",
+  "@historyReviewDone": {
+    "description": "État d'une ligne dont l'avis a déjà été donné."
+  },
+  "historyCallAgain": "Rappeler",
+  "@historyCallAgain": {
+    "description": "Recontacte directement depuis l'historique, sans rouvrir la fiche."
+  },
+
+  "reviewTitle": "Votre avis",
+  "@reviewTitle": {
+    "description": "Titre de C05."
+  },
+  "reviewRatingQuestion": "Comment s'est passé l'échange ?",
+  "@reviewRatingQuestion": {
+    "description": "Question de la note globale, en langage parlé."
+  },
+  "reviewCriteriaResponsiveness": "Réactivité",
+  "@reviewCriteriaResponsiveness": { "description": "Critère secondaire." },
+  "reviewCriteriaAccuracy": "Informations exactes",
+  "@reviewCriteriaAccuracy": { "description": "Critère secondaire." },
+  "reviewCriteriaCourtesy": "Courtoisie",
+  "@reviewCriteriaCourtesy": { "description": "Critère secondaire." },
+  "reviewCommentLabel": "Commentaire",
+  "@reviewCommentLabel": { "description": "Champ de commentaire facultatif." },
+  "reviewCommentHint": "Facultatif",
+  "@reviewCommentHint": {
+    "description": "Indique que le commentaire n'est pas obligatoire."
+  },
+  "reviewSubmit": "Envoyer l'avis",
+  "@reviewSubmit": { "description": "Action principale de C05." },
+  "reviewMissingRating": "Choisissez d'abord une note",
+  "@reviewMissingRating": {
+    "description": "Motif d'indisponibilité de l'envoi. Dit quoi faire."
+  },
+  "reviewSent": "Avis envoyé, en attente de modération",
+  "@reviewSent": {
+    "description": "Confirmation après envoi. Dit ce qui va se passer ensuite."
+  },
+  "reviewStarLabel": "{count, plural, =1{1 étoile} other{{count} étoiles}}",
+  "@reviewStarLabel": {
+    "description": "Libellé sémantique de chaque étoile en saisie.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "settingsTitle": "Réglages",
+  "@settingsTitle": { "description": "Titre de S01." },
+  "settingsSectionData": "Données",
+  "@settingsSectionData": {
+    "description": "Section regroupant mode démo et remise à zéro."
+  },
+  "settingsSectionFeedback": "Retours",
+  "@settingsSectionFeedback": {
+    "description": "Section regroupant sons, vibrations et guidage vocal."
+  },
+  "settingsSectionDeveloper": "Développement",
+  "@settingsSectionDeveloper": {
+    "description": "Section visible en debug ou en mode démo."
+  },
+  "settingsDemoMode": "Mode démonstration",
+  "@settingsDemoMode": {
+    "description": "Bascule entre données d'exemple et base vide."
+  },
+  "settingsDemoModeOn": "Données d'exemple chargées",
+  "@settingsDemoModeOn": {
+    "description": "État actuel : le jeu de démonstration est en place."
+  },
+  "settingsDemoModeOff": "Base vide, parcours réel",
+  "@settingsDemoModeOff": {
+    "description": "État actuel : aucune donnée d'exemple."
+  },
+  "settingsDemoEnableTitle": "Charger les données d'exemple ?",
+  "@settingsDemoEnableTitle": {
+    "description": "Titre de la confirmation M10 avant activation du mode démo."
+  },
+  "settingsDemoDisableTitle": "Repartir d'une base vide ?",
+  "@settingsDemoDisableTitle": {
+    "description": "Titre de la confirmation M10 avant désactivation."
+  },
+  "settingsDemoImpact": "{count, plural, =0{Rien ne sera supprimé.} =1{1 élément sera supprimé.} other{{count} éléments seront supprimés.}}",
+  "@settingsDemoImpact": {
+    "description": "Conséquence chiffrée de la bascule. Dit exactement ce qui disparaît.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "settingsDemoConfirm": "Remplacer les données",
+  "@settingsDemoConfirm": {
+    "description": "Action destructive de M10. Nomme ce qu'elle fait."
+  },
+  "settingsDemoDone": "Données remplacées",
+  "@settingsDemoDone": {
+    "description": "Confirmation après la bascule de mode."
+  },
+  "settingsSounds": "Sons",
+  "@settingsSounds": { "description": "Active les signaux sonores." },
+  "settingsHaptics": "Vibrations",
+  "@settingsHaptics": { "description": "Active les retours haptiques." },
+  "settingsGuidedVoice": "Guidage vocal",
+  "@settingsGuidedVoice": {
+    "description": "Fait énoncer les résultats à voix haute."
+  },
+  "settingsGuidedVoiceSuppressed": "Désactivé pendant qu'un lecteur d'écran est actif",
+  "@settingsGuidedVoiceSuppressed": {
+    "description": "Explique pourquoi le guidage vocal ne parle pas, plutôt que de le laisser muet sans raison."
+  },
+  "settingsCatalog": "Catalogue des composants",
+  "@settingsCatalog": {
+    "description": "Ouvre S02, l'écran de vérification visuelle."
+  },
+
+  "settingsSectionRole": "Rôle",
+  "@settingsSectionRole": {
+    "description": "Section permettant de basculer entre client et courtier."
+  },
+  "roleClient": "Je cherche un logement",
+  "@roleClient": {
+    "description": "Rôle client, dit à la première personne."
+  },
+  "roleBroker": "Je propose des biens",
+  "@roleBroker": {
+    "description": "Rôle courtier ou agence, dit à la première personne."
+  },
+
+  "brokerPropertiesTitle": "Mes biens",
+  "@brokerPropertiesTitle": { "description": "Titre de B02." },
+  "brokerPropertiesEmptyTitle": "Aucun bien publié",
+  "@brokerPropertiesEmptyTitle": {
+    "description": "Titre de l'état vide de B02."
+  },
+  "brokerPropertiesEmptyBody": "Ajoutez un bien pour apparaître dans les recherches.",
+  "@brokerPropertiesEmptyBody": {
+    "description": "Explication de l'état vide de B02 : dit ce que ça change."
+  },
+  "propertyAdd": "Ajouter un bien",
+  "@propertyAdd": { "description": "Action principale de B02." },
+  "propertyAddAnother": "Ajouter un autre bien",
+  "@propertyAddAnother": {
+    "description": "Après publication : repart d'un formulaire pré-rempli des valeurs communes."
+  },
+  "propertyEditorNew": "Nouveau bien",
+  "@propertyEditorNew": { "description": "Titre de B03 en création." },
+  "propertyEditorEdit": "Modifier le bien",
+  "@propertyEditorEdit": { "description": "Titre de B03 en modification." },
+  "propertyEditorStep": "Étape {current} sur {total}",
+  "@propertyEditorStep": {
+    "description": "Annonce de progression dans B03.",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "propertyEditorStepBasics": "Type et opération",
+  "@propertyEditorStepBasics": { "description": "Titre de l'étape 1 de B03." },
+  "propertyEditorStepDetails": "Infos essentielles",
+  "@propertyEditorStepDetails": { "description": "Titre de l'étape 2 de B03." },
+  "propertyEditorStepLocation": "Quartier",
+  "@propertyEditorStepLocation": { "description": "Titre de l'étape 3 de B03." },
+  "propertyEditorStepMedia": "Photos et publication",
+  "@propertyEditorStepMedia": { "description": "Titre de l'étape 4 de B03." },
+  "propertyEditorNext": "Suivant",
+  "@propertyEditorNext": { "description": "Action principale des étapes 1 à 3 de B03." },
+  "propertySave": "Publier le bien",
+  "@propertySave": { "description": "Action principale de B03." },
+  "propertySaved": "Bien publié",
+  "@propertySaved": { "description": "Confirmation après publication." },
+  "propertyDelete": "Supprimer ce bien",
+  "@propertyDelete": { "description": "Action destructive de B04." },
+  "propertyDeleteTitle": "Supprimer « {title} » ?",
+  "@propertyDeleteTitle": {
+    "description": "Confirmation M09 : nomme le bien concerné.",
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "propertyDeleteBody": "Ce bien disparaîtra définitivement de vos annonces.",
+  "@propertyDeleteBody": {
+    "description": "Conséquence de la suppression."
+  },
+  "propertyDeleted": "Bien supprimé",
+  "@propertyDeleted": { "description": "Confirmation après suppression." },
+  "propertyStatusChange": "Changer le statut",
+  "@propertyStatusChange": { "description": "Ouvre la feuille M08." },
+  "propertyStatusImpactClosed": "Ce bien disparaîtra des recherches côté client.",
+  "@propertyStatusImpactClosed": {
+    "description": "Conséquence publique du statut vendu ou loué, dite avant de valider."
+  },
+  "propertyStatusImpactVisible": "Ce bien restera visible dans les recherches.",
+  "@propertyStatusImpactVisible": {
+    "description": "Conséquence publique des statuts disponible et réservé."
+  },
+
+  "fieldTitle": "Titre",
+  "@fieldTitle": { "description": "Champ titre d'un bien." },
+  "fieldTitleHint": "Maison 3 pièces à Médina",
+  "@fieldTitleHint": {
+    "description": "Exemple de titre, montrant le niveau de détail attendu."
+  },
+  "fieldPrice": "Prix",
+  "@fieldPrice": { "description": "Champ prix d'un bien, en francs." },
+  "fieldSurface": "Surface en m²",
+  "@fieldSurface": { "description": "Champ surface d'un bien." },
+  "fieldRooms": "Nombre de pièces",
+  "@fieldRooms": { "description": "Champ nombre de pièces." },
+  "fieldNeighbourhood": "Quartier",
+  "@fieldNeighbourhood": { "description": "Champ quartier d'un bien." },
+  "fieldDescription": "Description",
+  "@fieldDescription": { "description": "Champ description courte." },
+  "fieldKind": "Type de bien",
+  "@fieldKind": { "description": "Sélecteur de type de bien." },
+  "fieldTransaction": "Louer ou vendre",
+  "@fieldTransaction": { "description": "Sélecteur de nature de transaction." },
+  "fieldStatus": "Statut",
+  "@fieldStatus": { "description": "Sélecteur de disponibilité du bien." },
+
+  "validationRequired": "Ce champ est nécessaire",
+  "@validationRequired": {
+    "description": "Champ obligatoire vide. Dit ce qui manque, pas « invalide »."
+  },
+  "validationPositiveNumber": "Indiquez un nombre plus grand que zéro",
+  "@validationPositiveNumber": {
+    "description": "Valeur numérique nulle ou négative. Dit quoi faire."
+  },
+  "validationFixFirst": "Corrigez le premier champ signalé",
+  "@validationFixFirst": {
+    "description": "Résumé annoncé à la soumission d'un formulaire incomplet."
+  },
+
+  "filtersTitle": "Filtres",
+  "@filtersTitle": { "description": "Titre de la feuille M01." },
+  "filtersTransaction": "Louer ou acheter",
+  "@filtersTransaction": {
+    "description": "Filtre sur la nature de la transaction."
+  },
+  "filtersKind": "Type de bien",
+  "@filtersKind": { "description": "Filtre sur le type de bien." },
+  "filtersMaxPrice": "Prix maximum",
+  "@filtersMaxPrice": { "description": "Filtre sur le prix." },
+  "filtersRadius": "Distance",
+  "@filtersRadius": { "description": "Filtre sur le rayon de recherche." },
+  "filtersAny": "Peu importe",
+  "@filtersAny": {
+    "description": "Option qui retire un filtre. Dite comme on la pense."
+  },
+  "filtersApply": "{count, plural, =0{Aucun résultat} =1{Voir 1 résultat} other{Voir {count} résultats}}",
+  "@filtersApply": {
+    "description": "Bouton d'application, portant le nombre de résultats en direct.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "filtersReset": "Tout enlever",
+  "@filtersReset": {
+    "description": "Retire tous les filtres. Demande un appui explicite."
+  },
+  "filtersRadiusValue": "{km} km autour de moi",
+  "@filtersRadiusValue": {
+    "description": "Option de rayon de recherche.",
+    "placeholders": { "km": { "type": "int" } }
+  },
+  "filtersPriceValue": "Jusqu'à {price} F",
+  "@filtersPriceValue": {
+    "description": "Option de prix maximum.",
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "filtersActive": "{count, plural, =0{Filtres} =1{1 filtre} other{{count} filtres}}",
+  "@filtersActive": {
+    "description": "Bouton d'ouverture de M01, portant le nombre de filtres actifs.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "voiceListening": "Parlez maintenant",
+  "@voiceListening": {
+    "description": "État d'écoute du micro. Impératif court, énonçable."
+  },
+  "voiceProcessing": "Un instant, je comprends…",
+  "@voiceProcessing": {
+    "description": "État de traitement de la commande vocale."
+  },
+  "voiceHeard": "J'ai compris :",
+  "@voiceHeard": {
+    "description": "Introduit la commande comprise, relue avant application."
+  },
+  "voiceApply": "Chercher ça",
+  "@voiceApply": {
+    "description": "Applique la commande comprise. Verbe concret."
+  },
+  "voiceRetry": "Réessayer",
+  "@voiceRetry": { "description": "Relance l'écoute." },
+  "voiceNotUnderstood": "Je n'ai pas compris",
+  "@voiceNotUnderstood": {
+    "description": "Aucune commande reconnue. Ne blâme pas l'utilisateur."
+  },
+  "voiceNotUnderstoodHelp": "Dites par exemple : maison à louer près d'ici.",
+  "@voiceNotUnderstoodHelp": {
+    "description": "Exemple concret de commande, plutôt qu'une consigne abstraite."
+  },
+  "voiceSimulated": "Reconnaissance simulée : le moteur réel arrive plus tard.",
+  "@voiceSimulated": {
+    "description": "Dit honnêtement que la reconnaissance est jouée, pour ne pas faire croire à une capacité inexistante."
+  },
+
+  "brokerHomeTitle": "Mon activité",
+  "@brokerHomeTitle": {
+    "description": "Titre de B01, l'accueil du rôle courtier."
+  },
+  "brokerHomeTab": "Accueil",
+  "@brokerHomeTab": {
+    "description": "Libellé court de l'onglet B01."
+  },
+  "brokerHomeNext": "À traiter maintenant",
+  "@brokerHomeNext": {
+    "description": "Section de B01 listant le prochain geste utile."
+  },
+  "brokerHomeNothing": "Rien à traiter pour le moment.",
+  "@brokerHomeNothing": {
+    "description": "Aucune action en attente côté courtier."
+  },
+  "brokerHomeOverview": "Résumé",
+  "@brokerHomeOverview": {
+    "description": "Section de B01 résumant les chiffres utiles."
+  },
+  "brokerStatVisible": "{count, plural, =0{Aucun bien visible} =1{1 bien visible} other{{count} biens visibles}}",
+  "@brokerStatVisible": {
+    "description": "Nombre de biens apparaissant dans les recherches clients.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "brokerStatHidden": "{count, plural, =0{Aucun bien clos} =1{1 bien clos} other{{count} biens clos}}",
+  "@brokerStatHidden": {
+    "description": "Nombre de biens vendus ou loués, retirés des recherches.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "brokerStatContacts": "{count, plural, =0{Aucun contact reçu} =1{1 contact reçu} other{{count} contacts reçus}}",
+  "@brokerStatContacts": {
+    "description": "Nombre de mises en relation reçues.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "brokerStatReviews": "{count, plural, =0{Aucun avis} =1{1 avis publié} other{{count} avis publiés}}",
+  "@brokerStatReviews": {
+    "description": "Nombre d'avis publiés sur le profil.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "brokerPendingReviews": "{count, plural, =1{1 avis en modération} other{{count} avis en modération}}",
+  "@brokerPendingReviews": {
+    "description": "Avis pas encore publiés, visibles seulement du courtier.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "brokerVerificationPending": "Vérification en attente",
+  "@brokerVerificationPending": {
+    "description": "Statut de vérification du profil courtier."
+  },
+  "brokerVerificationMissing": "Profil non vérifié",
+  "@brokerVerificationMissing": {
+    "description": "Le profil n'a jamais été soumis à vérification."
+  },
+
+  "brokerReviewsTitle": "Avis reçus",
+  "@brokerReviewsTitle": { "description": "Titre de B06." },
+  "brokerReviewsEmptyTitle": "Aucun avis pour le moment",
+  "@brokerReviewsEmptyTitle": {
+    "description": "Titre de l'état vide de B06."
+  },
+  "brokerReviewsEmptyBody": "Les clients qui vous ont joint pourront vous noter.",
+  "@brokerReviewsEmptyBody": {
+    "description": "Explication de l'état vide de B06 : rappelle la règle."
+  },
+  "reviewModerationPending": "En modération",
+  "@reviewModerationPending": {
+    "description": "Statut d'un avis pas encore publié. Invisible du client."
+  },
+  "reviewModerationPublished": "Publié",
+  "@reviewModerationPublished": {
+    "description": "Statut d'un avis visible des clients."
+  },
+  "reviewModerationRejected": "Refusé",
+  "@reviewModerationRejected": {
+    "description": "Statut d'un avis écarté par la modération."
+  },
+  "reviewReplyAction": "Répondre",
+  "@reviewReplyAction": {
+    "description": "Ouvre la rédaction d'une réponse publique à un avis."
+  },
+  "reviewReplyLabel": "Votre réponse",
+  "@reviewReplyLabel": { "description": "Champ de réponse publique." },
+  "reviewReplyHint": "Visible par tous",
+  "@reviewReplyHint": {
+    "description": "Rappelle que la réponse est publique avant de l'écrire."
+  },
+  "reviewReplySend": "Publier la réponse",
+  "@reviewReplySend": { "description": "Envoie la réponse publique." },
+  "reviewReplySent": "Réponse publiée",
+  "@reviewReplySent": { "description": "Confirmation après réponse." },
+  "reviewReportAction": "Signaler",
+  "@reviewReportAction": {
+    "description": "Signale un avis abusif à la modération."
+  },
+  "reviewReportTitle": "Signaler cet avis ?",
+  "@reviewReportTitle": { "description": "Confirmation avant signalement." },
+  "reviewReportBody": "Un modérateur le relira. L'avis reste visible en attendant.",
+  "@reviewReportBody": {
+    "description": "Dit ce qui se passe réellement : le signalement ne masque rien tout de suite."
+  },
+  "reviewReported": "Avis signalé",
+  "@reviewReported": { "description": "Confirmation après signalement." },
+  "reviewCannotEdit": "Vous ne pouvez pas modifier un avis reçu.",
+  "@reviewCannotEdit": {
+    "description": "Rappelle que le courtier ne peut ni changer ni supprimer un avis."
+  },
+
+  "propertyPreviewTitle": "Aperçu du bien",
+  "@propertyPreviewTitle": {
+    "description": "Titre de B04 : ce que le client verra."
+  },
+  "propertyPreviewNotice": "Voici ce que voient les clients.",
+  "propertyPreviewContactDisabled": "Aperçu : le bouton est celui des clients, il ne fait rien ici.",
+  "@propertyPreviewContactDisabled": {
+    "description": "Motif d'indisponibilité du bouton de contact dans l'aperçu courtier. Lu par le lecteur d'écran."
+  },
+  "propertyBrokerLabel": "Proposé par",
+  "@propertyBrokerLabel": {
+    "description": "Introduit le nom du courtier sur la fiche d'un bien."
+  },
+  "@propertyPreviewNotice": {
+    "description": "Rappelle que l'écran montre la vue publique, pas la gestion."
+  },
+  "propertyStatusTitle": "Statut du bien",
+  "@propertyStatusTitle": { "description": "Titre de la feuille M08." },
+  "propertyStatusChanged": "Statut mis à jour",
+  "@propertyStatusChanged": {
+    "description": "Confirmation après changement de statut."
+  },
+
+  "authPhoneTitle": "Votre numéro",
+  "@authPhoneTitle": { "description": "Titre de G03." },
+  "authPhoneReasonContact": "Pour garder la trace de vos contacts.",
+  "@authPhoneReasonContact": {
+    "description": "Dit pourquoi le numéro est demandé, juste avant un contact."
+  },
+  "authPhoneReasonBroker": "Pour retrouver vos biens sur n'importe quel téléphone.",
+  "@authPhoneReasonBroker": {
+    "description": "Dit pourquoi le numéro est demandé au courtier."
+  },
+  "authPhoneLabel": "Numéro de téléphone",
+  "@authPhoneLabel": { "description": "Champ de saisie du numéro." },
+  "authPhoneContinue": "Recevoir le code",
+  "@authPhoneContinue": {
+    "description": "Action de G03. Dit ce qui va arriver."
+  },
+  "authPhoneInvalid": "Ce numéro n'est pas complet",
+  "@authPhoneInvalid": {
+    "description": "Numéro incomplet. Dit quoi corriger, pas « invalide »."
+  },
+  "authPhoneCountrySenegal": "Sénégal +221",
+  "@authPhoneCountrySenegal": {
+    "description": "Aide courte sous le champ téléphone : l'indicatif est fixe pour le MVP Sénégal."
+  },
+  "authOtpTitle": "Code reçu par SMS",
+  "@authOtpTitle": { "description": "Titre de G04." },
+  "authOtpSentTo": "Envoyé au {phone}",
+  "@authOtpSentTo": {
+    "description": "Rappelle à quel numéro le code est parti.",
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "authOtpWrong": "Code incorrect, réessayez",
+  "@authOtpWrong": { "description": "Code OTP erroné." },
+  "authOtpCodeLabel": "Code SMS",
+  "@authOtpCodeLabel": { "description": "Libellé du champ de saisie du code reçu." },
+  "authOtpCodeHint": "6 chiffres",
+  "@authOtpCodeHint": { "description": "Exemple court pour le champ OTP." },
+  "authOtpChecking": "Vérification du code",
+  "@authOtpChecking": {
+    "description": "Message affiché pendant la vérification automatique du code OTP."
+  },
+  "authOtpResend": "Renvoyer le code",
+  "@authOtpResend": { "description": "Relance l'envoi du code." },
+  "authOtpResendIn": "Renvoyer dans {seconds} s",
+  "@authOtpResendIn": {
+    "description": "Compte à rebours avant de pouvoir renvoyer.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "authOtpChangeNumber": "Modifier le numéro",
+  "@authOtpChangeNumber": {
+    "description": "Revient à G03 sans perdre la démarche en cours."
+  },
+  "authOtpSimulated": "Code de démonstration : {code}",
+  "@authOtpSimulated": {
+    "description": "Affiche le code en clair tant qu'aucun SMS réel n'est envoyé. Honnête plutôt que bloquant.",
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "authSignedIn": "Vous êtes identifié",
+  "@authSignedIn": { "description": "Confirmation après identification." },
+
+  "settingsSectionAccount": "Compte",
+  "@settingsSectionAccount": {
+    "description": "Section de S01 regroupant identification et déconnexion."
+  },
+  "settingsSignIn": "M'identifier",
+  "@settingsSignIn": {
+    "description": "Ouvre G03. Nécessaire avant de contacter ou de publier."
+  },
+  "settingsSignedInAs": "Identifié avec le {phone}",
+  "@settingsSignedInAs": {
+    "description": "Rappelle quel numéro est identifié.",
+    "placeholders": { "phone": { "type": "String" } }
+  },
+  "settingsSignOut": "Me déconnecter",
+  "@settingsSignOut": {
+    "description": "Oublie l'identité locale. Les données restent."
+  },
+
+  "brokerActivityTitle": "Consultations et contacts",
+  "@brokerActivityTitle": { "description": "Titre de B05." },
+  "brokerActivityTab": "Activité",
+  "@brokerActivityTab": { "description": "Libellé court de l'onglet B05." },
+  "brokerActivityEmptyTitle": "Aucune activité",
+  "@brokerActivityEmptyTitle": {
+    "description": "Titre de l'état vide de B05."
+  },
+  "brokerActivityEmptyBody": "Les contacts reçus apparaîtront ici.",
+  "@brokerActivityEmptyBody": {
+    "description": "Explication de l'état vide de B05."
+  },
+  "brokerActivityAbout": "À propos de : {title}",
+  "@brokerActivityAbout": {
+    "description": "Bien concerné par un contact reçu.",
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "brokerActivityOutcomeReached": "Échange confirmé",
+  "@brokerActivityOutcomeReached": {
+    "description": "Le client a déclaré avoir échangé."
+  },
+  "brokerActivityOutcomeAttempted": "Sans suite déclarée",
+  "@brokerActivityOutcomeAttempted": {
+    "description": "Le client n'a pas dit ce qui s'est passé."
+  },
+  "brokerActivityOutcomeNoAnswer": "Pas de réponse",
+  "@brokerActivityOutcomeNoAnswer": {
+    "description": "Le client a déclaré ne pas vous avoir joint."
+  },
+
+  "brokerVerificationTitle": "Vérification",
+  "@brokerVerificationTitle": { "description": "Titre de B09." },
+  "brokerVerificationExplain": "Un profil vérifié inspire confiance et remonte dans les résultats.",
+  "@brokerVerificationExplain": {
+    "description": "Dit à quoi sert la vérification, en termes concrets."
+  },
+  "brokerVerificationSubmit": "Demander la vérification",
+  "@brokerVerificationSubmit": { "description": "Action principale de B09." },
+  "brokerVerificationSent": "Demande envoyée",
+  "@brokerVerificationSent": {
+    "description": "Confirmation après soumission de la vérification."
+  },
+  "brokerVerificationWaiting": "Un modérateur examine votre demande.",
+  "@brokerVerificationWaiting": {
+    "description": "État en attente : dit ce qui se passe, pas juste « en cours »."
+  },
+  "authPhoneHint": "77 123 45 67",
+  "@authPhoneHint": {
+    "description": "Exemple de numéro sénégalais, affiché dans le champ vide. Montre la forme attendue plutôt que de répéter le libellé."
+  },
+  "brokerVerificationHowTo": "Envoyez votre demande : un modérateur vérifie votre profil, puis le badge apparaît sur votre fiche.",
+  "@brokerVerificationHowTo": {
+    "description": "Explique la marche à suivre à un courtier pas encore vérifié."
+  },
+  "brokerVerificationDone": "Votre profil est vérifié.",
+  "@brokerVerificationDone": { "description": "État vérifié." },
+  "brokerVerificationRejected": "Demande refusée. Vous pouvez recommencer.",
+  "@brokerVerificationRejected": {
+    "description": "État refusé, avec la sortie possible."
+  },
+
+  "brokerRankingTitle": "Mon classement",
+  "@brokerRankingTitle": { "description": "Titre de B10." },
+  "brokerRankingExplain": "Voici ce qui fait votre position dans les recherches.",
+  "@brokerRankingExplain": {
+    "description": "Introduit la décomposition du score, en clair."
+  },
+  "brokerRankingRating": "Note et confiance",
+  "@brokerRankingRating": {
+    "description": "Facteur de classement : la note, pondérée par le volume d'avis."
+  },
+  "brokerRankingProximity": "Proximité du client",
+  "@brokerRankingProximity": {
+    "description": "Facteur de classement : la distance, qui change selon le client."
+  },
+  "brokerRankingVolume": "Nombre d'avis",
+  "@brokerRankingVolume": { "description": "Facteur de classement." },
+  "brokerRankingResponse": "Taux de réponse",
+  "@brokerRankingResponse": { "description": "Facteur de classement." },
+  "brokerRankingVaries": "La proximité change d'un client à l'autre : votre position n'est pas la même pour tout le monde.",
+  "@brokerRankingVaries": {
+    "description": "Évite de laisser croire à un classement unique et absolu."
+  },
+  "brokerRankingPercent": "{percent} %",
+  "@brokerRankingPercent": {
+    "description": "Contribution d'un facteur, en pourcentage.",
+    "placeholders": { "percent": { "type": "int" } }
+  },
+
+  "locationTitle": "Où cherchez-vous ?",
+  "@locationTitle": { "description": "Titre de la feuille M02." },
+  "locationShort": "Quartier",
+  "@locationShort": { "description": "Libellé court du bouton de choix de quartier." },
+  "locationUseGps": "Utiliser ma position",
+  "@locationUseGps": {
+    "description": "Demande la position du téléphone. Chemin secondaire : la saisie manuelle reste première."
+  },
+  "locationSearchHint": "Nom du quartier",
+  "@locationSearchHint": {
+    "description": "Invite du champ de recherche de quartier."
+  },
+  "locationRecent": "Récents",
+  "@locationRecent": {
+    "description": "Quartiers choisis récemment, remontés en tête."
+  },
+  "locationAll": "Tous les quartiers",
+  "@locationAll": { "description": "Liste complète des quartiers connus." },
+  "locationNone": "Aucun quartier ne correspond",
+  "@locationNone": {
+    "description": "Aucun résultat pour la recherche de quartier."
+  },
+  "locationDenied": "Position refusée. Choisissez un quartier à la main.",
+  "@locationDenied": {
+    "description": "Refus de permission : dit la sortie, ne culpabilise pas."
+  },
+  "locationUnavailable": "Position indisponible. Choisissez un quartier à la main.",
+  "@locationUnavailable": {
+    "description": "GPS injoignable : même sortie que le refus."
+  },
+
+  "permissionLocationTitle": "Trouver ce qui est près de vous",
+  "@permissionLocationTitle": {
+    "description": "Titre de M06 pour la position. Dit le bénéfice, pas la permission."
+  },
+  "permissionLocationBody": "Votre position sert à trier les courtiers du plus proche au plus loin. Elle ne quitte pas le téléphone.",
+  "@permissionLocationBody": {
+    "description": "Explique l'usage et la limite avant de demander l'autorisation système."
+  },
+  "permissionContinue": "Continuer",
+  "@permissionContinue": {
+    "description": "Déclenche la demande d'autorisation du système."
+  },
+  "permissionNotNow": "Pas maintenant",
+  "@permissionNotNow": {
+    "description": "Refuse sans blocage. Le parcours manuel reste entier."
+  },
+  "permissionOpenSettings": "Ouvrir les réglages",
+  "@permissionOpenSettings": {
+    "description": "Proposé seulement après un refus définitif."
+  },
+
+  "photosLabel": "Photos",
+  "@photosLabel": { "description": "Section photos de l'éditeur de bien." },
+  "photosAdd": "Ajouter une photo",
+  "@photosAdd": { "description": "Ouvre le choix de la source." },
+  "photosSourceTitle": "D'où vient la photo ?",
+  "@photosSourceTitle": { "description": "Titre de la feuille M11." },
+  "photosCamera": "Prendre une photo",
+  "@photosCamera": { "description": "Source appareil photo." },
+  "photosGallery": "Choisir dans mes images",
+  "@photosGallery": { "description": "Source galerie." },
+  "photosRemove": "Retirer cette photo",
+  "@photosRemove": { "description": "Supprime une photo déjà ajoutée." },
+  "photosLimit": "{count} photos maximum",
+  "@photosLimit": {
+    "description": "Limite du nombre de photos, dite avant de bloquer.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "photosCount": "{used} sur {max}",
+  "@photosCount": {
+    "description": "Photos déjà ajoutées sur le maximum autorisé.",
+    "placeholders": { "used": { "type": "int" }, "max": { "type": "int" } }
+  },
+  "photosCompressed": "Les photos sont allégées pour économiser vos données.",
+  "@photosCompressed": {
+    "description": "Dit pourquoi les photos sont compressées : la data coûte cher à la cible."
+  },
+  "photosFailed": "Cette photo n'a pas pu être ajoutée.",
+  "@photosFailed": {
+    "description": "Échec sur une photo précise, sans perdre les autres."
+  },
+
+  "viewList": "Liste",
+  "@viewList": { "description": "Présentation des résultats en liste." },
+  "viewMap": "Carte",
+  "@viewMap": { "description": "Présentation des résultats sur une carte." },
+  "exploreShowMap": "Carte",
+  "@exploreShowMap": {
+    "description": "Bascule C01 de la liste vers la carte. Nomme la destination, pas le mode."
+  },
+  "exploreShowList": "Liste",
+  "@exploreShowList": {
+    "description": "Bascule C01 de la carte vers la liste."
+  },
+  "historyOutcomeQuestion": "Avez-vous eu cette personne ?",
+  "@historyOutcomeQuestion": {
+    "description": "Demandé sur un contact dont l'issue n'est pas encore connue. C'est la réponse qui ouvre le droit de noter."
+  },
+  "historyOutcomeReached": "Oui, on s'est parlé",
+  "@historyOutcomeReached": {
+    "description": "Confirme l'échange et ouvre le droit de noter."
+  },
+  "historyOutcomeNoAnswer": "Non, pas de réponse",
+  "@historyOutcomeNoAnswer": {
+    "description": "Déclare l'absence de réponse. Le contact reste au journal."
+  },
+  "historyNoAnswerNote": "Pas de réponse : on ne note que quelqu'un à qui on a parlé.",
+  "@historyNoAnswerNote": {
+    "description": "Explique pourquoi aucun bouton d'avis n'apparaît sur ce contact."
+  },
+  "mapTilesUnavailable": "Les images de la carte n'arrivent pas. Les repères et la liste fonctionnent toujours.",
+  "@mapTilesUnavailable": {
+    "description": "Affiché quand les tuiles de la carte échouent à se charger, ce qui arrive souvent sur un réseau faible."
+  },
+  "mapDataWarning": "La carte télécharge des images. En mode léger, restez sur la liste.",
+  "@mapDataWarning": {
+    "description": "Prévient du coût en données avant d'afficher la carte."
+  },
+  "mapAttribution": "© OpenStreetMap",
+  "@mapAttribution": {
+    "description": "Attribution obligatoire des tuiles OpenStreetMap."
+  },
+  "mapBackToList": "Revenir à la liste",
+  "@mapBackToList": {
+    "description": "Sortie immédiate de la carte, toujours disponible."
+  },
+
+  "catalogTitle": "Catalogue",
+  "@catalogTitle": {
+    "description": "Titre de l'écran S02 qui montre tous les composants."
+  },
+  "catalogSubtitle": "Les composants partagés et tous leurs états.",
+  "@catalogSubtitle": {
+    "description": "Sous-titre de l'écran Catalogue."
+  },
+  "catalogSectionColors": "Couleurs",
+  "@catalogSectionColors": {
+    "description": "Section du catalogue montrant les jetons de couleur."
+  },
+  "catalogSectionTypography": "Typographie",
+  "@catalogSectionTypography": {
+    "description": "Section du catalogue montrant l'échelle typographique."
+  },
+  "catalogSectionSpacing": "Espacement",
+  "@catalogSectionSpacing": {
+    "description": "Section du catalogue montrant l'échelle d'espacement."
+  },
+  "catalogSectionTouch": "Cibles tactiles",
+  "@catalogSectionTouch": {
+    "description": "Section du catalogue montrant les hauteurs minimales de cible."
+  },
+  "catalogSectionMotion": "Mouvement",
+  "@catalogSectionMotion": {
+    "description": "Section du catalogue montrant les durées d'animation."
+  },
+  "catalogMotionReduced": "Mouvement réduit actif : les durées passent à zéro.",
+  "@catalogMotionReduced": {
+    "description": "Note affichée quand le système demande des animations réduites."
+  },
+  "catalogSectionButtons": "Boutons",
+  "@catalogSectionButtons": {
+    "description": "Section du catalogue montrant chaque variante de bouton."
+  },
+  "catalogSectionInputs": "Saisie",
+  "@catalogSectionInputs": {
+    "description": "Section du catalogue montrant les champs et les sélecteurs."
+  },
+  "catalogSectionContent": "Contenu",
+  "@catalogSectionContent": {
+    "description": "Section du catalogue montrant les cartes, badges et notes."
+  },
+  "catalogSectionStates": "États d'écran",
+  "@catalogSectionStates": {
+    "description": "Section du catalogue montrant chargement, vide et erreur."
+  },
+  "catalogSectionOverlays": "Feuilles et messages",
+  "@catalogSectionOverlays": {
+    "description": "Section du catalogue permettant d'ouvrir chaque type de feuille."
+  },
+  "catalogStateDisabled": "Désactivé",
+  "@catalogStateDisabled": {
+    "description": "Étiquette d'un exemple de bouton désactivé dans le catalogue."
+  },
+  "catalogStateLoading": "En cours",
+  "@catalogStateLoading": {
+    "description": "Étiquette d'un exemple de bouton en chargement dans le catalogue."
+  }
+}
