@@ -21,7 +21,7 @@ class WkConnectionBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final CacheStatus status = context.watch<CacheStatus>();
-    final BackendWarmup? warmup = context.watch<BackendWarmup?>();
+    final BackendWarmup warmup = context.watch<BackendWarmup>();
 
     if (status.servedFromCache) {
       return _Line(
@@ -29,7 +29,7 @@ class WkConnectionBanner extends StatelessWidget {
         message: context.l10n.offlineCached(_age(context, status.fetchedAt)),
       );
     }
-    if (warmup != null && warmup.state == WarmupState.warming) {
+    if (warmup.state == WarmupState.warming) {
       return _Line(
         icon: Icons.hourglass_bottom,
         message: context.l10n.backendWakingUp,

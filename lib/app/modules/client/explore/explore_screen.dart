@@ -68,7 +68,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Future<void> _primeLocation() async {
     final ClientPositionController positions = context
         .read<ClientPositionController>();
-    if (positions.hasBeenPrimed || !mounted) {
+    if (!mounted) {
+      return;
+    }
+    if (positions.hasBeenPrimed) {
+      // Déjà expliqué une fois : on relit la position sans rien redemander.
+      await positions.refreshIfPermitted();
       return;
     }
     await requestClientPosition(
@@ -88,6 +93,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final Neighbourhood? place = await LocationSheet.show(
       context,
       service: widget.location,
+      positions: context.read<ClientPositionController>(),
       recents: model.recentPlaces,
     );
     if (place != null) {

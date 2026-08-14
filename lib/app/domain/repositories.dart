@@ -8,6 +8,14 @@ abstract class BrokerRepository {
   Future<List<Broker>> all();
   Future<Broker?> byId(String id);
   Future<void> save(Broker broker);
+
+  /// Écrit un lot d'un coup.
+  ///
+  /// Un magasin mémoire boucle sur [save] ; une base ouvre **une** transaction.
+  /// Recopier une réponse serveur ligne par ligne en ouvre une par
+  /// enregistrement, et sur un téléphone d'entrée de gamme — la cible
+  /// d'acceptation — cela se voit à l'écran.
+  Future<void> saveAll(List<Broker> brokers);
 }
 
 abstract class PropertyRepository {
@@ -20,6 +28,9 @@ abstract class PropertyRepository {
   Future<Property?> byId(String id);
   Future<void> save(Property property);
   Future<void> delete(String id);
+
+  /// Voir [BrokerRepository.saveAll].
+  Future<void> saveAll(List<Property> properties);
 }
 
 abstract class ReviewRepository {
@@ -33,6 +44,9 @@ abstract class ReviewRepository {
   /// modération démarre à `pending`. L'appelant en a besoin pour rattacher
   /// l'avis au contact, d'où le retour plutôt qu'un `void`.
   Future<Review> save(Review review);
+
+  /// Voir [BrokerRepository.saveAll].
+  Future<void> saveAll(List<Review> reviews);
 }
 
 abstract class ContactRepository {
@@ -48,6 +62,9 @@ abstract class ContactRepository {
   });
 
   Future<void> update(ContactLog contact);
+
+  /// Voir [BrokerRepository.saveAll].
+  Future<void> updateAll(List<ContactLog> contacts);
 }
 
 /// Ce que le mode démo peut purger et resemer.

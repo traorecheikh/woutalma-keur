@@ -34,6 +34,9 @@ class _ScriptedBrokers implements BrokerRepository {
 
   @override
   Future<void> save(Broker broker) async {}
+
+  @override
+  Future<void> saveAll(List<Broker> brokers) async {}
 }
 
 Broker _broker(String id) => Broker(

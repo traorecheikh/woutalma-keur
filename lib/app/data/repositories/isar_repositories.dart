@@ -34,6 +34,16 @@ class IsarBrokerRepository implements BrokerRepository {
       () => _isar.brokerRows.put(BrokerRow.fromDomain(broker)),
     );
   }
+
+  @override
+  Future<void> saveAll(List<Broker> brokers) async {
+    if (brokers.isEmpty) {
+      return;
+    }
+    await _isar.writeTxn(
+      () => _isar.brokerRows.putAll(brokers.map(BrokerRow.fromDomain).toList()),
+    );
+  }
 }
 
 class IsarPropertyRepository implements PropertyRepository {
@@ -91,6 +101,18 @@ class IsarPropertyRepository implements PropertyRepository {
   }
 
   @override
+  Future<void> saveAll(List<Property> properties) async {
+    if (properties.isEmpty) {
+      return;
+    }
+    await _isar.writeTxn(
+      () => _isar.propertyRows.putAll(
+        properties.map(PropertyRow.fromDomain).toList(),
+      ),
+    );
+  }
+
+  @override
   Future<void> delete(String id) async {
     await _isar.writeTxn(
       () => _isar.propertyRows.filter().uidEqualTo(id).deleteAll(),
@@ -132,6 +154,16 @@ class IsarReviewRepository implements ReviewRepository {
     );
     // La base locale n'attribue rien : ce qui entre ressort identique.
     return review;
+  }
+
+  @override
+  Future<void> saveAll(List<Review> reviews) async {
+    if (reviews.isEmpty) {
+      return;
+    }
+    await _isar.writeTxn(
+      () => _isar.reviewRows.putAll(reviews.map(ReviewRow.fromDomain).toList()),
+    );
   }
 }
 
@@ -186,6 +218,18 @@ class IsarContactRepository implements ContactRepository {
   Future<void> update(ContactLog contact) async {
     await _isar.writeTxn(
       () => _isar.contactRows.put(ContactRow.fromDomain(contact)),
+    );
+  }
+
+  @override
+  Future<void> updateAll(List<ContactLog> contacts) async {
+    if (contacts.isEmpty) {
+      return;
+    }
+    await _isar.writeTxn(
+      () => _isar.contactRows.putAll(
+        contacts.map(ContactRow.fromDomain).toList(),
+      ),
     );
   }
 }

@@ -87,12 +87,18 @@ l'application mobile prototype ; ses résultats sont simulés par les données l
 ### Accessibilité vocale
 
 - Lecture de l'écran et des informations essentielles à voix haute.
-- Recherche par commande vocale.
+- Recherche par commande vocale. **Retirée de l'application le 2026-08-14** :
+  la reconnaissance n'a jamais été réelle, et un micro qui répond un script
+  figé dessert précisément la personne qui ne lit pas. À rétablir dès qu'un
+  moteur français mesuré sur des voix ouest-africaines existe — c'est déjà la
+  condition posée en §« Hors périmètre ».
 - Dictée dans l'ajout d'un bien.
 - Enregistrement et lecture d'un message vocal.
 - Permission refusée, silence et commande incomprise ont toujours une
   alternative tactile.
-- Le prototype simule la reconnaissance ; le moteur réel reste derrière `VoiceService`.
+- Le moteur réel reste derrière `VoiceService`. L'interface du prototype
+  survit dans le catalogue S02 ; elle n'est plus atteignable depuis un écran
+  produit.
 
 ## 4. Règles métier verrouillées
 

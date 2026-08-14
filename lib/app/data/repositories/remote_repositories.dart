@@ -83,6 +83,14 @@ class RemoteBrokerRepository implements BrokerRepository {
       ),
     );
   }
+
+  /// Pas d'écriture en lot côté serveur : chaque profil est une requête.
+  @override
+  Future<void> saveAll(List<Broker> brokers) async {
+    for (final Broker broker in brokers) {
+      await save(broker);
+    }
+  }
 }
 
 class RemotePropertyRepository implements PropertyRepository {
@@ -212,6 +220,14 @@ class RemotePropertyRepository implements PropertyRepository {
   Future<void> delete(String id) async {
     await _propertiesApi.propertiesControllerClose(id: id);
   }
+
+  /// Pas d'écriture en lot côté serveur : chaque bien est une requête.
+  @override
+  Future<void> saveAll(List<Property> properties) async {
+    for (final Property property in properties) {
+      await save(property);
+    }
+  }
 }
 
 class RemoteReviewRepository implements ReviewRepository {
@@ -280,6 +296,15 @@ class RemoteReviewRepository implements ReviewRepository {
       _ => null,
     };
   }
+
+  /// Pas d'écriture en lot côté serveur : chaque avis passe par sa propre
+  /// vérification d'éligibilité.
+  @override
+  Future<void> saveAll(List<Review> reviews) async {
+    for (final Review review in reviews) {
+      await save(review);
+    }
+  }
 }
 
 class RemoteContactRepository implements ContactRepository {
@@ -336,5 +361,12 @@ class RemoteContactRepository implements ContactRepository {
         b.outcome = mapContactOutcomeToApi(contact.outcome);
       }),
     );
+  }
+
+  @override
+  Future<void> updateAll(List<ContactLog> contacts) async {
+    for (final ContactLog contact in contacts) {
+      await update(contact);
+    }
   }
 }

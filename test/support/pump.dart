@@ -47,7 +47,9 @@ Future<RecordingFeedbackService> pumpWk(
         ChangeNotifierProvider<ClientPositionController>.value(
           value: positions ?? fakePositions(),
         ),
-        Provider<BackendWarmup?>.value(value: warmup),
+        ChangeNotifierProvider<BackendWarmup>.value(
+          value: warmup ?? BackendWarmup.disabled(),
+        ),
       ],
       child: MaterialApp(
         theme: theme ?? WkTheme.light(),

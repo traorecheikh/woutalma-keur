@@ -23,6 +23,14 @@ class BackendWarmup extends ChangeNotifier {
     : _health = health,
       _maxAttempts = maxAttempts;
 
+  /// Mode local : il n'y a pas de serveur à réveiller.
+  ///
+  /// Une instance inerte plutôt qu'un `BackendWarmup?` : `Provider` refuse
+  /// d'exposer un sous-type de `Listenable` (il ne saurait pas se réabonner),
+  /// et un `ChangeNotifierProvider` d'un type nullable n'existe pas. Un objet
+  /// qui reste `idle` dit la même chose sans compliquer chaque lecteur.
+  BackendWarmup.disabled() : _health = null, _maxAttempts = 0;
+
   static const List<Duration> _backoff = <Duration>[
     Duration(seconds: 1),
     Duration(seconds: 2),
@@ -32,7 +40,7 @@ class BackendWarmup extends ChangeNotifier {
     Duration(seconds: 8),
   ];
 
-  final api.HealthApi _health;
+  final api.HealthApi? _health;
   final int _maxAttempts;
 
   WarmupState _state = WarmupState.idle;
@@ -42,7 +50,7 @@ class BackendWarmup extends ChangeNotifier {
 
   /// Démarre la séquence. Synchrone par contrat.
   void start() {
-    if (_state == WarmupState.warm || _running != null) {
+    if (_health == null || _state == WarmupState.warm || _running != null) {
       return;
     }
     _set(WarmupState.warming);
@@ -52,7 +60,7 @@ class BackendWarmup extends ChangeNotifier {
   Future<void> _loop() async {
     for (var attempt = 0; attempt < _maxAttempts; attempt++) {
       try {
-        await _health.healthControllerReadiness(
+        await _health!.healthControllerReadiness(
           // Délai court par tentative : mieux vaut réessayer que rester
           // suspendu soixante secondes sur un socket mort.
           extra: const <String, dynamic>{},

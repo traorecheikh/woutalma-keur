@@ -9,13 +9,14 @@
 # 60-80 ms against ~180 ms to Oregon. The web service and the database MUST
 # share a region or the internal connection string does not resolve.
 
-databases:
-  - name: woutalma-db
-    databaseName: woutalma
-    user: woutalma
-    plan: free
-    region: frankfurt
-    postgresMajorVersion: "16"
+# No `databases:` block on purpose. Render's free tier allows exactly one free
+# Postgres per workspace, and this one's slot is held by an unrelated project.
+# This deployment therefore shares that instance and keeps its own tables in a
+# `woutalma` schema — DATABASE_URL carries `?schema=woutalma`, and PostGIS and
+# unaccent live in `public` where both tenants can reach them.
+#
+# Consequence worth remembering: the shared free database expires 30 days after
+# *its* creation, and both projects go with it.
 
 services:
   - type: web

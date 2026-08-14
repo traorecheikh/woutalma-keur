@@ -43,9 +43,20 @@ racine laisse Android fermer l'application selon le comportement plateforme.
 
 - Loading : skeletons de même hauteur que les cartes, recherche toujours utilisable.
 - Data : résultats et nombre annoncés ; profil épinglé explicitement marqué.
-- Empty : élargir rayon, retirer filtres ou changer quartier ; option vocale visible.
+- Empty : élargir rayon, retirer filtres ou changer quartier.
 - Error : résultats locaux précédents si disponibles, cause courte et Réessayer.
+- GPS accordé : la position réelle est celle depuis laquelle on classe, relue à
+  chaque lancement sans jamais redemander.
 - GPS inconnu/refusé : quartier manuel dominant ; aucune boucle de permission.
+
+> **Décision (2026-08-14) — le GPS passe devant.** Ce contrat plaçait la saisie
+> manuelle en premier et le GPS en second. Le GPS est désormais la position par
+> défaut : l'explication M06 est présentée une fois au premier lancement, puis
+> la position réelle sert au classement. Ce qui ne change pas, et qui portait
+> l'intention d'origine : un refus n'ampute rien. La liste des quartiers reste
+> entière, aucune relance n'est faite, et « Pas maintenant » laisse un parcours
+> complet. Motif : le classement par distance est la promesse du produit, et il
+> partait jusqu'ici d'un point fixe quelle que soit la position réelle.
 - Offline/low data : liste active ; tuiles absentes expliquées sans bloquer la recherche.
 - Demo : seed couvrant résultats proches, lointains, épinglés et aucun résultat.
 - Real local : base vide menant à l'état Empty, pas à une fausse erreur réseau.

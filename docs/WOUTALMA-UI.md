@@ -53,6 +53,16 @@ désormais ces deux valeurs.
 
 ## 3. Chemin vocal
 
+> **État au 2026-08-14 — le micro est retiré des écrans produit.** Ce qui suit
+> décrit la cible, pas ce qui est livré. `SimulatedVoiceService` rendait un
+> script figé ; l'exposer comme une recherche vocale promettait à la cible qui
+> ne lit pas quelque chose qui n'existait pas. `WkSearchTrigger.onVoice` et
+> `WkSearchBar.onVoice` sont nullables et aucun appelant ne les fournit, donc
+> le micro ne peut pas revenir par inadvertance. `M03` survit dans le catalogue
+> S02. Les points 2 et 3 ci-dessous reprennent effet le jour où un moteur réel
+> est branché ; la lecture à voix haute (`Écouter`), elle, n'a jamais été
+> touchée.
+
 Le vocal n'est pas une option, c'est un **chemin parallèle complet** : ouvrir l'application,
 trouver un courtier et l'appeler doit être possible **sans lire un seul mot**.
 

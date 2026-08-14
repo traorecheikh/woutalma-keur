@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_confirm_sheet.dart';
+import 'package:woutalma_keur/app/modules/client/explore/location_permission_flow.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_search_bar.dart';
 
 /// M02 — Choisir où chercher.
@@ -19,11 +19,17 @@ import 'package:woutalma_keur/app/shared/widgets/wk_search_bar.dart';
 class LocationSheet extends StatefulWidget {
   const LocationSheet({
     required this.service,
+    required this.positions,
     required this.recents,
     super.key,
   });
 
   final LocationService service;
+
+  /// Le GPS écrit directement dedans : la feuille ne rend alors aucun
+  /// quartier, puisqu'on n'est pas dans un quartier nommé mais « près de
+  /// vous ».
+  final ClientPositionController positions;
 
   /// Derniers quartiers choisis, remontés en tête.
   final List<Neighbourhood> recents;
@@ -31,6 +37,7 @@ class LocationSheet extends StatefulWidget {
   static Future<Neighbourhood?> show(
     BuildContext context, {
     required LocationService service,
+    required ClientPositionController positions,
     List<Neighbourhood> recents = const <Neighbourhood>[],
   }) {
     return showModalBottomSheet<Neighbourhood>(
@@ -44,7 +51,11 @@ class LocationSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(WkRadius.xxl)),
       ),
-      builder: (_) => LocationSheet(service: service, recents: recents),
+      builder: (_) => LocationSheet(
+        service: service,
+        positions: positions,
+        recents: recents,
+      ),
     );
   }
 
@@ -156,54 +167,36 @@ class _LocationSheetState extends State<LocationSheet> {
   }
 
   Future<void> _useGps() async {
-    // M06 : on explique le bénéfice **avant** la demande système. Une
-    // autorisation refusée par réflexe ne se redemande pas.
-    final bool? go = await WkConfirmSheet.show(
-      context,
-      title: context.l10n.permissionLocationTitle,
-      body: context.l10n.permissionLocationBody,
-      confirmLabel: context.l10n.permissionContinue,
-      cancelLabel: context.l10n.permissionNotNow,
-    );
-    if (go != true || !mounted) {
-      return;
-    }
-
     setState(() {
       _locating = true;
       _error = null;
     });
-    final LocationResult result = await widget.service.current();
+
+    // Un seul M06 dans l'application : la feuille d'explication, la demande
+    // système et le chemin « refus définitif → réglages » vivent dans
+    // location_permission_flow.dart, et ce bouton n'en est qu'un appelant.
+    final LocationResult? result = await requestClientPosition(
+      context,
+      widget.positions,
+    );
     if (!mounted) {
       return;
     }
     setState(() => _locating = false);
 
     switch (result) {
-      case LocationFound(:final GeoPoint position):
-        Navigator.of(context).pop(
-          Neighbourhood(name: context.l10n.exploreNearYou, position: position),
-        );
+      case null:
+        // « Pas maintenant » : la liste des quartiers reste ouverte, entière.
+        return;
+      case LocationFound():
+        // La position est déjà posée dans le contrôleur ; rien à renvoyer.
+        Navigator.of(context).pop();
       case LocationRefused(:final LocationRefusal reason):
         setState(() {
           _error = reason == LocationRefusal.unavailable
               ? context.l10n.locationUnavailable
               : context.l10n.locationDenied;
         });
-        if (reason == LocationRefusal.deniedForever && mounted) {
-          // Seul cas où proposer les réglages a du sens : redemander
-          // n'affichera plus jamais de dialogue.
-          final bool? open = await WkConfirmSheet.show(
-            context,
-            title: context.l10n.permissionLocationTitle,
-            body: context.l10n.locationDenied,
-            confirmLabel: context.l10n.permissionOpenSettings,
-            cancelLabel: context.l10n.permissionNotNow,
-          );
-          if (open == true) {
-            await widget.service.openSettings();
-          }
-        }
     }
   }
 }

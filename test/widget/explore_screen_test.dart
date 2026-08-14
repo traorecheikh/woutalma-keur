@@ -308,6 +308,9 @@ class _FixedLocationService implements LocationService {
       const LocationFound(DemoSeed.clientPosition);
 
   @override
+  Future<bool> hasPermission() async => false;
+
+  @override
   Future<void> openSettings() async {}
 
   @override

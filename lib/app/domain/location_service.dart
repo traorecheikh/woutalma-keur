@@ -53,6 +53,14 @@ final class LocationRefused extends LocationResult {
 abstract class LocationService {
   Future<LocationResult> current();
 
+  /// L'autorisation est-elle déjà accordée ?
+  ///
+  /// Distinct de [current] : celle-ci **demande** si besoin, donc peut ouvrir
+  /// un dialogue système. Il faut pouvoir savoir sans demander, pour relire la
+  /// position aux lancements suivants sans jamais rouvrir un dialogue — ce que
+  /// docs/screen-contracts/client-discovery.md interdit.
+  Future<bool> hasPermission();
+
   /// Ouvre les réglages système. Proposé seulement après un refus définitif.
   Future<void> openSettings();
 

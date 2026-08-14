@@ -45,6 +45,13 @@ class InMemoryBrokerRepository implements BrokerRepository {
 
   @override
   Future<void> save(Broker broker) async => _store.brokers[broker.id] = broker;
+
+  @override
+  Future<void> saveAll(List<Broker> brokers) async {
+    for (final Broker broker in brokers) {
+      _store.brokers[broker.id] = broker;
+    }
+  }
 }
 
 class InMemoryPropertyRepository implements PropertyRepository {
@@ -80,6 +87,13 @@ class InMemoryPropertyRepository implements PropertyRepository {
       _store.properties[property.id] = property;
 
   @override
+  Future<void> saveAll(List<Property> properties) async {
+    for (final Property property in properties) {
+      _store.properties[property.id] = property;
+    }
+  }
+
+  @override
   Future<void> delete(String id) async => _store.properties.remove(id);
 }
 
@@ -111,6 +125,13 @@ class InMemoryReviewRepository implements ReviewRepository {
   Future<Review> save(Review review) async {
     _store.reviews[review.id] = review;
     return review;
+  }
+
+  @override
+  Future<void> saveAll(List<Review> reviews) async {
+    for (final Review review in reviews) {
+      _store.reviews[review.id] = review;
+    }
   }
 }
 
@@ -155,6 +176,13 @@ class InMemoryContactRepository implements ContactRepository {
   @override
   Future<void> update(ContactLog contact) async =>
       _store.contacts[contact.id] = contact;
+
+  @override
+  Future<void> updateAll(List<ContactLog> contacts) async {
+    for (final ContactLog contact in contacts) {
+      _store.contacts[contact.id] = contact;
+    }
+  }
 }
 
 class InMemorySeedRepository implements SeedRepository {

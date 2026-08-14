@@ -91,11 +91,7 @@ class CachedBrokerRepository implements BrokerRepository {
   @override
   Future<List<Broker>> all() => _readThrough<List<Broker>>(
     remote: _remote.all,
-    writeThrough: (List<Broker> brokers) async {
-      for (final Broker broker in brokers) {
-        await _cache.save(broker);
-      }
-    },
+    writeThrough: _cache.saveAll,
     cached: _cache.all,
     isEmpty: (List<Broker> brokers) => brokers.isEmpty,
     status: _status,
@@ -123,6 +119,12 @@ class CachedBrokerRepository implements BrokerRepository {
     await _remote.save(broker);
     await _cache.save(broker);
   }
+
+  @override
+  Future<void> saveAll(List<Broker> brokers) async {
+    await _remote.saveAll(brokers);
+    await _cache.saveAll(brokers);
+  }
 }
 
 class CachedPropertyRepository implements PropertyRepository {
@@ -141,11 +143,8 @@ class CachedPropertyRepository implements PropertyRepository {
   final CacheStatus _status;
   final DateTime Function() _now;
 
-  Future<void> _writeAll(List<Property> properties) async {
-    for (final Property property in properties) {
-      await _cache.save(property);
-    }
-  }
+  Future<void> _writeAll(List<Property> properties) =>
+      _cache.saveAll(properties);
 
   @override
   Future<List<Property>> all() => _readThrough<List<Property>>(
@@ -206,6 +205,12 @@ class CachedPropertyRepository implements PropertyRepository {
     await _remote.delete(id);
     await _cache.delete(id);
   }
+
+  @override
+  Future<void> saveAll(List<Property> properties) async {
+    await _remote.saveAll(properties);
+    await _cache.saveAll(properties);
+  }
 }
 
 class CachedReviewRepository implements ReviewRepository {
@@ -224,11 +229,7 @@ class CachedReviewRepository implements ReviewRepository {
   final CacheStatus _status;
   final DateTime Function() _now;
 
-  Future<void> _writeAll(List<Review> reviews) async {
-    for (final Review review in reviews) {
-      await _cache.save(review);
-    }
-  }
+  Future<void> _writeAll(List<Review> reviews) => _cache.saveAll(reviews);
 
   @override
   Future<List<Review>> byBroker(String brokerId, {bool onlyPublic = false}) =>
@@ -260,6 +261,12 @@ class CachedReviewRepository implements ReviewRepository {
     await _cache.save(saved);
     return saved;
   }
+
+  @override
+  Future<void> saveAll(List<Review> reviews) async {
+    await _remote.saveAll(reviews);
+    await _cache.saveAll(reviews);
+  }
 }
 
 class CachedContactRepository implements ContactRepository {
@@ -281,11 +288,7 @@ class CachedContactRepository implements ContactRepository {
   @override
   Future<List<ContactLog>> all() => _readThrough<List<ContactLog>>(
     remote: _remote.all,
-    writeThrough: (List<ContactLog> contacts) async {
-      for (final ContactLog contact in contacts) {
-        await _cache.update(contact);
-      }
-    },
+    writeThrough: _cache.updateAll,
     cached: _cache.all,
     isEmpty: (List<ContactLog> c) => c.isEmpty,
     status: _status,
@@ -328,6 +331,12 @@ class CachedContactRepository implements ContactRepository {
   Future<void> update(ContactLog contact) async {
     await _remote.update(contact);
     await _cache.update(contact);
+  }
+
+  @override
+  Future<void> updateAll(List<ContactLog> contacts) async {
+    await _remote.updateAll(contacts);
+    await _cache.updateAll(contacts);
   }
 }
 

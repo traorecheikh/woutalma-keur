@@ -15,8 +15,12 @@ class FakeLocationService implements LocationService {
   });
 
   LocationResult result;
+  bool permitted = false;
   int calls = 0;
   int settingsOpened = 0;
+
+  @override
+  Future<bool> hasPermission() async => permitted;
 
   @override
   Future<LocationResult> current() async {

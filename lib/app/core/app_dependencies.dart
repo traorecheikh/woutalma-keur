@@ -52,7 +52,7 @@ class AppDependencies {
     required this.clientPosition,
     required this.cacheStatus,
     required this.sessionExpiry,
-    this.warmup,
+    required this.warmup,
   });
 
   final BrokerRepository brokers;
@@ -89,9 +89,9 @@ class AppDependencies {
   /// Signale qu'une session a expiré sans pouvoir être renouvelée.
   final SessionExpiry sessionExpiry;
 
-  /// Réveille l'instance gratuite pendant que l'application se peint. `null`
+  /// Réveille l'instance gratuite pendant que l'application se peint. Inerte
   /// en mode local, où il n'y a rien à réveiller.
-  final BackendWarmup? warmup;
+  final BackendWarmup warmup;
 
   /// Courtier connecté, déduit de l'identification.
   ///
@@ -323,7 +323,7 @@ class AppDependencies {
       ),
       cacheStatus: cacheStatus ?? CacheStatus(),
       sessionExpiry: sessionExpiry ?? SessionExpiry(),
-      warmup: warmup,
+      warmup: warmup ?? BackendWarmup.disabled(),
       auth:
           auth ??
           SimulatedAuthService(

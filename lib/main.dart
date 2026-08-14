@@ -67,8 +67,8 @@ class _WoutalmaKeurAppState extends State<WoutalmaKeurApp> {
         ChangeNotifierProvider<ClientPositionController>.value(
           value: widget.deps.clientPosition,
         ),
-        // Nul en mode local : il n'y a rien à réveiller.
-        Provider<BackendWarmup?>.value(value: widget.deps.warmup),
+        // Inerte en mode local : il n'y a rien à réveiller.
+        ChangeNotifierProvider<BackendWarmup>.value(value: widget.deps.warmup),
       ],
       child: MaterialApp.router(
         onGenerateTitle: (BuildContext context) => AppL10n.of(context).appTitle,

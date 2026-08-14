@@ -77,6 +77,19 @@ class ClientPositionController extends ChangeNotifier {
     return result;
   }
 
+  /// Relit la position à chaque lancement, mais seulement si l'autorisation
+  /// est déjà accordée.
+  ///
+  /// Sans cela, l'amorçage n'ayant lieu qu'une fois dans la vie de
+  /// l'installation, la position resterait figée à sa valeur de repli à tous
+  /// les lancements suivants — le GPS aurait été demandé une fois puis jamais
+  /// relu. Aucun dialogue ici : on vérifie, on ne redemande pas.
+  Future<void> refreshIfPermitted() async {
+    if (await _location.hasPermission()) {
+      await locate();
+    }
+  }
+
   /// Ouvre les réglages système. Proposé seulement après un refus définitif.
   Future<void> openSettings() => _location.openSettings();
 

@@ -155,7 +155,7 @@ d'écran à voix haute restent obligatoires, en français.
 
 | ID | Écran et décision | Contenu / fonctions | Entrées → sorties |
 |:--|:--|:--|:--|
-| C01 | Explorer : qui ou quel bien près de moi ? | quartier actuel, `WkSearchTrigger` épinglé (micro dominant), filtres actifs, segments Courtiers/Biens et Liste/Carte, résultats classés, profil épinglé signalé comme tel ; seule la barre de recherche est fixe, filtres/segments/compteur défilent avec les résultats | shell, M14, M01/M02/M03 → C02 ou C03 |
+| C01 | Explorer : qui ou quel bien près de moi ? | quartier actuel, `WkSearchTrigger` épinglé, filtres actifs, segments Courtiers/Biens et Liste/Carte, résultats classés, profil épinglé signalé comme tel ; seule la barre de recherche est fixe, filtres/segments/compteur défilent avec les résultats | shell, M14, M01/M02/M03 → C02 ou C03 |
 | C02 | Fiche courtier : puis-je lui faire confiance ? | identité vérifiée, distance, zone, note + volume, réactivité, biens disponibles, avis récents, Écouter, action Contact fixe ; la première ouverture journalise une consultation dédupliquée | C01/C03/C04 → M04, C03, liste complète des avis ; retour restitue position de liste |
 | C03 | Fiche bien : ce bien correspond-il ? | photos, statut, prix, type, transaction, surface, pièces, description courte, localisation approximative, courtier, Signaler une information, Contact fixe | C01/C02 → galerie, C02 ou M04 ; retour restitue le résultat |
 | C04 | Contacts : qui ai-je déjà joint ? | regroupement par courtier, canal/date, résultat, statut « avis possible/déjà donné », recherche locale | onglet ou M05 → C02/C05 ; vide → C01 |
@@ -164,9 +164,12 @@ d'écran à voix haute restent obligatoires, en français.
 
 ### États obligatoires de C01
 
-- Localisation inconnue : adresse/quartier manuel mis en avant, GPS secondaire.
+- Localisation connue : le GPS est la position par défaut (décision du
+  2026-08-14, voir `docs/screen-contracts/client-discovery.md`).
+- Localisation inconnue ou refusée : adresse/quartier manuel entière et
+  immédiate — jamais un parcours dégradé.
 - Permission GPS refusée : aucune relance en boucle ; bouton « Choisir mon quartier ».
-- Aucun résultat : élargir le rayon, enlever les filtres, recherche vocale.
+- Aucun résultat : élargir le rayon, enlever les filtres.
 - Réseau faible : les données locales restent visibles ; la carte peut laisser place à la liste.
 - Commande vocale comprise : filtres extraits visibles avant application.
 - Commande ambiguë : deux ou trois interprétations dans M03, jamais une erreur textuelle seule.
@@ -194,11 +197,11 @@ changent ; aucun second arbre d'application n'est créé.
 | ID | Surface | Ouverture | Action et fermeture |
 |:--|:--|:--|:--|
 | M01 | Filtres | C01, bouton Filtres | transaction, type, rayon, prix ; Appliquer ferme et met C01 à jour ; Réinitialiser explicite |
-| M02 | Quartier / position | C01, zone actuelle | recherche de quartier, positions récentes, GPS ; choisir ferme ; refus GPS garde la sheet ouverte en manuel |
-| M03 | Voix plein écran | micro global | écoute → transcription simulée → interprétation ; appliquer ferme ; retour stoppe micro et ferme |
+| M02 | Quartier / position | C01, zone actuelle | **GPS en action principale, en tête**, puis recherche de quartier et positions récentes ; choisir ferme ; refus GPS garde la sheet ouverte en manuel |
+| M03 | Voix plein écran | ~~micro global~~ **retiré de l'application** | Décision du 2026-08-14 : la reconnaissance n'était pas réelle (`SimulatedVoiceService`, script figé), et un micro qui ne comprend rien dessert précisément la cible qui ne lit pas. L'écran survit dans le catalogue S02 comme prototype, prêt à revenir dès qu'un moteur réel existe. |
 | M04 | Contacter | C02/C03 | Appeler, SMS, WhatsApp, message vocal ; si invité → G03 puis réouverture ; canal choisi journalisé avant ouverture externe |
 | M05 | Résultat du contact | retour d'une app externe ou historique | « J'ai échangé » rend l'avis éligible ; « Pas de réponse » conserve le journal sans avis immédiat ; Plus tard ferme |
-| M06 | Permission expliquée | première demande GPS/micro/photo/notification | Continuer déclenche le prompt système ; Pas maintenant ferme vers l'alternative manuelle |
+| M06 | Permission expliquée | premier lancement (position) puis toute demande photo/notification | Continuer déclenche le prompt système ; Pas maintenant ferme vers l'alternative manuelle ; présentée **une seule fois**, un refus ne se redemande pas |
 | M07 | Sélecteur d'option | tout `WkSelectField` | ligne 56+, icône, libellé, coche ; sélection ferme et restitue la valeur |
 | M08 | Statut du bien | B02/B04 | disponible/réservé/vendu-loué avec impact expliqué ; changement confirmé met à jour les recherches |
 | M09 | Confirmation contextuelle | suppression, sortie formulaire, changement mode | nomme objet et conséquence ; action destructive séparée de l'annulation |
