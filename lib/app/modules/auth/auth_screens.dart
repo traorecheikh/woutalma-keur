@@ -22,6 +22,7 @@ class PhoneScreen extends StatefulWidget {
     required this.reason,
     required this.onBack,
     required this.onCodeSent,
+    required this.onSignedIn,
     super.key,
   });
 
@@ -29,6 +30,7 @@ class PhoneScreen extends StatefulWidget {
   final String reason;
   final VoidCallback onBack;
   final void Function(String phone, String? simulatedCode) onCodeSent;
+  final VoidCallback onSignedIn;
 
   @override
   State<PhoneScreen> createState() => _PhoneScreenState();
@@ -72,6 +74,19 @@ class _PhoneScreenState extends State<PhoneScreen> {
             body: widget.reason,
           ),
           const SizedBox(height: WkSpacing.lg),
+          _GoogleAuthButton(
+            label: context.l10n.authGoogleContinue,
+            onPressed: _signInWithGoogle,
+          ),
+          const SizedBox(height: WkSpacing.md),
+          Text(
+            context.l10n.authPhoneFallback,
+            style: context.text.bodySmall?.copyWith(
+              color: context.colors.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: WkSpacing.md),
           WkTextField(
             label: context.l10n.authPhoneLabel,
             controller: _phone,
@@ -112,6 +127,88 @@ class _PhoneScreenState extends State<PhoneScreen> {
     }
     setState(() => _sending = false);
     widget.onCodeSent(phone, auth.isSimulated ? code : null);
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _sending = true);
+    final AuthResult result = await context.read<AuthService>().signInWithGoogle();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _sending = false);
+    if (result == AuthResult.signedIn || result == AuthResult.linked) {
+      context.read<InteractionFeedbackService?>()?.emit(
+        FeedbackIntent.success,
+        eventId: 'G03:success:google',
+      );
+      widget.onSignedIn();
+    }
+  }
+
+}
+
+class _GoogleAuthButton extends StatelessWidget {
+  const _GoogleAuthButton({required this.label, required this.onPressed});
+
+  static const Color _fill = Color(0xFFFFFFFF);
+  static const Color _stroke = Color(0xFF747775);
+  static const Color _text = Color(0xFF1F1F1F);
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: _fill,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(WkRadius.md),
+          side: const BorderSide(color: _stroke),
+        ),
+        child: InkWell(
+          onTap: () {
+            context
+                .read<InteractionFeedbackService?>()
+                ?.emit(FeedbackIntent.selection);
+            onPressed();
+          },
+          borderRadius: BorderRadius.circular(WkRadius.md),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: WkTouch.min),
+            padding: const EdgeInsetsDirectional.only(
+              start: 12,
+              end: 12,
+              top: WkSpacing.sm,
+              bottom: WkSpacing.sm,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Image.asset(
+                  'assets/brand/google_signin_light_square_2x.png',
+                  width: 18,
+                  height: 18,
+                  excludeFromSemantics: true,
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: context.text.labelLarge?.copyWith(color: _text),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

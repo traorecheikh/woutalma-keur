@@ -147,14 +147,15 @@ void main() {
   ) async {
     final ExploreViewModel model = await pumpExplore(tester);
 
-    expect(model.searchSuggestions, isEmpty);
+    expect(model.searchSuggestions, contains('Maison'));
 
     await tester.tap(find.byType(WkSearchTrigger));
     await tester.pumpAndSettle();
     expect(find.byType(SearchOverlay), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Mer');
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     expect(find.text('Mermoz'), findsOneWidget);
 
     await tester.tap(find.text('Mermoz'));
@@ -162,7 +163,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(model.filters.query, 'Mermoz');
-    expect(model.searchSuggestions, isEmpty);
+    expect(model.searchSuggestions, isNotEmpty);
 
     // Fermer l'écran de recherche rend la requête visible sur C01.
     await tester.tap(find.byIcon(Icons.arrow_back));
@@ -203,6 +204,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(WkEmptyState), findsOneWidget);
+  });
+
+  testWidgets('les filtres appliqués restent visibles et retirables', (
+    WidgetTester tester,
+  ) async {
+    final ExploreViewModel model = await pumpExplore(tester);
+
+    await model.applyFilters(
+      const DiscoveryFilters(
+        transaction: TransactionKind.rent,
+        kind: PropertyKind.apartment,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('À louer'), findsOneWidget);
+    expect(find.text('Appartement'), findsOneWidget);
+
+    await tester.tap(find.text('Appartement'));
+    await tester.pumpAndSettle();
+
+    expect(model.filters.kind, isNull);
+    expect(model.filters.transaction, TransactionKind.rent);
   });
 
   testWidgets('toucher une carte ouvre la fiche du bon courtier', (
@@ -311,6 +335,13 @@ class _CountingDiscovery implements DiscoveryService {
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
   }) => _inner.findProperties(from: from, filters: filters);
+
+  @override
+  Future<List<String>> suggestions({
+    required GeoPoint from,
+    DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = 5,
+  }) => _inner.suggestions(from: from, filters: filters, limit: limit);
 
   @override
   BrokerRepository get brokers => _inner.brokers;

@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
-
 import 'package:flutter/foundation.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
@@ -62,6 +60,7 @@ class ExploreViewModel extends ChangeNotifier {
   /// La liste par défaut : la carte coûte de la data, elle se demande.
   ExploreView _view = ExploreView.list;
   DiscoveryFilters _filters = const DiscoveryFilters();
+  List<String> _searchSuggestions = const <String>[];
 
   ScreenState<ExploreResults> get state => _state;
   ExploreSegment get segment => _segment;
@@ -69,33 +68,7 @@ class ExploreViewModel extends ChangeNotifier {
   DiscoveryFilters get filters => _filters;
   GeoPoint get position => _position;
 
-  List<String> get searchSuggestions {
-    final String query = _filters.query.trim().toLowerCase();
-    if (query.isEmpty) {
-      return const <String>[];
-    }
-    return _state.map(
-      initial: () => const <String>[],
-      loading: () => const <String>[],
-      empty: () => const <String>[],
-      error: (_) => const <String>[],
-      data: (ExploreResults results) {
-        final LinkedHashSet<String> values = LinkedHashSet<String>();
-        for (final BrokerListing listing in results.brokers) {
-          values.addAll(listing.broker.coverage.take(2));
-        }
-        for (final Property property in results.properties) {
-          values.add(property.neighbourhood);
-        }
-        values.removeWhere(
-          (String value) =>
-              value.toLowerCase() == query ||
-              !value.toLowerCase().contains(query),
-        );
-        return values.take(4).toList(growable: false);
-      },
-    );
-  }
+  List<String> get searchSuggestions => _searchSuggestions;
 
   @override
   void dispose() {
@@ -194,6 +167,10 @@ class ExploreViewModel extends ChangeNotifier {
         filters: _filters,
       );
       final List<Property> properties = await _discovery.findProperties(
+        from: _position,
+        filters: _filters,
+      );
+      _searchSuggestions = await _discovery.suggestions(
         from: _position,
         filters: _filters,
       );

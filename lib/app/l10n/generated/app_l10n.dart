@@ -1377,6 +1377,18 @@ abstract class AppL10n {
   /// **'Sénégal +221'**
   String get authPhoneCountrySenegal;
 
+  /// Bouton d'identification Google. Le libellé doit clairement nommer l'action complète.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer avec Google'**
+  String get authGoogleContinue;
+
+  /// Sépare les options Google/email du chemin téléphone existant.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ou recevez un code par SMS'**
+  String get authPhoneFallback;
+
   /// Titre de G04.
   ///
   /// In fr, this message translates to:

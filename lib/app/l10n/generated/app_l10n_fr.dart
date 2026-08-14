@@ -813,6 +813,12 @@ class AppL10nFr extends AppL10n {
   String get authPhoneCountrySenegal => 'Sénégal +221';
 
   @override
+  String get authGoogleContinue => 'Continuer avec Google';
+
+  @override
+  String get authPhoneFallback => 'Ou recevez un code par SMS';
+
+  @override
   String get authOtpTitle => 'Code reçu par SMS';
 
   @override

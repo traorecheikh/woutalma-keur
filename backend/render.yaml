@@ -1,0 +1,56 @@
+# Infrastructure-as-code record of what is actually running on Render.
+#
+# Render's REST API has no endpoint that instantiates a Blueprint — only
+# GET /v1/blueprints exists — so this file does not perform the deploy. The
+# bring-up is the imperative sequence of API calls in tool/render_deploy.sh.
+# Keep the two in sync; a stale render.yaml is worse than none.
+#
+# Region frankfurt, not the oregon default: Dakar to Frankfurt is roughly
+# 60-80 ms against ~180 ms to Oregon. The web service and the database MUST
+# share a region or the internal connection string does not resolve.
+
+databases:
+  - name: woutalma-db
+    databaseName: woutalma
+    user: woutalma
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: woutalma-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    # prisma generate is called explicitly rather than left to postinstall:
+    # package.json carries an allowScripts gate, so lifecycle scripts are not
+    # guaranteed to run.
+    buildCommand: npm ci && npx prisma generate && npm run build
+    # Migrations re-run on every boot. Intentional redundancy: when the free
+    # database expires at day 30 and is recreated, a redeploy re-migrates
+    # without anyone remembering to do it by hand. No-op when nothing pends.
+    startCommand: npx prisma migrate deploy && node dist/main.js
+    # Liveness, not readiness — a failing health check during a rollout is
+    # treated as a failed deploy, and a database blip must not roll back a
+    # good build.
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: woutalma-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEV_AUTH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TOKEN_TTL
+        value: 15m
+      - key: JWT_REFRESH_TOKEN_TTL
+        value: 30d
+      - key: DEV_AUTH_ENABLED
+        value: "true"
+      - key: NODE_VERSION
+        value: 22.11.0

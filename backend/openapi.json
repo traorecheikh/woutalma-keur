@@ -1,0 +1,2006 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "HealthController_liveness",
+        "summary": "Liveness. Always 200 while the process is up. Never touches the database.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "HealthController_readiness",
+        "summary": "Readiness. Round-trips the database so a boot-time ping actually warms the connection pool.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/auth/google": {
+      "post": {
+        "operationId": "AuthController_signInWithGoogle",
+        "summary": "Sign in (or sign up) with a Google ID token obtained on-device.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/dev": {
+      "post": {
+        "operationId": "AuthController_signInAsDev",
+        "summary": "Sign in as a seeded demo persona. Returns 404 unless the deployment sets DEV_AUTH_ENABLED=true, and 401 without the matching x-dev-auth-secret header.",
+        "parameters": [
+          {
+            "name": "x-dev-auth-secret",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "summary": "Exchange a refresh token for a fresh access/refresh pair.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/brokers": {
+      "get": {
+        "operationId": "BrokersController_findAll",
+        "summary": "Mirrors BrokerRepository.all().",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrokerDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ]
+      },
+      "post": {
+        "operationId": "BrokersController_create",
+        "summary": "B01 — create the caller’s broker profile. Starts unverified.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBrokerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokerDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/brokers/{id}": {
+      "patch": {
+        "operationId": "BrokersController_update",
+        "summary": "Edit the caller’s own broker profile. 403 for someone else’s.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBrokerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokerDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "BrokersController_findById",
+        "summary": "Mirrors BrokerRepository.byId.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokerDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ]
+      }
+    },
+    "/brokers/{id}/properties": {
+      "get": {
+        "operationId": "BrokersController_findProperties",
+        "summary": "Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyDiscoverable",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ]
+      }
+    },
+    "/properties": {
+      "get": {
+        "operationId": "PropertiesController_findAll",
+        "summary": "Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly=true for the latter.",
+        "parameters": [
+          {
+            "name": "discoverableOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "properties"
+        ]
+      },
+      "post": {
+        "operationId": "PropertiesController_create",
+        "summary": "Publish a listing under the caller’s own broker profile (B03 save).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "properties"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/properties/photos/{photoId}": {
+      "get": {
+        "operationId": "PropertiesController_findPhoto",
+        "summary": "Bytes behind an `api:<id>` photoAssets entry. Public, like the listing itself.",
+        "parameters": [
+          {
+            "name": "photoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/properties/{id}": {
+      "get": {
+        "operationId": "PropertiesController_findById",
+        "summary": "Mirrors PropertyRepository.byId.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "properties"
+        ]
+      },
+      "patch": {
+        "operationId": "PropertiesController_update",
+        "summary": "Edit one of the caller’s own listings. 403 for someone else’s.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "properties"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PropertiesController_close",
+        "summary": "Withdraw a listing. Soft delete to CLOSED so client contact history keeps resolving it.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertyDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "properties"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/search/brokers": {
+      "get": {
+        "operationId": "SearchController_findBrokers",
+        "summary": "Mirrors DiscoveryService.findBrokers, ranked server-side via PostGIS.",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "description": "Client latitude — required to rank/sort by distance.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "description": "Client longitude — required to rank/sort by distance.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "transaction",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "RENT",
+                "SALE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "APARTMENT",
+                "HOUSE",
+                "LAND",
+                "STUDIO",
+                "ROOM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "radiusMeters",
+            "required": false,
+            "in": "query",
+            "description": "Meters.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "description": "Free text against broker name/coverage or property title/neighbourhood.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokerSearchResultsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/properties": {
+      "get": {
+        "operationId": "SearchController_findProperties",
+        "summary": "Mirrors DiscoveryService.findProperties, sorted by distance.",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "description": "Client latitude — required to rank/sort by distance.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "description": "Client longitude — required to rank/sort by distance.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "transaction",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "RENT",
+                "SALE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "APARTMENT",
+                "HOUSE",
+                "LAND",
+                "STUDIO",
+                "ROOM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "radiusMeters",
+            "required": false,
+            "in": "query",
+            "description": "Meters.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "description": "Free text against broker name/coverage or property title/neighbourhood.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertySearchResultsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/suggestions": {
+      "get": {
+        "operationId": "SearchController_suggestions",
+        "summary": "Returns ranked server-side search suggestions.",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "description": "Client latitude — required to rank/sort by distance.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "description": "Client longitude — required to rank/sort by distance.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "transaction",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "RENT",
+                "SALE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "APARTMENT",
+                "HOUSE",
+                "LAND",
+                "STUDIO",
+                "ROOM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "radiusMeters",
+            "required": false,
+            "in": "query",
+            "description": "Meters.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "description": "Free text against broker name/coverage or property title/neighbourhood.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchSuggestionsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/reviews": {
+      "get": {
+        "operationId": "ReviewsController_all",
+        "parameters": [
+          {
+            "name": "onlyPublic",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ReviewsController_create",
+        "summary": "Port of ReviewEligibilityService — 403s with a `reason` (noContact/notReached/alreadyReviewed/notOwner) when not eligible.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/reviews/broker/{brokerId}": {
+      "get": {
+        "operationId": "ReviewsController_byBroker",
+        "parameters": [
+          {
+            "name": "brokerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyPublic",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/contacts": {
+      "post": {
+        "operationId": "ContactsController_log",
+        "summary": "Logs a contact BEFORE the client opens the external channel (tel:/sms:/wa.me) — PRODUCT.md §3: \"Journal local avant l'ouverture du canal externe.\"",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactLogDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "ContactsController_all",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactLogDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/contacts/{id}": {
+      "get": {
+        "operationId": "ContactsController_byId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactLogDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/contacts/{id}/outcome": {
+      "patch": {
+        "operationId": "ContactsController_updateOutcome",
+        "summary": "Records the exchange result — 'reached' is the only outcome that opens a review.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContactOutcomeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactLogDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Woutalma Keur API",
+    "description": "Phase 1: broker/property read, ranked search, contact logging, review eligibility.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "LivenessDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "example": 412
+          }
+        },
+        "required": [
+          "status",
+          "uptimeSeconds"
+        ]
+      },
+      "ReadinessDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "example": "ok"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "example": "up"
+          },
+          "latencyMs": {
+            "type": "number",
+            "example": 12,
+            "description": "Round-trip time of the readiness query."
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "example": 412
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "latencyMs",
+          "uptimeSeconds"
+        ]
+      },
+      "GoogleSignInDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "ID token returned by Google Sign-In on the device."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AuthSessionDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "activeRole": {
+            "type": "string",
+            "enum": [
+              "CLIENT",
+              "BROKER"
+            ]
+          },
+          "brokerId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "userId",
+          "activeRole"
+        ]
+      },
+      "DevSignInDto": {
+        "type": "object",
+        "properties": {
+          "persona": {
+            "type": "string",
+            "enum": [
+              "client",
+              "broker"
+            ],
+            "description": "Which seeded demo account to sign in as. Only available when the deployment sets DEV_AUTH_ENABLED=true."
+          }
+        },
+        "required": [
+          "persona"
+        ]
+      },
+      "RefreshSessionDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "The refreshToken from a previous AuthSessionDto."
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "GeoPointDto": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "BrokerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "INDIVIDUAL",
+              "AGENCY"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "$ref": "#/components/schemas/GeoPointDto"
+          },
+          "coverage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "logoAsset": {
+            "type": "string",
+            "nullable": true
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "PENDING",
+              "VERIFIED",
+              "REJECTED"
+            ]
+          },
+          "responseRate": {
+            "type": "number",
+            "description": "Between 0 and 1."
+          },
+          "pinned": {
+            "type": "boolean"
+          },
+          "isVerified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "phone",
+          "position",
+          "coverage",
+          "verification",
+          "responseRate",
+          "pinned",
+          "isVerified"
+        ]
+      },
+      "CreateBrokerDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "INDIVIDUAL",
+              "AGENCY"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "coverage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "logoAsset": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "phone",
+          "latitude",
+          "longitude"
+        ]
+      },
+      "UpdateBrokerDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "INDIVIDUAL",
+              "AGENCY"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "coverage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "logoAsset": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PropertyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brokerId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "LAND",
+              "STUDIO",
+              "ROOM"
+            ]
+          },
+          "transaction": {
+            "type": "string",
+            "enum": [
+              "RENT",
+              "SALE"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "CFA francs, integer."
+          },
+          "surface": {
+            "type": "number",
+            "nullable": true
+          },
+          "rooms": {
+            "type": "number",
+            "nullable": true
+          },
+          "position": {
+            "$ref": "#/components/schemas/GeoPointDto"
+          },
+          "neighbourhood": {
+            "type": "string"
+          },
+          "photoAssets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RESERVED",
+              "CLOSED"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "isDiscoverable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "brokerId",
+          "kind",
+          "transaction",
+          "title",
+          "description",
+          "price",
+          "position",
+          "neighbourhood",
+          "photoAssets",
+          "status",
+          "createdAt",
+          "isDiscoverable"
+        ]
+      },
+      "UploadPhotoDto": {
+        "type": "object",
+        "properties": {
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "dataBase64": {
+            "type": "string",
+            "description": "Base64-encoded image bytes. Decoded size must not exceed 163840 bytes — compress before sending."
+          }
+        },
+        "required": [
+          "mimeType",
+          "dataBase64"
+        ]
+      },
+      "CreatePropertyDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "LAND",
+              "STUDIO",
+              "ROOM"
+            ]
+          },
+          "transaction": {
+            "type": "string",
+            "enum": [
+              "RENT",
+              "SALE"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "CFA francs, integer."
+          },
+          "surface": {
+            "type": "number",
+            "nullable": true
+          },
+          "rooms": {
+            "type": "number",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "neighbourhood": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RESERVED",
+              "CLOSED"
+            ]
+          },
+          "photoAssets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "newPhotos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UploadPhotoDto"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "transaction",
+          "title",
+          "price",
+          "latitude",
+          "longitude",
+          "neighbourhood"
+        ]
+      },
+      "UpdatePropertyDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "APARTMENT",
+              "HOUSE",
+              "LAND",
+              "STUDIO",
+              "ROOM"
+            ]
+          },
+          "transaction": {
+            "type": "string",
+            "enum": [
+              "RENT",
+              "SALE"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "CFA francs, integer."
+          },
+          "surface": {
+            "type": "number",
+            "nullable": true
+          },
+          "rooms": {
+            "type": "number",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "neighbourhood": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RESERVED",
+              "CLOSED"
+            ]
+          },
+          "photoAssets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "newPhotos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UploadPhotoDto"
+            }
+          }
+        }
+      },
+      "BrokerListingDto": {
+        "type": "object",
+        "properties": {
+          "broker": {
+            "$ref": "#/components/schemas/BrokerDto"
+          },
+          "distanceMeters": {
+            "type": "number"
+          },
+          "averageRating": {
+            "type": "number"
+          },
+          "reviewCount": {
+            "type": "number"
+          },
+          "availableProperties": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "broker",
+          "distanceMeters",
+          "averageRating",
+          "reviewCount",
+          "availableProperties",
+          "score"
+        ]
+      },
+      "BrokerSearchResultsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BrokerListingDto"
+            }
+          },
+          "totalCount": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "offset": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "totalCount",
+          "limit",
+          "offset"
+        ]
+      },
+      "PropertySearchResultsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PropertyDto"
+            }
+          },
+          "totalCount": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "offset": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "totalCount",
+          "limit",
+          "offset"
+        ]
+      },
+      "SearchSuggestionsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brokerId": {
+            "type": "string"
+          },
+          "contactId": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "responsiveness": {
+            "type": "number",
+            "nullable": true
+          },
+          "accuracy": {
+            "type": "number",
+            "nullable": true
+          },
+          "courtesy": {
+            "type": "number",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "moderation": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PUBLISHED",
+              "REJECTED"
+            ]
+          },
+          "brokerReply": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "brokerId",
+          "contactId",
+          "rating",
+          "moderation",
+          "createdAt",
+          "isPublic"
+        ]
+      },
+      "CreateReviewDto": {
+        "type": "object",
+        "properties": {
+          "contactId": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "responsiveness": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "courtesy": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contactId",
+          "rating"
+        ]
+      },
+      "CreateContactDto": {
+        "type": "object",
+        "properties": {
+          "brokerId": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "CALL",
+              "SMS",
+              "WHATSAPP",
+              "VOICE_MESSAGE"
+            ]
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Stable client-generated key for retry-safe contact logging."
+          }
+        },
+        "required": [
+          "brokerId",
+          "channel"
+        ]
+      },
+      "ContactLogDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brokerId": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "CALL",
+              "SMS",
+              "WHATSAPP",
+              "VOICE_MESSAGE"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ATTEMPTED",
+              "REACHED",
+              "NO_ANSWER"
+            ]
+          },
+          "reviewId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "allowsReview": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "brokerId",
+          "channel",
+          "outcome",
+          "createdAt",
+          "allowsReview"
+        ]
+      },
+      "UpdateContactOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ATTEMPTED",
+              "REACHED",
+              "NO_ANSWER"
+            ]
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      }
+    }
+  }
+}

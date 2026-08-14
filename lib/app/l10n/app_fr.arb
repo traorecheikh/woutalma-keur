@@ -806,6 +806,14 @@
   "@authPhoneCountrySenegal": {
     "description": "Aide courte sous le champ téléphone : l'indicatif est fixe pour le MVP Sénégal."
   },
+  "authGoogleContinue": "Continuer avec Google",
+  "@authGoogleContinue": {
+    "description": "Bouton d'identification Google. Le libellé doit clairement nommer l'action complète."
+  },
+  "authPhoneFallback": "Ou recevez un code par SMS",
+  "@authPhoneFallback": {
+    "description": "Sépare les options Google/email du chemin téléphone existant."
+  },
   "authOtpTitle": "Code reçu par SMS",
   "@authOtpTitle": { "description": "Titre de G04." },
   "authOtpSentTo": "Envoyé au {phone}",

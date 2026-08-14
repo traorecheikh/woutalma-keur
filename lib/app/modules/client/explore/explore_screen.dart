@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
@@ -12,6 +15,7 @@ import 'package:woutalma_keur/app/modules/client/explore/location_sheet.dart';
 import 'package:woutalma_keur/app/modules/client/explore/results_map.dart';
 import 'package:woutalma_keur/app/modules/client/explore/search_overlay.dart';
 import 'package:woutalma_keur/app/modules/client/explore/voice_overlay.dart';
+import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
@@ -182,6 +186,7 @@ class _Controls extends StatelessWidget {
           ],
         ),
         const SizedBox(height: WkSpacing.lg),
+        _ActiveFilters(model: model),
         WkSegmentedControl<ExploreSegment>(
           value: model.segment,
           onChanged: model.selectSegment,
@@ -192,6 +197,125 @@ class _Controls extends StatelessWidget {
         ),
         const SizedBox(height: WkSpacing.md),
       ],
+    );
+  }
+}
+
+class _ActiveFilters extends StatelessWidget {
+  const _ActiveFilters({required this.model});
+
+  final ExploreViewModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    final DiscoveryFilters filters = model.filters;
+    if (filters.activeCount == 0) {
+      return const SizedBox.shrink();
+    }
+    final List<Widget> chips = <Widget>[
+      if (filters.transaction != null)
+        _FilterChip(
+          label: WkFormat.transaction(context.l10n, filters.transaction!),
+          icon: Icons.sell_outlined,
+          onRemove: () => model.applyFilters(
+            filters.copyWith(clearTransaction: true),
+          ),
+        ),
+      if (filters.kind != null)
+        _FilterChip(
+          label: WkFormat.propertyKind(context.l10n, filters.kind!),
+          icon: WkFormat.propertyKindIcon(filters.kind!),
+          onRemove: () => model.applyFilters(filters.copyWith(clearKind: true)),
+        ),
+      if (filters.maxPrice != null)
+        _FilterChip(
+          label: context.l10n.filtersPriceValue(
+            NumberFormat('#,##0', 'fr').format(filters.maxPrice),
+          ),
+          icon: Icons.payments_outlined,
+          onRemove: () => model.applyFilters(
+            filters.copyWith(clearMaxPrice: true),
+          ),
+        ),
+      if (filters.radiusMeters != null)
+        _FilterChip(
+          label: context.l10n.filtersRadiusValue(
+            (filters.radiusMeters! / 1000).round(),
+          ),
+          icon: Icons.place_outlined,
+          onRemove: () => model.applyFilters(
+            filters.copyWith(clearRadius: true),
+          ),
+        ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: WkSpacing.md),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            for (int i = 0; i < chips.length; i++) ...<Widget>[
+              chips[i],
+              if (i < chips.length - 1) const SizedBox(width: WkSpacing.sm),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.icon,
+    required this.onRemove,
+  });
+
+  final String label;
+  final IconData icon;
+  final Future<void> Function() onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: context.colors.primaryContainer,
+        borderRadius: BorderRadius.circular(WkRadius.full),
+        child: InkWell(
+          onTap: () => unawaited(onRemove()),
+          borderRadius: BorderRadius.circular(WkRadius.full),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: WkTouch.min),
+            padding: const EdgeInsetsDirectional.only(
+              start: WkSpacing.md,
+              end: WkSpacing.sm,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(icon, size: 18, color: context.colors.onPrimaryContainer),
+                const SizedBox(width: WkSpacing.xs),
+                Text(
+                  label,
+                  style: context.text.labelMedium?.copyWith(
+                    color: context.colors.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: WkSpacing.xs),
+                Icon(
+                  Icons.close,
+                  size: 18,
+                  color: context.colors.onPrimaryContainer,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

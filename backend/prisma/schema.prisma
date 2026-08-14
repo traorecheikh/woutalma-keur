@@ -1,0 +1,222 @@
+// Woutalma Keur — Phase 1 schema.
+//
+// Mirrors lib/app/domain/entities.dart field-for-field. `position` columns
+// use PostGIS `geography(Point,4326)` instead of two float columns so
+// distance/radius queries run server-side (search/ranking.sql.ts) — see
+// lib/app/domain/ranking.dart's own comment anticipating this move.
+//
+// Fields not yet used by any Phase 1 endpoint (Broker.rejectionReason,
+// Review.authorId enforcement paths beyond eligibility, User.activeRole)
+// are still declared here so the schema doesn't need a breaking migration
+// the moment Phase 2 (moderation console, role switch) lands.
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  // unaccent backs the case/accent-insensitive text search in search/, an
+  // approximation of the manual accent-folding in
+  // lib/app/domain/discovery.dart's _fold() — close enough for Phase 1,
+  // not byte-for-byte identical on every edge case.
+  extensions = [postgis, unaccent]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+enum Role {
+  CLIENT
+  BROKER
+}
+
+enum BrokerKind {
+  INDIVIDUAL
+  AGENCY
+}
+
+enum VerificationStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum TransactionKind {
+  RENT
+  SALE
+}
+
+enum PropertyKind {
+  APARTMENT
+  HOUSE
+  LAND
+  STUDIO
+  ROOM
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  CLOSED
+}
+
+enum ContactChannel {
+  CALL
+  SMS
+  WHATSAPP
+  VOICE_MESSAGE
+}
+
+enum ContactOutcome {
+  ATTEMPTED
+  REACHED
+  NO_ANSWER
+}
+
+enum ModerationStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+/// Identifies whoever is signed in — a client, a broker, or both (role is
+/// switchable, PRODUCT.md §4 rule 8). Not persisted before this backend:
+/// today's SimulatedAuthService session lives only in memory.
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  googleSub     String?  @unique
+  phone         String?  @unique
+  activeRole    Role     @default(CLIENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  brokerProfile Broker?
+  contactLogs   ContactLog[]
+  reviews       Review[]
+
+  @@map("users")
+}
+
+model Broker {
+  id              String             @id @default(cuid())
+  ownerId         String             @unique
+  owner           User               @relation(fields: [ownerId], references: [id])
+  kind            BrokerKind
+  name            String
+  phone           String
+  whatsapp        String?
+  position        Unsupported("geography(Point,4326)")
+  coverage        String[]
+  logoAsset       String?
+  verification    VerificationStatus @default(NONE)
+  rejectionReason String?
+  responseRate    Float              @default(0)
+  pinned          Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  properties  Property[]
+  reviews     Review[]
+  contactLogs ContactLog[]
+
+  @@index([position], type: Gist)
+  @@map("brokers")
+}
+
+model Property {
+  id            String          @id @default(cuid())
+  brokerId      String
+  broker        Broker          @relation(fields: [brokerId], references: [id])
+  kind          PropertyKind
+  transaction   TransactionKind
+  title         String
+  description   String          @default("")
+  /// CFA francs, integer — no centimes, matching Property.price in entities.dart.
+  price         Int
+  surface       Int?
+  rooms         Int?
+  position      Unsupported("geography(Point,4326)")
+  neighbourhood String
+  photoAssets   String[]
+  status        PropertyStatus  @default(AVAILABLE)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  contactLogs ContactLog[]
+  photos      PropertyPhoto[]
+
+  @@index([status])
+  @@index([position], type: Gist)
+  @@map("properties")
+}
+
+/// Broker-uploaded photo bytes, stored in Postgres.
+///
+/// Render's free tier has no persistent disk and no object storage, so there
+/// is nowhere else to put them. This is a demo-window choice, not an
+/// architecture: bytes in a 1 GB database do not scale, and the upload path
+/// caps size and count (see CreatePropertyDto) to keep it survivable. Moving
+/// to object storage later only changes what `photoAssets` holds.
+///
+/// `Property.photoAssets` remains the ordered list of display keys —
+/// `demo:kind:area:view` for seeded assets, `api:<PropertyPhoto.id>` for
+/// uploads. The client resolves the latter against its own configured base
+/// URL, so no PUBLIC_BASE_URL has to be pinned server-side.
+model PropertyPhoto {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  mimeType   String
+  bytes      Bytes
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+  @@map("property_photos")
+}
+
+model Review {
+  id             String            @id @default(cuid())
+  brokerId       String
+  broker         Broker            @relation(fields: [brokerId], references: [id])
+  /// One review per contact, enforced at the DB level (not just app logic —
+  /// closes a race a pure application-level check can't close under
+  /// concurrent requests). Mirrors ContactLog.allowsReview in entities.dart.
+  contactId      String            @unique
+  contact        ContactLog        @relation(fields: [contactId], references: [id])
+  authorId       String
+  author         User              @relation(fields: [authorId], references: [id])
+  rating         Int
+  responsiveness Int?
+  accuracy       Int?
+  courtesy       Int?
+  comment        String?
+  moderation     ModerationStatus  @default(PENDING)
+  brokerReply    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@map("reviews")
+}
+
+model ContactLog {
+  id         String         @id @default(cuid())
+  brokerId   String
+  broker     Broker         @relation(fields: [brokerId], references: [id])
+  clientId   String
+  client     User           @relation(fields: [clientId], references: [id])
+  propertyId String?
+  property   Property?      @relation(fields: [propertyId], references: [id])
+  channel    ContactChannel
+  outcome    ContactOutcome @default(ATTEMPTED)
+  clientRequestId String?
+  review     Review?
+  createdAt  DateTime       @default(now())
+
+  @@index([brokerId])
+  @@index([clientId])
+  @@unique([clientId, clientRequestId])
+  @@map("contact_logs")
+}

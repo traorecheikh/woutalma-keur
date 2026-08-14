@@ -132,6 +132,40 @@ void main() {
       );
     });
 
+    test('la recherche comprend les mots métier et le quartier', () async {
+      final List<Property> found = await discovery.findProperties(
+        from: plateau,
+        filters: const DiscoveryFilters(query: 'appart à louer mermoz'),
+      );
+
+      expect(found.map((Property p) => p.id), <String>['prp-003']);
+    });
+
+    test('une faute courte garde la suggestion utile', () async {
+      final List<String> suggestions = await discovery.suggestions(
+        from: plateau,
+        filters: const DiscoveryFilters(query: 'Mermozz'),
+      );
+
+      expect(suggestions.first, 'Mermoz');
+    });
+
+    test('une recherche par intention filtre aussi les courtiers', () async {
+      final List<BrokerListing> found = await discovery.findBrokers(
+        from: plateau,
+        filters: const DiscoveryFilters(query: 'terrain à vendre'),
+      );
+
+      expect(
+        found.map((BrokerListing l) => l.broker.id),
+        containsAll(<String>['brk-awa', 'brk-keur-massar']),
+      );
+      expect(
+        found.any((BrokerListing l) => l.broker.id == 'brk-moussa'),
+        isFalse,
+      );
+    });
+
     test('le profil épinglé arrive en tête et reste identifiable', () async {
       final List<BrokerListing> found = await discovery.findBrokers(
         from: plateau,

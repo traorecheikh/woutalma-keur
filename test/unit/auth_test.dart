@@ -26,6 +26,7 @@ void main() {
 
     expect(await auth.verify('+221770000000', code!), OtpResult.verified);
     expect(auth.current?.phone, '+221770000000');
+    expect(auth.current?.linkedProviders, contains(AuthProvider.phone));
   });
 
   test('un numéro connu du seed ouvre son espace courtier', () async {
@@ -44,6 +45,28 @@ void main() {
     await auth.verify('+221779998877', code!);
 
     expect(auth.current?.brokerId, isNull);
+  });
+
+  test('Google identifie sans bloquer la configuration du profil', () async {
+    expect(await auth.signInWithGoogle(), AuthResult.signedIn);
+
+    expect(auth.current?.email, 'broker.demo@gmail.com');
+    expect(auth.current?.needsProfileSetup, isTrue);
+    expect(auth.current?.linkedProviders, contains(AuthProvider.google));
+  });
+
+  test('un compte email peut lier Google ensuite', () async {
+    await auth.signUpWithEmail(
+      email: ' Courtier@Example.com ',
+      password: 'secret',
+    );
+
+    expect(auth.current?.email, 'courtier@example.com');
+    expect(await auth.link(AuthProvider.google), AuthResult.linked);
+    expect(
+      auth.current?.linkedProviders,
+      containsAll(<AuthProvider>[AuthProvider.email, AuthProvider.google]),
+    );
   });
 
   test('trop d\'essais bloque, et redemander un code débloque', () async {

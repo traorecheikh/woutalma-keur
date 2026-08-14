@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: woutalma-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: woutalma
+      POSTGRES_PASSWORD: woutalma
+      POSTGRES_DB: woutalma
+    ports:
+      # Host 5433 — this machine already has other Postgres instances bound
+      # to the default 5432 (a local Homebrew server, and other projects'
+      # containers). Keep this project isolated from them.
+      - "5433:5432"
+    volumes:
+      - woutalma_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U woutalma -d woutalma"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  woutalma_postgres_data:

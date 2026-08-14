@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/app_dependencies.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
+import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/modules/catalog/catalog_screen.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_screen.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
@@ -205,6 +206,7 @@ GoRouter buildRouter(AppDependencies deps) {
           reason:
               (state.extra as String?) ?? context.l10n.authPhoneReasonContact,
           onBack: () => context.pop(),
+          onSignedIn: () => context.go(_postAuthRoute(deps)),
           onCodeSent: (String phone, String? code) => context.push(
             AppRoutes.authOtp,
             extra: <String, String?>{'phone': phone, 'code': code},
@@ -225,11 +227,7 @@ GoRouter buildRouter(AppDependencies deps) {
             phone: phone,
             simulatedCode: args['code'],
             onBack: () => context.pop(),
-            onVerified: () => context.go(
-              deps.auth.current?.brokerId != null
-                  ? AppRoutes.brokerHome
-                  : AppRoutes.explore,
-            ),
+            onVerified: () => context.go(_postAuthRoute(deps)),
           );
         },
       ),
@@ -474,4 +472,15 @@ GoRouter buildRouter(AppDependencies deps) {
       ),
     ],
   );
+}
+
+String _postAuthRoute(AppDependencies deps) {
+  final Account? account = deps.auth.current;
+  if (account?.brokerId != null) {
+    return AppRoutes.brokerHome;
+  }
+  if (deps.settings.role == UserRole.broker && account?.needsProfileSetup == true) {
+    return AppRoutes.brokerProfile;
+  }
+  return AppRoutes.explore;
 }

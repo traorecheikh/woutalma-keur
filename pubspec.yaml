@@ -37,6 +37,13 @@ dependencies:
   isar_community: ^3.3.2
   isar_community_flutter_libs: ^3.3.2
   path_provider: ^2.1.5
+  # HTTP client for the generated API client (real mode only — demo mode
+  # stays 100% local, see docs/PRODUCT.md §5/§8bis).
+  dio: ^5.7.0
+  woutalma_api_client:
+    path: packages/woutalma_api_client
+  # Google Sign-In — real mode's primary auth method (docs/PRODUCT.md §8bis).
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +57,9 @@ flutter:
   generate: true
 
   assets:
+    # Official Google Identity Services button asset, downloaded from
+    # https://developers.google.com/identity/branding-guidelines.
+    - assets/brand/google_signin_light_square_2x.png
     # Photos du seed de démonstration : embarquées, compressées en WebP, pour
     # qu'un premier lancement ne coûte ni réseau ni attente. Crédits et
     # licences dans assets/seed/photos/CREDITS.md.

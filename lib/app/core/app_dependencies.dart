@@ -1,11 +1,17 @@
+import 'package:dio/dio.dart';
+import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/data/local/persistent_bootstrap.dart'
     if (dart.library.js_interop) 'package:woutalma_keur/app/data/local/persistent_bootstrap_web.dart';
 import 'package:woutalma_keur/app/core/feedback/platform_interaction_feedback.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
+import 'package:woutalma_keur/app/data/repositories/remote_repositories.dart';
 import 'package:woutalma_keur/app/data/seed/demo_seed.dart';
+import 'package:woutalma_keur/app/data/services/dio_auth_interceptor.dart';
 import 'package:woutalma_keur/app/data/services/geolocator_location_service.dart';
+import 'package:woutalma_keur/app/data/services/google_backend_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/image_picker_photo_service.dart';
+import 'package:woutalma_keur/app/data/services/token_store.dart';
 import 'package:woutalma_keur/app/data/services/url_contact_launcher.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/domain/contact_launcher.dart';
@@ -133,6 +139,7 @@ class AppDependencies {
     required ContactRepository contacts,
     required SeedRepository seed,
     required AppMode mode,
+    AuthService? auth,
   }) {
     return AppDependencies._(
       brokers: brokers,
@@ -155,14 +162,55 @@ class AppDependencies {
       voice: SimulatedVoiceService(),
       location: const GeolocatorLocationService(),
       photos: ImagePickerPhotoService(),
-      auth: SimulatedAuthService(
-        // Les numéros du seed ouvrent leur propre espace courtier.
-        brokerByPhone: <String, String>{
-          '221771234567': 'brk-moussa',
-          '221338211234': 'brk-teranga',
-          '221775558899': 'brk-fatou',
-        },
-      ),
+      auth:
+          auth ??
+          SimulatedAuthService(
+            // Les numéros du seed ouvrent leur propre espace courtier.
+            brokerByPhone: <String, String>{
+              '221771234567': 'brk-moussa',
+              '221338211234': 'brk-teranga',
+              '221775558899': 'brk-fatou',
+            },
+          ),
+    );
+  }
+
+  /// Démarrage `real` : parle à l'API distante au lieu d'Isar. `demo` reste
+  /// entièrement local (voir docs/PRODUCT.md §5/§8bis) — ce chemin ne le
+  /// remplace pas, il coexiste avec `bootstrap()`/`inMemory()`.
+  ///
+  /// La recherche classée (`GET /search/*`, backend/src/search) n'est pas
+  /// encore branchée ici : `discovery` continue de tourner en Dart pur via
+  /// [DiscoveryService], simplement alimenté par des dépôts distants au lieu
+  /// d'Isar. Le classement reste donc correct, seulement calculé côté
+  /// client pour cette tranche.
+  static AppDependencies remote({required String baseUrl}) {
+    final TokenStore tokens = TokenStore();
+    final api.WoutalmaApiClient client = api.WoutalmaApiClient(
+      basePathOverride: baseUrl,
+      interceptors: <Interceptor>[DioAuthInterceptor(tokens)],
+    );
+
+    final api.BrokersApi brokersApi = client.getBrokersApi();
+    final api.PropertiesApi propertiesApi = client.getPropertiesApi();
+    final api.ContactsApi contactsApi = client.getContactsApi();
+    final api.AuthApi authApi = client.getAuthApi();
+
+    final BrokerRepository brokers = RemoteBrokerRepository(brokersApi);
+    final PropertyRepository properties = RemotePropertyRepository(
+      propertiesApi,
+      brokersApi,
+    );
+    final ContactRepository contacts = RemoteContactRepository(contactsApi);
+
+    return _assemble(
+      brokers: brokers,
+      properties: properties,
+      reviews: const RemoteReviewRepository(),
+      contacts: contacts,
+      seed: const RemoteSeedRepository(),
+      mode: AppMode.real,
+      auth: GoogleBackendAuthService(authApi: authApi, tokens: tokens),
     );
   }
 }

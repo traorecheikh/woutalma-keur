@@ -116,8 +116,12 @@ l'application mobile prototype ; ses résultats sont simulés par les données l
 Le prototype utilise les mêmes contrats de repository dans les deux modes :
 
 - `demo` : seed local complet, déterministe, versionné et idempotent couvrant profils, biens,
-  statuts, avis, activités, contacts, vérification, erreurs et états vides.
-- `real` : base locale vide et parcours normal d'onboarding/saisie, sans serveur distant.
+  statuts, avis, activités, contacts, vérification, erreurs et états vides. Toujours 100% local,
+  sans réseau.
+- `real` : connecté à l'API distante (voir §8bis) ; identification requise avant les actions qui
+  écrivent des données, connectivité requise en usage normal. Un cache de lecture léger est
+  autorisé (résultats de recherche récents, par exemple) mais rien d'important n'est mis en file
+  d'attente hors-ligne.
 
 Changer de mode demande confirmation. La transaction purge les données du mode précédent puis
 charge le seed ou une base vide. Un échec ne doit jamais laisser un mélange de données.
@@ -154,14 +158,54 @@ pas dans ce document produit.
 
 ## 8. Hors périmètre du prototype
 
-- Backend distant, synchronisation multi-appareil et notifications push réelles.
 - Paiement, abonnement premium, contrat ou signature.
 - Chat textuel interne.
-- Console de modération et traitement humain réel.
 - Comptes multi-employés pour agences.
 - Statistiques avancées de conversion.
 - Reconnaissance vocale de production et engagement de précision STT.
-- Wolof, pulaar, sérère et mode hors-ligne synchronisé avec un serveur.
+- Wolof, pulaar, sérère.
+- Authentification SMS OTP et WhatsApp Business Cloud API OTP (voir §8bis — construites derrière une
+  abstraction serveur mais pas activées).
+
+## 8bis. Résolution de conflit — pivot backend (2026-08-10)
+
+Cette section documente et remplace la ligne « Backend distant, synchronisation multi-appareil et
+notifications push réelles » qui figurait précédemment en §8 comme hors périmètre, ainsi que
+« Console de modération et traitement humain réel » et « mode hors-ligne synchronisé avec un
+serveur ».
+
+**Conflit constaté** : ce document (version 1.0, prototype local-first) excluait explicitement un
+backend distant, la synchronisation et les notifications push réelles du MVP. Le porteur produit a
+depuis approuvé explicitement le développement d'un backend de production complet (API de
+synchronisation, authentification réelle, notifications push FCM, console de modération) — en
+contradiction directe avec l'exclusion ci-dessus.
+
+**Résolution** : l'exclusion est levée. Le périmètre inclut désormais un backend NestJS +
+PostgreSQL/PostGIS, une authentification Google Sign-In (client et courtier) et lien magique par
+e-mail (secondaire pour le client, primaire pour courtier/agence), les notifications FCM, et une
+console de modération séparée. L'authentification SMS OTP et WhatsApp Business restent hors
+périmètre actif (voir §8) mais l'abstraction serveur d'authentification (`AuthProvider` côté
+backend, miroir d'`AuthService` côté Flutter) est conçue pour les accueillir sans rupture de
+contrat.
+
+**Raison** : décision produit approuvée directement par le porteur produit, motivée par le besoin de
+synchronisation multi-appareil réelle et de notifications, avec les contraintes suivantes déjà
+tranchées : identifiants générés côté serveur (pas d'UUID client, pas de file d'écriture hors-ligne
+— l'app nécessite une connectivité normale, un cache de lecture léger reste acceptable), génération
+du client Dart depuis un spec OpenAPI auto-émis (`@nestjs/swagger`) plutôt qu'un client écrit à la
+main, et rejet explicite de GraphQL (écrans à requêtes fixes déjà définis, une seule équipe cliente
+mobile) et d'un admin auto-généré type AdminJS pour la console (contrôle UX voulu sur les deux
+actions modérateur : approbation/rejet de vérification, modération d'avis).
+
+Le §5 (« Mode local et mode démo ») est mis à jour en conséquence : `real` désigne maintenant le mode
+connecté à cette API, `demo` reste inchangé. Le §7 (l. 144, budget « moins de trois secondes sur
+3G ») cesse d'être une exigence différée : c'est désormais le budget de performance de cette API.
+
+Livré en tranche verticale (Phase 1, voir le plan d'implémentation archivé) : lecture
+courtier/bien, recherche classée server-side (portage exact de la formule de `RankingService`),
+journalisation de contact et éligibilité d'avis server-side, authentification Google Sign-In.
+Différé aux tranches suivantes : lien magique e-mail, notifications FCM, console de modération,
+écriture courtier/bien distante.
 
 ## 9. Indicateurs futurs
 
