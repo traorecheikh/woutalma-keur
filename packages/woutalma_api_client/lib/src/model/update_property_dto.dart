@@ -1,0 +1,420 @@
+//
+// AUTO-GENERATED FILE, DO NOT MODIFY!
+//
+
+// ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
+import 'package:woutalma_api_client/src/model/upload_photo_dto.dart';
+import 'package:built_value/built_value.dart';
+import 'package:built_value/serializer.dart';
+
+part 'update_property_dto.g.dart';
+
+/// UpdatePropertyDto
+///
+/// Properties:
+/// * [kind]
+/// * [transaction]
+/// * [title]
+/// * [description]
+/// * [price] - CFA francs, integer.
+/// * [surface]
+/// * [rooms]
+/// * [latitude]
+/// * [longitude]
+/// * [neighbourhood]
+/// * [status]
+/// * [photoAssets]
+/// * [newPhotos]
+@BuiltValue()
+abstract class UpdatePropertyDto
+    implements Built<UpdatePropertyDto, UpdatePropertyDtoBuilder> {
+  @BuiltValueField(wireName: r'kind')
+  UpdatePropertyDtoKindEnum? get kind;
+  // enum kindEnum {  APARTMENT,  HOUSE,  LAND,  STUDIO,  ROOM,  };
+
+  @BuiltValueField(wireName: r'transaction')
+  UpdatePropertyDtoTransactionEnum? get transaction;
+  // enum transactionEnum {  RENT,  SALE,  };
+
+  @BuiltValueField(wireName: r'title')
+  String? get title;
+
+  @BuiltValueField(wireName: r'description')
+  String? get description;
+
+  /// CFA francs, integer.
+  @BuiltValueField(wireName: r'price')
+  num? get price;
+
+  @BuiltValueField(wireName: r'surface')
+  num? get surface;
+
+  @BuiltValueField(wireName: r'rooms')
+  num? get rooms;
+
+  @BuiltValueField(wireName: r'latitude')
+  num? get latitude;
+
+  @BuiltValueField(wireName: r'longitude')
+  num? get longitude;
+
+  @BuiltValueField(wireName: r'neighbourhood')
+  String? get neighbourhood;
+
+  @BuiltValueField(wireName: r'status')
+  UpdatePropertyDtoStatusEnum? get status;
+  // enum statusEnum {  AVAILABLE,  RESERVED,  CLOSED,  };
+
+  @BuiltValueField(wireName: r'photoAssets')
+  BuiltList<String>? get photoAssets;
+
+  @BuiltValueField(wireName: r'newPhotos')
+  BuiltList<UploadPhotoDto>? get newPhotos;
+
+  UpdatePropertyDto._();
+
+  factory UpdatePropertyDto([void updates(UpdatePropertyDtoBuilder b)]) =
+      _$UpdatePropertyDto;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(UpdatePropertyDtoBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<UpdatePropertyDto> get serializer =>
+      _$UpdatePropertyDtoSerializer();
+}
+
+class _$UpdatePropertyDtoSerializer
+    implements PrimitiveSerializer<UpdatePropertyDto> {
+  @override
+  final Iterable<Type> types = const [UpdatePropertyDto, _$UpdatePropertyDto];
+
+  @override
+  final String wireName = r'UpdatePropertyDto';
+
+  Iterable<Object?> _serializeProperties(
+    Serializers serializers,
+    UpdatePropertyDto object, {
+    FullType specifiedType = FullType.unspecified,
+  }) sync* {
+    if (object.kind != null) {
+      yield r'kind';
+      yield serializers.serialize(
+        object.kind,
+        specifiedType: const FullType(UpdatePropertyDtoKindEnum),
+      );
+    }
+    if (object.transaction != null) {
+      yield r'transaction';
+      yield serializers.serialize(
+        object.transaction,
+        specifiedType: const FullType(UpdatePropertyDtoTransactionEnum),
+      );
+    }
+    if (object.title != null) {
+      yield r'title';
+      yield serializers.serialize(
+        object.title,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.description != null) {
+      yield r'description';
+      yield serializers.serialize(
+        object.description,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.price != null) {
+      yield r'price';
+      yield serializers.serialize(
+        object.price,
+        specifiedType: const FullType(num),
+      );
+    }
+    if (object.surface != null) {
+      yield r'surface';
+      yield serializers.serialize(
+        object.surface,
+        specifiedType: const FullType.nullable(num),
+      );
+    }
+    if (object.rooms != null) {
+      yield r'rooms';
+      yield serializers.serialize(
+        object.rooms,
+        specifiedType: const FullType.nullable(num),
+      );
+    }
+    if (object.latitude != null) {
+      yield r'latitude';
+      yield serializers.serialize(
+        object.latitude,
+        specifiedType: const FullType(num),
+      );
+    }
+    if (object.longitude != null) {
+      yield r'longitude';
+      yield serializers.serialize(
+        object.longitude,
+        specifiedType: const FullType(num),
+      );
+    }
+    if (object.neighbourhood != null) {
+      yield r'neighbourhood';
+      yield serializers.serialize(
+        object.neighbourhood,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.status != null) {
+      yield r'status';
+      yield serializers.serialize(
+        object.status,
+        specifiedType: const FullType(UpdatePropertyDtoStatusEnum),
+      );
+    }
+    if (object.photoAssets != null) {
+      yield r'photoAssets';
+      yield serializers.serialize(
+        object.photoAssets,
+        specifiedType: const FullType(BuiltList, [FullType(String)]),
+      );
+    }
+    if (object.newPhotos != null) {
+      yield r'newPhotos';
+      yield serializers.serialize(
+        object.newPhotos,
+        specifiedType: const FullType(BuiltList, [FullType(UploadPhotoDto)]),
+      );
+    }
+  }
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    UpdatePropertyDto object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
+  }
+
+  void _deserializeProperties(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+    required List<Object?> serializedList,
+    required UpdatePropertyDtoBuilder result,
+    required List<Object?> unhandled,
+  }) {
+    for (var i = 0; i < serializedList.length; i += 2) {
+      final key = serializedList[i] as String;
+      final value = serializedList[i + 1];
+      switch (key) {
+        case r'kind':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(UpdatePropertyDtoKindEnum),
+          ) as UpdatePropertyDtoKindEnum?;
+          if (valueDes == null) continue;
+          result.kind = valueDes;
+          break;
+        case r'transaction':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(UpdatePropertyDtoTransactionEnum),
+          ) as UpdatePropertyDtoTransactionEnum?;
+          if (valueDes == null) continue;
+          result.transaction = valueDes;
+          break;
+        case r'title':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.title = valueDes;
+          break;
+        case r'description':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.description = valueDes;
+          break;
+        case r'price':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(num),
+          ) as num?;
+          if (valueDes == null) continue;
+          result.price = valueDes;
+          break;
+        case r'surface':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(num),
+          ) as num?;
+          if (valueDes == null) continue;
+          result.surface = valueDes;
+          break;
+        case r'rooms':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(num),
+          ) as num?;
+          if (valueDes == null) continue;
+          result.rooms = valueDes;
+          break;
+        case r'latitude':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(num),
+          ) as num?;
+          if (valueDes == null) continue;
+          result.latitude = valueDes;
+          break;
+        case r'longitude':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(num),
+          ) as num?;
+          if (valueDes == null) continue;
+          result.longitude = valueDes;
+          break;
+        case r'neighbourhood':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.neighbourhood = valueDes;
+          break;
+        case r'status':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(UpdatePropertyDtoStatusEnum),
+          ) as UpdatePropertyDtoStatusEnum?;
+          if (valueDes == null) continue;
+          result.status = valueDes;
+          break;
+        case r'photoAssets':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>?;
+          if (valueDes == null) continue;
+          result.photoAssets.replace(valueDes);
+          break;
+        case r'newPhotos':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType:
+                const FullType.nullable(BuiltList, [FullType(UploadPhotoDto)]),
+          ) as BuiltList<UploadPhotoDto>?;
+          if (valueDes == null) continue;
+          result.newPhotos.replace(valueDes);
+          break;
+        default:
+          unhandled.add(key);
+          unhandled.add(value);
+          break;
+      }
+    }
+  }
+
+  @override
+  UpdatePropertyDto deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    final result = UpdatePropertyDtoBuilder();
+    final serializedList = (serialized as Iterable<Object?>).toList();
+    final unhandled = <Object?>[];
+    _deserializeProperties(
+      serializers,
+      serialized,
+      specifiedType: specifiedType,
+      serializedList: serializedList,
+      unhandled: unhandled,
+      result: result,
+    );
+    return result.build();
+  }
+}
+
+class UpdatePropertyDtoKindEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'APARTMENT')
+  static const UpdatePropertyDtoKindEnum APARTMENT =
+      _$updatePropertyDtoKindEnum_APARTMENT;
+  @BuiltValueEnumConst(wireName: r'HOUSE')
+  static const UpdatePropertyDtoKindEnum HOUSE =
+      _$updatePropertyDtoKindEnum_HOUSE;
+  @BuiltValueEnumConst(wireName: r'LAND')
+  static const UpdatePropertyDtoKindEnum LAND =
+      _$updatePropertyDtoKindEnum_LAND;
+  @BuiltValueEnumConst(wireName: r'STUDIO')
+  static const UpdatePropertyDtoKindEnum STUDIO =
+      _$updatePropertyDtoKindEnum_STUDIO;
+  @BuiltValueEnumConst(wireName: r'ROOM')
+  static const UpdatePropertyDtoKindEnum ROOM =
+      _$updatePropertyDtoKindEnum_ROOM;
+
+  static Serializer<UpdatePropertyDtoKindEnum> get serializer =>
+      _$updatePropertyDtoKindEnumSerializer;
+
+  const UpdatePropertyDtoKindEnum._(String name) : super(name);
+
+  static BuiltSet<UpdatePropertyDtoKindEnum> get values =>
+      _$updatePropertyDtoKindEnumValues;
+  static UpdatePropertyDtoKindEnum valueOf(String name) =>
+      _$updatePropertyDtoKindEnumValueOf(name);
+}
+
+class UpdatePropertyDtoTransactionEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'RENT')
+  static const UpdatePropertyDtoTransactionEnum RENT =
+      _$updatePropertyDtoTransactionEnum_RENT;
+  @BuiltValueEnumConst(wireName: r'SALE')
+  static const UpdatePropertyDtoTransactionEnum SALE =
+      _$updatePropertyDtoTransactionEnum_SALE;
+
+  static Serializer<UpdatePropertyDtoTransactionEnum> get serializer =>
+      _$updatePropertyDtoTransactionEnumSerializer;
+
+  const UpdatePropertyDtoTransactionEnum._(String name) : super(name);
+
+  static BuiltSet<UpdatePropertyDtoTransactionEnum> get values =>
+      _$updatePropertyDtoTransactionEnumValues;
+  static UpdatePropertyDtoTransactionEnum valueOf(String name) =>
+      _$updatePropertyDtoTransactionEnumValueOf(name);
+}
+
+class UpdatePropertyDtoStatusEnum extends EnumClass {
+  @BuiltValueEnumConst(wireName: r'AVAILABLE')
+  static const UpdatePropertyDtoStatusEnum AVAILABLE =
+      _$updatePropertyDtoStatusEnum_AVAILABLE;
+  @BuiltValueEnumConst(wireName: r'RESERVED')
+  static const UpdatePropertyDtoStatusEnum RESERVED =
+      _$updatePropertyDtoStatusEnum_RESERVED;
+  @BuiltValueEnumConst(wireName: r'CLOSED')
+  static const UpdatePropertyDtoStatusEnum CLOSED =
+      _$updatePropertyDtoStatusEnum_CLOSED;
+
+  static Serializer<UpdatePropertyDtoStatusEnum> get serializer =>
+      _$updatePropertyDtoStatusEnumSerializer;
+
+  const UpdatePropertyDtoStatusEnum._(String name) : super(name);
+
+  static BuiltSet<UpdatePropertyDtoStatusEnum> get values =>
+      _$updatePropertyDtoStatusEnumValues;
+  static UpdatePropertyDtoStatusEnum valueOf(String name) =>
+      _$updatePropertyDtoStatusEnumValueOf(name);
+}

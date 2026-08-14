@@ -4,6 +4,9 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "lib/app/l10n/generated/**"
+    # Regenerated wholesale by tool/generate_api_client.sh — never hand-edited,
+    # so lints on it are noise nobody can act on.
+    - "packages/woutalma_api_client/**"
 
 linter:
   rules:
