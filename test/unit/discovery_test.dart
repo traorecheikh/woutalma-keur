@@ -24,7 +24,7 @@ void main() {
       now: () => DateTime.utc(2026, 7, 1, 10),
     );
     seedRepo = InMemorySeedRepository(store);
-    discovery = DiscoveryService(
+    discovery = LocalDiscoveryService(
       brokers: InMemoryBrokerRepository(store),
       properties: propertyRepo,
       reviews: InMemoryReviewRepository(store),

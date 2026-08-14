@@ -15,6 +15,7 @@ String failureMessage(AppL10n l10n, WkFailure failure) {
     WkFailure.seed => l10n.failureSeed,
     WkFailure.permission => l10n.failurePermission,
     WkFailure.notFound => l10n.failureNotFound,
+    WkFailure.network => l10n.failureNetwork,
     WkFailure.unknown => l10n.failureUnknown,
   };
 }

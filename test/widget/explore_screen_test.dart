@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../support/fake_location.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
 import 'package:woutalma_keur/app/data/seed/demo_seed.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
-import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
-import 'package:woutalma_keur/app/domain/voice_service.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_screen.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
 import 'package:woutalma_keur/app/modules/client/explore/search_overlay.dart';
@@ -29,7 +28,7 @@ void main() {
   setUp(() async {
     store = InMemoryStore();
     seed = InMemorySeedRepository(store);
-    discovery = DiscoveryService(
+    discovery = LocalDiscoveryService(
       brokers: InMemoryBrokerRepository(store),
       properties: InMemoryPropertyRepository(store),
       reviews: InMemoryReviewRepository(store),
@@ -45,7 +44,7 @@ void main() {
   }) async {
     final ExploreViewModel model = ExploreViewModel(
       discovery: discovery,
-      position: DemoSeed.clientPosition,
+      position: fakePositions(),
     );
     addTearDown(model.dispose);
 
@@ -57,7 +56,6 @@ void main() {
           onOpenBroker: onOpenBroker ?? (String _) {},
           onOpenProperty: (String _) {},
           onOpenSettings: () {},
-          voice: SimulatedVoiceService(),
           location: _FixedLocationService(),
         ),
       ),
@@ -133,44 +131,46 @@ void main() {
 
   // La recherche est devenue un écran : C01 n'expose plus qu'un déclencheur,
   // et le clavier n'apparaît que si on le demande.
-  testWidgets('C01 ne montre aucun champ de saisie tant qu\'on ne cherche pas', (
-    WidgetTester tester,
-  ) async {
-    await pumpExplore(tester);
+  testWidgets(
+    'C01 ne montre aucun champ de saisie tant qu\'on ne cherche pas',
+    (WidgetTester tester) async {
+      await pumpExplore(tester);
 
-    expect(find.byType(TextField), findsNothing);
-    expect(find.byType(WkSearchTrigger), findsOneWidget);
-  });
+      expect(find.byType(TextField), findsNothing);
+      expect(find.byType(WkSearchTrigger), findsOneWidget);
+    },
+  );
 
-  testWidgets('la barre ouvre l\'écran de recherche, un quartier suggéré la lance', (
-    WidgetTester tester,
-  ) async {
-    final ExploreViewModel model = await pumpExplore(tester);
+  testWidgets(
+    'la barre ouvre l\'écran de recherche, un quartier suggéré la lance',
+    (WidgetTester tester) async {
+      final ExploreViewModel model = await pumpExplore(tester);
 
-    expect(model.searchSuggestions, contains('Maison'));
+      expect(model.searchSuggestions, contains('Maison'));
 
-    await tester.tap(find.byType(WkSearchTrigger));
-    await tester.pumpAndSettle();
-    expect(find.byType(SearchOverlay), findsOneWidget);
+      await tester.tap(find.byType(WkSearchTrigger));
+      await tester.pumpAndSettle();
+      expect(find.byType(SearchOverlay), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'Mer');
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
-    expect(find.text('Mermoz'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Mer');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(find.text('Mermoz'), findsOneWidget);
 
-    await tester.tap(find.text('Mermoz'));
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Mermoz'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
 
-    expect(model.filters.query, 'Mermoz');
-    expect(model.searchSuggestions, isNotEmpty);
+      expect(model.filters.query, 'Mermoz');
+      expect(model.searchSuggestions, isNotEmpty);
 
-    // Fermer l'écran de recherche rend la requête visible sur C01.
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await tester.pumpAndSettle();
-    expect(find.byType(SearchOverlay), findsNothing);
-    expect(find.text('Mermoz'), findsWidgets);
-  });
+      // Fermer l'écran de recherche rend la requête visible sur C01.
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+      expect(find.byType(SearchOverlay), findsNothing);
+      expect(find.text('Mermoz'), findsWidgets);
+    },
+  );
 
   // Test simple et non widget : l'anti-rebond repose sur un vrai Timer, et
   // l'horloge de `testWidgets` est simulée — elle ne le ferait jamais partir.
@@ -178,7 +178,7 @@ void main() {
     final _CountingDiscovery counting = _CountingDiscovery(discovery);
     final ExploreViewModel model = ExploreViewModel(
       discovery: counting,
-      position: DemoSeed.clientPosition,
+      position: fakePositions(),
     );
     addTearDown(model.dispose);
 
@@ -342,16 +342,4 @@ class _CountingDiscovery implements DiscoveryService {
     DiscoveryFilters filters = const DiscoveryFilters(),
     int limit = 5,
   }) => _inner.suggestions(from: from, filters: filters, limit: limit);
-
-  @override
-  BrokerRepository get brokers => _inner.brokers;
-
-  @override
-  PropertyRepository get properties => _inner.properties;
-
-  @override
-  ReviewRepository get reviews => _inner.reviews;
-
-  @override
-  RankingService get ranking => _inner.ranking;
 }

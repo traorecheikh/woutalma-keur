@@ -126,10 +126,12 @@ class IsarReviewRepository implements ReviewRepository {
   }
 
   @override
-  Future<void> save(Review review) async {
+  Future<Review> save(Review review) async {
     await _isar.writeTxn(
       () => _isar.reviewRows.put(ReviewRow.fromDomain(review)),
     );
+    // La base locale n'attribue rien : ce qui entre ressort identique.
+    return review;
   }
 }
 

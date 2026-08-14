@@ -56,9 +56,7 @@ class SettingsScreen extends StatelessWidget {
               return _ActionRow(
                 label: account == null
                     ? context.l10n.settingsSignIn
-                    : context.l10n.settingsSignedInAs(
-                        account.displayIdentity,
-                      ),
+                    : context.l10n.settingsSignedInAs(account.displayIdentity),
                 icon: account == null
                     ? Icons.login
                     : Icons.verified_user_outlined,

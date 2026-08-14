@@ -1,3 +1,4 @@
+import 'package:woutalma_keur/app/data/local/cache_meta_store.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 
 /// Même forme que la version native, sans Isar.
@@ -8,6 +9,7 @@ class PersistentRepositories {
     required this.reviews,
     required this.contacts,
     required this.seed,
+    required this.meta,
   });
 
   final BrokerRepository brokers;
@@ -15,6 +17,7 @@ class PersistentRepositories {
   final ReviewRepository reviews;
   final ContactRepository contacts;
   final SeedRepository seed;
+  final CacheMetaStore meta;
 }
 
 /// Faux sur le web : aucune base native n'y est disponible.

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import '../support/fake_location.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
-import 'package:woutalma_keur/app/data/seed/demo_seed.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
@@ -12,12 +12,12 @@ void main() {
     final InMemoryStore store = InMemoryStore();
     await InMemorySeedRepository(store).loadDemoSeed();
     model = ExploreViewModel(
-      discovery: DiscoveryService(
+      discovery: LocalDiscoveryService(
         brokers: InMemoryBrokerRepository(store),
         properties: InMemoryPropertyRepository(store),
         reviews: InMemoryReviewRepository(store),
       ),
-      position: DemoSeed.clientPosition,
+      position: fakePositions(),
     );
     await model.load();
   });

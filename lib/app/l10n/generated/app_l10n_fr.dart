@@ -69,7 +69,47 @@ class AppL10nFr extends AppL10n {
   String get failureNotFound => 'Cette fiche n\'existe plus.';
 
   @override
+  String get failureNetwork =>
+      'Pas de connexion. Réessayez quand le réseau revient.';
+
+  @override
   String get failureUnknown => 'Ça n\'a pas marché.';
+
+  @override
+  String offlineCached(String when) {
+    return 'Hors ligne. Informations enregistrées $when.';
+  }
+
+  @override
+  String get offlineJustNow => 'à l\'instant';
+
+  @override
+  String offlineMinutesAgo(int count) {
+    return 'il y a $count min';
+  }
+
+  @override
+  String offlineHoursAgo(int count) {
+    return 'il y a $count h';
+  }
+
+  @override
+  String offlineDaysAgo(int count) {
+    return 'il y a $count j';
+  }
+
+  @override
+  String get backendWakingUp => 'Le service se réveille, quelques secondes…';
+
+  @override
+  String get brokerSignInRequiredTitle => 'Espace courtier';
+
+  @override
+  String get brokerSignInRequiredBody =>
+      'Connectez-vous avec le compte de votre profil courtier pour gérer vos biens.';
+
+  @override
+  String get brokerSignInRequiredAction => 'Se connecter';
 
   @override
   String get voiceSearch => 'Chercher en parlant';

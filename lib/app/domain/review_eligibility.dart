@@ -11,6 +11,25 @@ enum ReviewRefusal {
 
   /// Ce contact a déjà donné lieu à un avis.
   alreadyReviewed,
+
+  /// Ce contact appartient à quelqu'un d'autre.
+  ///
+  /// Inatteignable localement — l'écran ne propose que les contacts de
+  /// l'utilisateur — mais le serveur applique la même règle sur des données
+  /// qu'il voit toutes, et refuse ainsi. Le code existe pour que ce refus
+  /// traverse la couche réseau sans être écrasé en « cause inconnue ».
+  notOwner,
+}
+
+/// Le serveur a refusé un avis. Porte le même code que [ReviewDenied], pour
+/// que l'écran affiche la même phrase qu'en local.
+class ReviewNotAllowed implements Exception {
+  const ReviewNotAllowed(this.reason);
+
+  final ReviewRefusal reason;
+
+  @override
+  String toString() => 'ReviewNotAllowed(${reason.name})';
 }
 
 /// Résultat d'une demande d'avis.

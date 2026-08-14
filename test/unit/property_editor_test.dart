@@ -27,7 +27,7 @@ void main() {
   setUp(() async {
     store = InMemoryStore();
     properties = InMemoryPropertyRepository(store);
-    discovery = DiscoveryService(
+    discovery = LocalDiscoveryService(
       brokers: InMemoryBrokerRepository(store),
       properties: properties,
       reviews: InMemoryReviewRepository(store),

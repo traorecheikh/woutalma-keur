@@ -131,7 +131,9 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
   Future<void> _signInWithGoogle() async {
     setState(() => _sending = true);
-    final AuthResult result = await context.read<AuthService>().signInWithGoogle();
+    final AuthResult result = await context
+        .read<AuthService>()
+        .signInWithGoogle();
     if (!mounted) {
       return;
     }
@@ -144,7 +146,6 @@ class _PhoneScreenState extends State<PhoneScreen> {
       widget.onSignedIn();
     }
   }
-
 }
 
 class _GoogleAuthButton extends StatelessWidget {
@@ -170,9 +171,9 @@ class _GoogleAuthButton extends StatelessWidget {
         ),
         child: InkWell(
           onTap: () {
-            context
-                .read<InteractionFeedbackService?>()
-                ?.emit(FeedbackIntent.selection);
+            context.read<InteractionFeedbackService?>()?.emit(
+              FeedbackIntent.selection,
+            );
             onPressed();
           },
           borderRadius: BorderRadius.circular(WkRadius.md),

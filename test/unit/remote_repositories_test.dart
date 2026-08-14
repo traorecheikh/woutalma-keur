@@ -145,26 +145,26 @@ void main() {
     });
 
     test(
-      'save is not part of the Phase 1 API and fails loudly rather than silently no-op-ing',
-      () {
+      'save creates the profile when the server does not know it yet',
+      () async {
+        // Un identifiant inconnu répond 404 sur GET, ce qui doit mener à POST
+        // /brokers plutôt qu'à un PATCH sur une fiche inexistante.
+        final Dio dio = _dioWithRoutes(<String, ({int status, Object? body})>{
+          'POST /brokers': (status: 200, body: _brokerJson()),
+        });
         final RemoteBrokerRepository repo = RemoteBrokerRepository(
-          api.BrokersApi(
-            _dioWithRoutes(const <String, ({int status, Object? body})>{}),
-            api.standardSerializers,
-          ),
+          api.BrokersApi(dio, api.standardSerializers),
         );
-        expect(
-          () => repo.save(
-            const Broker(
-              id: 'x',
-              kind: BrokerKind.individual,
-              name: 'x',
-              phone: 'x',
-              position: GeoPoint(0, 0),
-              coverage: <String>[],
-            ),
+
+        await repo.save(
+          const Broker(
+            id: 'brk-1',
+            kind: BrokerKind.individual,
+            name: 'x',
+            phone: 'x',
+            position: GeoPoint(0, 0),
+            coverage: <String>[],
           ),
-          throwsUnimplementedError,
         );
       },
     );

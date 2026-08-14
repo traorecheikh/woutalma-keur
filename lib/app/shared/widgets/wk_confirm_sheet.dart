@@ -51,6 +51,15 @@ class WkConfirmSheet extends StatelessWidget {
       useRootNavigator: true,
       isDismissible: !destructive,
       enableDrag: !destructive,
+      // Sans cela la feuille est plafonnée à 9/16 de l'écran. Un corps de
+      // texte de trois lignes plus deux boutons de 56 dp dépasse ce plafond
+      // sur un petit téléphone, et l'action de confirmation sort de l'écran —
+      // ce qui est exactement le pire endroit où perdre du contenu. À ×1.3,
+      // le cas devient la règle plutôt que l'exception.
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(WkRadius.xxl)),
@@ -68,7 +77,7 @@ class WkConfirmSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(WkSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -3,18 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
+import 'package:woutalma_keur/app/modules/client/explore/location_permission_flow.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_connection_banner.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
-import 'package:woutalma_keur/app/domain/voice_service.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/modules/client/explore/filters_sheet.dart';
 import 'package:woutalma_keur/app/modules/client/explore/location_sheet.dart';
 import 'package:woutalma_keur/app/modules/client/explore/results_map.dart';
 import 'package:woutalma_keur/app/modules/client/explore/search_overlay.dart';
-import 'package:woutalma_keur/app/modules/client/explore/voice_overlay.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
@@ -37,7 +38,6 @@ class ExploreScreen extends StatefulWidget {
     required this.onOpenBroker,
     required this.onOpenProperty,
     required this.onOpenSettings,
-    required this.voice,
     required this.location,
     super.key,
   });
@@ -45,9 +45,6 @@ class ExploreScreen extends StatefulWidget {
   final void Function(String brokerId) onOpenBroker;
   final void Function(String propertyId) onOpenProperty;
   final VoidCallback onOpenSettings;
-
-  /// Simulé en phase UX ; l'écran ne fait pas la différence.
-  final VoiceService voice;
 
   /// Position du téléphone et quartiers connus.
   final LocationService location;
@@ -57,25 +54,34 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  Future<void> _openSearch(BuildContext context, ExploreViewModel model) {
-    return SearchOverlay.show(
+  @override
+  void initState() {
+    super.initState();
+    // Décision C : le GPS est la position par défaut. On explique d'abord —
+    // M06 — puis le système demande. Une seule fois dans la vie de
+    // l'installation : `docs/screen-contracts/client-discovery.md` interdit
+    // toute boucle de permission, donc un refus ne se redemande jamais au
+    // lancement suivant. Le bouton GPS de M02 reste la porte de rattrapage.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _primeLocation());
+  }
+
+  Future<void> _primeLocation() async {
+    final ClientPositionController positions = context
+        .read<ClientPositionController>();
+    if (positions.hasBeenPrimed || !mounted) {
+      return;
+    }
+    await requestClientPosition(
       context,
-      model: model,
-      onVoice: () => _openVoice(context, model),
+      positions,
+      // Au premier lancement, enchaîner « ouvrez les réglages » sur un refus
+      // serait la relance que le contrat interdit.
+      offerSettingsOnPermanentDenial: false,
     );
   }
 
-  Future<void> _openVoice(BuildContext context, ExploreViewModel model) async {
-    final DiscoveryFilters? heard = await VoiceOverlay.show(
-      context,
-      service: widget.voice,
-    );
-    if (heard == null) {
-      return;
-    }
-    // La commande vocale remplace les filtres mais garde la recherche texte :
-    // les deux chemins mènent au même arbre, ils ne s'annulent pas.
-    await model.applyFilters(heard.copyWith(query: model.filters.query));
+  Future<void> _openSearch(BuildContext context, ExploreViewModel model) {
+    return SearchOverlay.show(context, model: model);
   }
 
   Future<void> _openPlace(BuildContext context, ExploreViewModel model) async {
@@ -121,6 +127,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          const WkConnectionBanner(),
           const SizedBox(height: WkSpacing.sm),
           // Seule pièce épinglée. Filtres, segments et compteur défilent avec
           // les résultats : trois blocs figés au-dessus d'une liste ne
@@ -130,7 +137,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
             semanticLabel: context.l10n.exploreSearchOpen,
             query: model.filters.query,
             onOpen: () => _openSearch(context, model),
-            onVoice: () => _openVoice(context, model),
           ),
           Expanded(
             child: _Body(
@@ -217,9 +223,8 @@ class _ActiveFilters extends StatelessWidget {
         _FilterChip(
           label: WkFormat.transaction(context.l10n, filters.transaction!),
           icon: Icons.sell_outlined,
-          onRemove: () => model.applyFilters(
-            filters.copyWith(clearTransaction: true),
-          ),
+          onRemove: () =>
+              model.applyFilters(filters.copyWith(clearTransaction: true)),
         ),
       if (filters.kind != null)
         _FilterChip(
@@ -233,9 +238,8 @@ class _ActiveFilters extends StatelessWidget {
             NumberFormat('#,##0', 'fr').format(filters.maxPrice),
           ),
           icon: Icons.payments_outlined,
-          onRemove: () => model.applyFilters(
-            filters.copyWith(clearMaxPrice: true),
-          ),
+          onRemove: () =>
+              model.applyFilters(filters.copyWith(clearMaxPrice: true)),
         ),
       if (filters.radiusMeters != null)
         _FilterChip(
@@ -243,9 +247,8 @@ class _ActiveFilters extends StatelessWidget {
             (filters.radiusMeters! / 1000).round(),
           ),
           icon: Icons.place_outlined,
-          onRemove: () => model.applyFilters(
-            filters.copyWith(clearRadius: true),
-          ),
+          onRemove: () =>
+              model.applyFilters(filters.copyWith(clearRadius: true)),
         ),
     ];
 

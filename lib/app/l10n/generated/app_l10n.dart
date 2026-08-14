@@ -207,11 +207,71 @@ abstract class AppL10n {
   /// **'Cette fiche n\'existe plus.'**
   String get failureNotFound;
 
+  /// Cause d'erreur : le serveur est injoignable et rien n'est enregistré hors ligne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de connexion. Réessayez quand le réseau revient.'**
+  String get failureNetwork;
+
   /// Cause d'erreur non identifiée. Dernier recours.
   ///
   /// In fr, this message translates to:
   /// **'Ça n\'a pas marché.'**
   String get failureUnknown;
+
+  /// Bandeau : le contenu affiché vient de la dernière copie reçue du serveur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne. Informations enregistrées {when}.'**
+  String offlineCached(String when);
+
+  /// Ancienneté d'une copie hors ligne datant de moins d'une minute.
+  ///
+  /// In fr, this message translates to:
+  /// **'à l\'instant'**
+  String get offlineJustNow;
+
+  /// Ancienneté d'une copie hors ligne, en minutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'il y a {count} min'**
+  String offlineMinutesAgo(int count);
+
+  /// Ancienneté d'une copie hors ligne, en heures.
+  ///
+  /// In fr, this message translates to:
+  /// **'il y a {count} h'**
+  String offlineHoursAgo(int count);
+
+  /// Ancienneté d'une copie hors ligne, en jours.
+  ///
+  /// In fr, this message translates to:
+  /// **'il y a {count} j'**
+  String offlineDaysAgo(int count);
+
+  /// Attente longue annoncée pendant le démarrage à froid du serveur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le service se réveille, quelques secondes…'**
+  String get backendWakingUp;
+
+  /// Titre affiché quand on ouvre un écran courtier sans profil courtier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Espace courtier'**
+  String get brokerSignInRequiredTitle;
+
+  /// Explication affichée quand aucun profil courtier n'est rattaché au compte.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous avec le compte de votre profil courtier pour gérer vos biens.'**
+  String get brokerSignInRequiredBody;
+
+  /// Action menant à l'identification depuis un écran courtier verrouillé.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get brokerSignInRequiredAction;
 
   /// Bouton micro. Décrit le geste, pas la technologie.
   ///

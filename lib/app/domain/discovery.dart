@@ -61,11 +61,37 @@ class DiscoveryFilters {
   }
 }
 
-/// Assemble ce que l'écran Explorer affiche.
+/// Ce que l'écran Explorer demande.
+///
+/// Deux implémentations : [LocalDiscoveryService], qui classe en Dart pur, et
+/// `RemoteDiscoveryService`, qui délègue à `GET /search/*`. L'écran ne sait pas
+/// laquelle est branchée — même raison d'être que les contrats de
+/// `repositories.dart`.
+abstract class DiscoveryService {
+  Future<List<Property>> findProperties({
+    required GeoPoint from,
+    DiscoveryFilters filters,
+  });
+
+  Future<List<BrokerListing>> findBrokers({
+    required GeoPoint from,
+    DiscoveryFilters filters,
+  });
+
+  Future<List<String>> suggestions({
+    required GeoPoint from,
+    DiscoveryFilters filters,
+    int limit,
+  });
+}
+
+/// Assemble ce que l'écran Explorer affiche, en local.
 ///
 /// Toute la logique vit ici, en Dart pur : un widget ne trie ni ne filtre.
-class DiscoveryService {
-  const DiscoveryService({
+/// C'est aussi la référence dont `backend/src/search` est le portage — les
+/// tests des deux côtés comparent les mêmes scores.
+class LocalDiscoveryService implements DiscoveryService {
+  const LocalDiscoveryService({
     required this.brokers,
     required this.properties,
     required this.reviews,
@@ -78,6 +104,7 @@ class DiscoveryService {
   final RankingService ranking;
 
   /// Biens visibles par un client, filtrés et triés par distance.
+  @override
   Future<List<Property>> findProperties({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
@@ -110,6 +137,7 @@ class DiscoveryService {
   }
 
   /// Courtiers classés, avec tout ce que la carte de résultat doit montrer.
+  @override
   Future<List<BrokerListing>> findBrokers({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
@@ -124,7 +152,8 @@ class DiscoveryService {
     }
     final _FtsIndex index = _FtsIndex(
       allBrokers.map(
-        (Broker broker) => _brokerDocument(broker, byBroker[broker.id] ?? const <Property>[]),
+        (Broker broker) =>
+            _brokerDocument(broker, byBroker[broker.id] ?? const <Property>[]),
       ),
     );
     final Map<String, double> scores = index.search(search.tokens);
@@ -139,7 +168,9 @@ class DiscoveryService {
       }
 
       final List<Property> own = (byBroker[broker.id] ?? const <Property>[])
-          .where((Property p) => _passesPropertyFacets(p, filters, from, search))
+          .where(
+            (Property p) => _passesPropertyFacets(p, filters, from, search),
+          )
           .toList();
 
       // Un filtre de bien ne masque pas un courtier qui n'en a aucun : il
@@ -189,6 +220,7 @@ class DiscoveryService {
     return ranking.sort(listings);
   }
 
+  @override
   Future<List<String>> suggestions({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
@@ -377,7 +409,7 @@ class _SearchQuery {
     PropertyKind? kind;
     TransactionKind? transaction;
 
-    for (final String token in DiscoveryService._tokens(raw)) {
+    for (final String token in LocalDiscoveryService._tokens(raw)) {
       switch (token) {
         case 'appart':
         case 'appartement':
@@ -433,17 +465,16 @@ class _SearchQuery {
       return true;
     }
     final List<String> haystack = values
-        .expand((String value) => DiscoveryService._tokens(value))
+        .expand((String value) => LocalDiscoveryService._tokens(value))
         .toList();
     return tokens.every(
-      (String token) => haystack.any(
-        (String candidate) => _matchesToken(candidate, token),
-      ),
+      (String token) =>
+          haystack.any((String candidate) => _matchesToken(candidate, token)),
     );
   }
 
   int scoreText(String value) {
-    final List<String> haystack = DiscoveryService._tokens(value);
+    final List<String> haystack = LocalDiscoveryService._tokens(value);
     var score = 0;
     for (final String token in tokens) {
       for (final String candidate in haystack) {
@@ -469,12 +500,12 @@ class _SearchQuery {
     if (score > 0) {
       return score;
     }
-    final List<String> haystack = DiscoveryService._tokens(value);
+    final List<String> haystack = LocalDiscoveryService._tokens(value);
     return tokens.any(
-      (String token) => haystack.any(
-        (String candidate) => _distanceAtMostOne(candidate, token),
-      ),
-    )
+          (String token) => haystack.any(
+            (String candidate) => _distanceAtMostOne(candidate, token),
+          ),
+        )
         ? 1
         : 0;
   }
@@ -545,7 +576,7 @@ class _FtsIndex {
     for (final _FtsDocument document in _documents) {
       final Map<String, double> documentTerms = <String, double>{};
       for (final _FtsField field in document.fields) {
-        for (final String token in DiscoveryService._tokens(field.value)) {
+        for (final String token in LocalDiscoveryService._tokens(field.value)) {
           documentTerms.update(
             token,
             (double value) => value + field.weight,
@@ -555,7 +586,11 @@ class _FtsIndex {
       }
       _termWeights[document.id] = documentTerms;
       for (final String token in documentTerms.keys) {
-        _documentFrequency.update(token, (int value) => value + 1, ifAbsent: () => 1);
+        _documentFrequency.update(
+          token,
+          (int value) => value + 1,
+          ifAbsent: () => 1,
+        );
       }
     }
   }
@@ -580,8 +615,9 @@ class _FtsIndex {
           break;
         }
         final double idf = math.log(
-          1 + (_documents.length - (_documentFrequency[token] ?? 0) + 0.5) /
-              ((_documentFrequency[token] ?? 0) + 0.5),
+          1 +
+              (_documents.length - (_documentFrequency[token] ?? 0) + 0.5) /
+                  ((_documentFrequency[token] ?? 0) + 0.5),
         );
         score += terms[token]! * idf;
       }

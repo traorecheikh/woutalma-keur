@@ -25,7 +25,14 @@ abstract class PropertyRepository {
 abstract class ReviewRepository {
   Future<List<Review>> byBroker(String brokerId, {bool onlyPublic});
   Future<List<Review>> all();
-  Future<void> save(Review review);
+
+  /// Rend l'avis **tel qu'enregistré**, pas celui qu'on a proposé.
+  ///
+  /// L'identifiant et l'état de modération appartiennent à la source de
+  /// vérité : côté serveur, l'identifiant est frappé à l'insertion et la
+  /// modération démarre à `pending`. L'appelant en a besoin pour rattacher
+  /// l'avis au contact, d'où le retour plutôt qu'un `void`.
+  Future<Review> save(Review review);
 }
 
 abstract class ContactRepository {

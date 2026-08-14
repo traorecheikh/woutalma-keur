@@ -80,9 +80,75 @@
   "@failureNotFound": {
     "description": "Cause d'erreur : la donnée demandée par un lien a disparu."
   },
+  "failureNetwork": "Pas de connexion. Réessayez quand le réseau revient.",
+  "@failureNetwork": {
+    "description": "Cause d'erreur : le serveur est injoignable et rien n'est enregistré hors ligne."
+  },
   "failureUnknown": "Ça n'a pas marché.",
   "@failureUnknown": {
     "description": "Cause d'erreur non identifiée. Dernier recours."
+  },
+
+  "offlineCached": "Hors ligne. Informations enregistrées {when}.",
+  "@offlineCached": {
+    "description": "Bandeau : le contenu affiché vient de la dernière copie reçue du serveur.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "il y a 2 heures"
+      }
+    }
+  },
+  "offlineJustNow": "à l'instant",
+  "@offlineJustNow": {
+    "description": "Ancienneté d'une copie hors ligne datant de moins d'une minute."
+  },
+  "offlineMinutesAgo": "il y a {count} min",
+  "@offlineMinutesAgo": {
+    "description": "Ancienneté d'une copie hors ligne, en minutes.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "offlineHoursAgo": "il y a {count} h",
+  "@offlineHoursAgo": {
+    "description": "Ancienneté d'une copie hors ligne, en heures.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "offlineDaysAgo": "il y a {count} j",
+  "@offlineDaysAgo": {
+    "description": "Ancienneté d'une copie hors ligne, en jours.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "backendWakingUp": "Le service se réveille, quelques secondes…",
+  "@backendWakingUp": {
+    "description": "Attente longue annoncée pendant le démarrage à froid du serveur."
+  },
+
+  "brokerSignInRequiredTitle": "Espace courtier",
+  "@brokerSignInRequiredTitle": {
+    "description": "Titre affiché quand on ouvre un écran courtier sans profil courtier."
+  },
+  "brokerSignInRequiredBody": "Connectez-vous avec le compte de votre profil courtier pour gérer vos biens.",
+  "@brokerSignInRequiredBody": {
+    "description": "Explication affichée quand aucun profil courtier n'est rattaché au compte."
+  },
+  "brokerSignInRequiredAction": "Se connecter",
+  "@brokerSignInRequiredAction": {
+    "description": "Action menant à l'identification depuis un écran courtier verrouillé."
   },
 
   "voiceSearch": "Chercher en parlant",

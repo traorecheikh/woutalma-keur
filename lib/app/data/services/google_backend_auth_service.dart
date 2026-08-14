@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/data/services/token_store.dart';
@@ -85,7 +87,10 @@ class GoogleBackendAuthService implements AuthService {
           googleSignInDto: api.GoogleSignInDto((b) => b.idToken = idToken),
         )).data!;
 
-    _tokens.set(session.accessToken);
+    await _tokens.save(
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    );
     _current = Account(
       email: googleUser.email,
       name: googleUser.displayName,
@@ -98,7 +103,7 @@ class GoogleBackendAuthService implements AuthService {
   @override
   void signOut() {
     _current = null;
-    _tokens.clear();
+    unawaited(_tokens.clear());
     // Fire-and-forget: nothing downstream depends on Google's own sign-out
     // completing before the local session is considered cleared.
     _googleSignIn.signOut();

@@ -13,15 +13,22 @@ import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 class WkSearchTrigger extends StatelessWidget {
   const WkSearchTrigger({
     required this.onOpen,
-    required this.onVoice,
     required this.hint,
     required this.semanticLabel,
+    this.onVoice,
     this.query,
     super.key,
   });
 
   final VoidCallback onOpen;
-  final VoidCallback onVoice;
+
+  /// Micro. `null` — la valeur par défaut — n'affiche rien.
+  ///
+  /// Nullable plutôt qu'un drapeau `showVoice` : « pas de micro » devient
+  /// l'état par défaut au niveau du type, donc il ne peut pas revenir par
+  /// l'oubli d'un paramètre. Tant qu'aucun moteur de reconnaissance réel
+  /// n'existe, aucun appelant ne le fournit.
+  final VoidCallback? onVoice;
 
   /// Ce qu'on peut chercher, affiché tant que rien n'est cherché.
   final String hint;
@@ -86,29 +93,30 @@ class WkSearchTrigger extends StatelessWidget {
               ),
             ),
           ),
-          Semantics(
-            button: true,
-            label: context.l10n.voiceSearch,
-            child: InkResponse(
-              onTap: onVoice,
-              radius: WkTouch.min / 2,
-              child: Container(
-                width: WkTouch.min,
-                height: WkTouch.min,
-                alignment: Alignment.center,
+          if (onVoice != null)
+            Semantics(
+              button: true,
+              label: context.l10n.voiceSearch,
+              child: InkResponse(
+                onTap: onVoice,
+                radius: WkTouch.min / 2,
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: WkTouch.min,
+                  height: WkTouch.min,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: context.colors.primary,
-                    borderRadius: BorderRadius.circular(WkRadius.full),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: context.colors.primary,
+                      borderRadius: BorderRadius.circular(WkRadius.full),
+                    ),
+                    child: Icon(Icons.mic, color: context.colors.onPrimary),
                   ),
-                  child: Icon(Icons.mic, color: context.colors.onPrimary),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -118,31 +126,27 @@ class WkSearchTrigger extends StatelessWidget {
 /// Champ de recherche véritable, avec clavier. N'apparaît que sur un écran dont
 /// la recherche est le sujet.
 ///
-/// Le micro est à droite, dans le pouce. Le champ texte est une commodité :
-/// c'est le micro qui sert la cible qui ne lit pas.
+/// Le micro, quand il existe, est à droite, dans le pouce.
 class WkSearchBar extends StatelessWidget {
   const WkSearchBar({
     required this.controller,
     required this.onChanged,
-    required this.onVoice,
+    this.onVoice,
     this.hint,
-    this.showVoice = true,
     this.autofocus = false,
     super.key,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
-  final VoidCallback onVoice;
+
+  /// Micro. `null` par défaut : voir [WkSearchTrigger.onVoice].
+  final VoidCallback? onVoice;
   final String? hint;
 
   /// Vrai seulement quand la recherche **est** l'écran : ailleurs, ouvrir le
   /// clavier d'autorité vole la moitié de la page à qui venait juste lire.
   final bool autofocus;
-
-  /// Faux quand on choisit dans une liste courte : le micro n'aide pas à
-  /// filtrer vingt quartiers, il encombre.
-  final bool showVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +226,7 @@ class WkSearchBar extends StatelessWidget {
               );
             },
           ),
-          if (showVoice)
+          if (onVoice != null)
             Semantics(
               button: true,
               label: context.l10n.voiceSearch,

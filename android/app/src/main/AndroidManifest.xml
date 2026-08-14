@@ -1,4 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET n'était déclaré que dans les variantes debug et profile, donc
+         chaque appel réseau marchait sous `flutter run` et échouait dans un
+         build release. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Les deux niveaux de position : geolocator demande FINE pour
+         LocationAccuracy.medium, et déclarer COARSE en plus permet à qui
+         n'accorde que l'approximatif de réussir quand même — c'est tout ce
+         dont un classement à l'échelle du quartier a besoin.
+         Pas de ACCESS_BACKGROUND_LOCATION : l'application ne suit personne. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+
+    <!-- Un téléphone sans GPS reste servi par la saisie manuelle de quartier. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
+
     <application
         android:label="Woutalma Keur"
         android:name="${applicationName}"

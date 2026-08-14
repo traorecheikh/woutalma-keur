@@ -108,7 +108,10 @@ class InMemoryReviewRepository implements ReviewRepository {
   }
 
   @override
-  Future<void> save(Review review) async => _store.reviews[review.id] = review;
+  Future<Review> save(Review review) async {
+    _store.reviews[review.id] = review;
+    return review;
+  }
 }
 
 class InMemoryContactRepository implements ContactRepository {

@@ -129,7 +129,7 @@ void main() {
           .opacity;
     }
 
-    expect(opacityOf('mic'), 1);
+    expect(opacityOf('call'), 1);
     expect(opacityOf('share'), lessThan(1));
   });
 }

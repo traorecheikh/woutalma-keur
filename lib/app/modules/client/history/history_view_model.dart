@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
@@ -49,27 +50,41 @@ class HistoryViewModel extends ChangeNotifier {
     _state = const ScreenState<List<ContactEntry>>.loading();
     notifyListeners();
 
-    final List<ContactLog> logs = await _contacts.all();
-    final List<ContactEntry> entries = <ContactEntry>[];
+    // Sans ce try/catch, une lecture qui échoue produisait une erreur
+    // asynchrone non capturée au lieu de l'état d'erreur de l'écran. Le dépôt
+    // Isar ne lançant jamais, le défaut ne se voyait pas ; un dépôt réseau,
+    // lui, lance au premier trou de couverture.
+    try {
+      final List<ContactLog> logs = await _contacts.all();
+      final List<ContactEntry> entries = <ContactEntry>[];
 
-    for (final ContactLog log in logs) {
-      final ReviewPermission permission = await _eligibility.forContact(log.id);
-      entries.add(
-        ContactEntry(
-          contact: log,
-          broker: await _brokers.byId(log.brokerId),
-          canReview: permission is ReviewAllowed,
-        ),
+      for (final ContactLog log in logs) {
+        final ReviewPermission permission = await _eligibility.forContact(
+          log.id,
+        );
+        entries.add(
+          ContactEntry(
+            contact: log,
+            broker: await _brokers.byId(log.brokerId),
+            canReview: permission is ReviewAllowed,
+          ),
+        );
+      }
+      entries.sort(
+        (ContactEntry a, ContactEntry b) =>
+            b.contact.createdAt.compareTo(a.contact.createdAt),
       );
-    }
-    entries.sort(
-      (ContactEntry a, ContactEntry b) =>
-          b.contact.createdAt.compareTo(a.contact.createdAt),
-    );
 
-    _state = entries.isEmpty
-        ? const ScreenState<List<ContactEntry>>.empty()
-        : ScreenState<List<ContactEntry>>.data(entries);
+      _state = entries.isEmpty
+          ? const ScreenState<List<ContactEntry>>.empty()
+          : ScreenState<List<ContactEntry>>.data(entries);
+    } on DioException catch (error) {
+      _state = ScreenState<List<ContactEntry>>.error(
+        error.response == null ? WkFailure.network : WkFailure.unknown,
+      );
+    } on Object {
+      _state = const ScreenState<List<ContactEntry>>.error(WkFailure.unknown);
+    }
     notifyListeners();
   }
 

@@ -221,3 +221,22 @@ class ContactRow {
     ..reviewUid = contact.reviewId
     ..createdAt = contact.createdAt;
 }
+
+/// Petites valeurs de service, hors domaine : quelle sorte de données occupe
+/// la base, et si l'explication de la permission de position a déjà été
+/// montrée.
+///
+/// Séparée des quatre collections métier pour qu'une purge du cache n'efface
+/// pas des réglages, et qu'un rechargement du jeu de démonstration n'ait pas
+/// à connaître ces clés.
+@collection
+class CacheMetaRow {
+  Id id = Isar.autoIncrement;
+
+  @Index(unique: true, replace: true)
+  late String key;
+
+  String? value;
+
+  DateTime? updatedAt;
+}

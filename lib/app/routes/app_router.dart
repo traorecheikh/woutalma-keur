@@ -37,6 +37,36 @@ import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
 GoRouter buildRouter(AppDependencies deps) {
   final GlobalKey<NavigatorState> rootKey = GlobalKey<NavigatorState>();
 
+  /// Les écrans courtier ont besoin d'un profil qui existe vraiment.
+  ///
+  /// En mode local on retombe sur le courtier du seed, donc l'identifiant
+  /// n'est jamais nul. En mode distant il l'est tant que personne n'est
+  /// connecté, et fabriquer un identifiant ferait rendre quatre écrans
+  /// d'erreur 404 au lieu d'une invitation à se connecter.
+  Widget requireBroker(
+    BuildContext context,
+    Widget Function(String brokerId) build,
+  ) {
+    final String? brokerId = deps.currentBrokerId;
+    if (brokerId == null) {
+      return Scaffold(
+        body: SafeArea(
+          child: WkEmptyState(
+            icon: Icons.storefront_outlined,
+            title: context.l10n.brokerSignInRequiredTitle,
+            body: context.l10n.brokerSignInRequiredBody,
+            actionLabel: context.l10n.brokerSignInRequiredAction,
+            onAction: () => context.push(
+              AppRoutes.authPhone,
+              extra: context.l10n.authPhoneReasonContact,
+            ),
+          ),
+        ),
+      );
+    }
+    return build(brokerId);
+  }
+
   return GoRouter(
     navigatorKey: rootKey,
     initialLocation: AppRoutes.explore,
@@ -74,7 +104,6 @@ GoRouter buildRouter(AppDependencies deps) {
                         onOpenProperty: (String id) =>
                             context.push(AppRoutes.propertyPath(id)),
                         onOpenSettings: () => context.push(AppRoutes.settings),
-                        voice: deps.voice,
                         location: deps.location,
                       ),
                     ),
@@ -143,7 +172,7 @@ GoRouter buildRouter(AppDependencies deps) {
               properties: deps.properties,
               reviews: deps.reviews,
               contact: deps.contact,
-              from: deps.clientPosition,
+              from: deps.clientPosition.position,
             )..load(),
             child: BrokerScreen(
               onBack: () => context.pop(),
@@ -189,7 +218,7 @@ GoRouter buildRouter(AppDependencies deps) {
               properties: deps.properties,
               brokers: deps.brokers,
               contact: deps.contact,
-              from: deps.clientPosition,
+              from: deps.clientPosition.position,
             )..load(),
             child: PropertyScreen(
               onBack: () => context.pop(),
@@ -281,27 +310,32 @@ GoRouter buildRouter(AppDependencies deps) {
               GoRoute(
                 path: AppRoutes.brokerHome,
                 builder: (BuildContext context, GoRouterState state) =>
-                    ChangeNotifierProvider<BrokerHomeViewModel>(
-                      create: (_) => BrokerHomeViewModel(
-                        brokers: deps.brokers,
-                        properties: deps.properties,
-                        reviews: deps.reviews,
-                        contacts: deps.contacts,
-                        brokerId: deps.currentBrokerId,
-                      )..load(),
-                      child: BrokerHomeScreen(
-                        onAddProperty: () =>
-                            context.push(AppRoutes.propertyEditor),
-                        onOpenSettings: () => context.push(AppRoutes.settings),
-                        onOpenReviews: () =>
-                            context.push(AppRoutes.brokerReviews),
-                        onOpenActivity: () =>
-                            context.go(AppRoutes.brokerActivity),
-                        onOpenVerification: () =>
-                            context.push(AppRoutes.brokerVerification),
-                        onOpenRanking: () =>
-                            context.push(AppRoutes.brokerRanking),
-                      ),
+                    requireBroker(
+                      context,
+                      (String brokerId) =>
+                          ChangeNotifierProvider<BrokerHomeViewModel>(
+                            create: (_) => BrokerHomeViewModel(
+                              brokers: deps.brokers,
+                              properties: deps.properties,
+                              reviews: deps.reviews,
+                              contacts: deps.contacts,
+                              brokerId: brokerId,
+                            )..load(),
+                            child: BrokerHomeScreen(
+                              onAddProperty: () =>
+                                  context.push(AppRoutes.propertyEditor),
+                              onOpenSettings: () =>
+                                  context.push(AppRoutes.settings),
+                              onOpenReviews: () =>
+                                  context.push(AppRoutes.brokerReviews),
+                              onOpenActivity: () =>
+                                  context.go(AppRoutes.brokerActivity),
+                              onOpenVerification: () =>
+                                  context.push(AppRoutes.brokerVerification),
+                              onOpenRanking: () =>
+                                  context.push(AppRoutes.brokerRanking),
+                            ),
+                          ),
                     ),
               ),
             ],
@@ -311,24 +345,31 @@ GoRouter buildRouter(AppDependencies deps) {
               GoRoute(
                 path: AppRoutes.brokerProperties,
                 builder: (BuildContext context, GoRouterState state) =>
-                    ChangeNotifierProvider<BrokerPropertiesViewModel>(
-                      create: (_) => BrokerPropertiesViewModel(
-                        properties: deps.properties,
-                        brokerId: deps.currentBrokerId,
-                      )..load(),
-                      child: Builder(
-                        builder: (BuildContext inner) => BrokerPropertiesScreen(
-                          onAdd: () => inner.push(AppRoutes.propertyEditor),
-                          onEdit: (Property property) => inner.push(
-                            AppRoutes.propertyEditor,
-                            extra: property,
+                    requireBroker(
+                      context,
+                      (String brokerId) =>
+                          ChangeNotifierProvider<BrokerPropertiesViewModel>(
+                            create: (_) => BrokerPropertiesViewModel(
+                              properties: deps.properties,
+                              brokerId: brokerId,
+                            )..load(),
+                            child: Builder(
+                              builder: (BuildContext inner) =>
+                                  BrokerPropertiesScreen(
+                                    onAdd: () =>
+                                        inner.push(AppRoutes.propertyEditor),
+                                    onEdit: (Property property) => inner.push(
+                                      AppRoutes.propertyEditor,
+                                      extra: property,
+                                    ),
+                                    onPreview: (Property property) =>
+                                        inner.push(
+                                          AppRoutes.propertyPreview,
+                                          extra: property,
+                                        ),
+                                  ),
+                            ),
                           ),
-                          onPreview: (Property property) => inner.push(
-                            AppRoutes.propertyPreview,
-                            extra: property,
-                          ),
-                        ),
-                      ),
                     ),
               ),
             ],
@@ -338,13 +379,17 @@ GoRouter buildRouter(AppDependencies deps) {
               GoRoute(
                 path: AppRoutes.brokerActivity,
                 builder: (BuildContext context, GoRouterState state) =>
-                    ChangeNotifierProvider<BrokerActivityViewModel>(
-                      create: (_) => BrokerActivityViewModel(
-                        contacts: deps.contacts,
-                        properties: deps.properties,
-                        brokerId: deps.currentBrokerId,
-                      )..load(),
-                      child: const BrokerActivityScreen(),
+                    requireBroker(
+                      context,
+                      (String brokerId) =>
+                          ChangeNotifierProvider<BrokerActivityViewModel>(
+                            create: (_) => BrokerActivityViewModel(
+                              contacts: deps.contacts,
+                              properties: deps.properties,
+                              brokerId: brokerId,
+                            )..load(),
+                            child: const BrokerActivityScreen(),
+                          ),
                     ),
               ),
             ],
@@ -354,26 +399,32 @@ GoRouter buildRouter(AppDependencies deps) {
               GoRoute(
                 path: AppRoutes.brokerProfile,
                 builder: (BuildContext context, GoRouterState state) =>
-                    ChangeNotifierProvider<BrokerViewModel>(
-                      create: (_) => BrokerViewModel(
-                        brokerId: deps.currentBrokerId,
-                        brokers: deps.brokers,
-                        properties: deps.properties,
-                        reviews: deps.reviews,
-                        contact: deps.contact,
-                        from: deps.clientPosition,
-                      )..load(),
-                      child: BrokerProfileScreen(
-                        onOpenSettings: () => context.push(AppRoutes.settings),
-                        onOpenVerification: () =>
-                            context.push(AppRoutes.brokerVerification),
-                        onOpenRanking: () =>
-                            context.push(AppRoutes.brokerRanking),
-                        onOpenProperty: (Property property) => context.push(
-                          AppRoutes.propertyPreview,
-                          extra: property,
-                        ),
-                      ),
+                    requireBroker(
+                      context,
+                      (String brokerId) =>
+                          ChangeNotifierProvider<BrokerViewModel>(
+                            create: (_) => BrokerViewModel(
+                              brokerId: brokerId,
+                              brokers: deps.brokers,
+                              properties: deps.properties,
+                              reviews: deps.reviews,
+                              contact: deps.contact,
+                              from: deps.clientPosition.position,
+                            )..load(),
+                            child: BrokerProfileScreen(
+                              onOpenSettings: () =>
+                                  context.push(AppRoutes.settings),
+                              onOpenVerification: () =>
+                                  context.push(AppRoutes.brokerVerification),
+                              onOpenRanking: () =>
+                                  context.push(AppRoutes.brokerRanking),
+                              onOpenProperty: (Property property) =>
+                                  context.push(
+                                    AppRoutes.propertyPreview,
+                                    extra: property,
+                                  ),
+                            ),
+                          ),
                     ),
               ),
             ],
@@ -394,7 +445,7 @@ GoRouter buildRouter(AppDependencies deps) {
               properties: deps.properties,
               brokers: deps.brokers,
               contact: deps.contact,
-              from: deps.clientPosition,
+              from: deps.clientPosition.position,
             )..load(),
             child: PropertyScreen(
               onBack: () => context.pop(),
@@ -409,61 +460,69 @@ GoRouter buildRouter(AppDependencies deps) {
       GoRoute(
         parentNavigatorKey: rootKey,
         path: AppRoutes.brokerVerification,
-        builder: (BuildContext context, GoRouterState state) =>
-            ChangeNotifierProvider<BrokerTrustViewModel>(
-              create: (_) => BrokerTrustViewModel(
-                brokers: deps.brokers,
-                reviews: deps.reviews,
-                brokerId: deps.currentBrokerId,
-              )..load(),
-              child: BrokerVerificationScreen(onBack: () => context.pop()),
-            ),
+        builder: (BuildContext context, GoRouterState state) => requireBroker(
+          context,
+          (String brokerId) => ChangeNotifierProvider<BrokerTrustViewModel>(
+            create: (_) => BrokerTrustViewModel(
+              brokers: deps.brokers,
+              reviews: deps.reviews,
+              brokerId: brokerId,
+            )..load(),
+            child: BrokerVerificationScreen(onBack: () => context.pop()),
+          ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootKey,
         path: AppRoutes.brokerRanking,
-        builder: (BuildContext context, GoRouterState state) =>
-            ChangeNotifierProvider<BrokerTrustViewModel>(
-              create: (_) => BrokerTrustViewModel(
-                brokers: deps.brokers,
-                reviews: deps.reviews,
-                brokerId: deps.currentBrokerId,
-              )..load(),
-              child: BrokerRankingScreen(onBack: () => context.pop()),
-            ),
+        builder: (BuildContext context, GoRouterState state) => requireBroker(
+          context,
+          (String brokerId) => ChangeNotifierProvider<BrokerTrustViewModel>(
+            create: (_) => BrokerTrustViewModel(
+              brokers: deps.brokers,
+              reviews: deps.reviews,
+              brokerId: brokerId,
+            )..load(),
+            child: BrokerRankingScreen(onBack: () => context.pop()),
+          ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootKey,
         path: AppRoutes.brokerReviews,
-        builder: (BuildContext context, GoRouterState state) =>
-            ChangeNotifierProvider<BrokerReviewsViewModel>(
-              create: (_) => BrokerReviewsViewModel(
-                reviews: deps.reviews,
-                brokerId: deps.currentBrokerId,
-              )..load(),
-              child: BrokerReviewsScreen(onBack: () => context.pop()),
-            ),
+        builder: (BuildContext context, GoRouterState state) => requireBroker(
+          context,
+          (String brokerId) => ChangeNotifierProvider<BrokerReviewsViewModel>(
+            create: (_) => BrokerReviewsViewModel(
+              reviews: deps.reviews,
+              brokerId: brokerId,
+            )..load(),
+            child: BrokerReviewsScreen(onBack: () => context.pop()),
+          ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootKey,
         path: AppRoutes.propertyEditor,
-        builder: (BuildContext context, GoRouterState state) =>
-            ChangeNotifierProvider<PropertyEditorViewModel>(
-              create: (_) => PropertyEditorViewModel(
-                properties: deps.properties,
-                brokerId: deps.currentBrokerId,
-                fallbackPosition: deps.clientPosition,
-                now: DateTime.now,
-                existing: state.extra as Property?,
-              ),
-              child: PropertyEditorScreen(
-                photos: deps.photos,
-                onBack: () => context.pop(),
-                // Retour à la liste, qui se recharge : le bien publié doit
-                // apparaître immédiatement, sinon on doute d'avoir réussi.
-                onSaved: (String _) => context.go(AppRoutes.brokerProperties),
-              ),
+        builder: (BuildContext context, GoRouterState state) => requireBroker(
+          context,
+          (String brokerId) => ChangeNotifierProvider<PropertyEditorViewModel>(
+            create: (_) => PropertyEditorViewModel(
+              properties: deps.properties,
+              brokerId: brokerId,
+              fallbackPosition: deps.clientPosition.position,
+              now: DateTime.now,
+              existing: state.extra as Property?,
             ),
+            child: PropertyEditorScreen(
+              photos: deps.photos,
+              onBack: () => context.pop(),
+              // Retour à la liste, qui se recharge : le bien publié doit
+              // apparaître immédiatement, sinon on doute d'avoir réussi.
+              onSaved: (String _) => context.go(AppRoutes.brokerProperties),
+            ),
+          ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootKey,
@@ -479,7 +538,8 @@ String _postAuthRoute(AppDependencies deps) {
   if (account?.brokerId != null) {
     return AppRoutes.brokerHome;
   }
-  if (deps.settings.role == UserRole.broker && account?.needsProfileSetup == true) {
+  if (deps.settings.role == UserRole.broker &&
+      account?.needsProfileSetup == true) {
     return AppRoutes.brokerProfile;
   }
   return AppRoutes.explore;

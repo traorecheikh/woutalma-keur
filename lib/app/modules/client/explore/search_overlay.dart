@@ -18,22 +18,20 @@ import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 /// L'écran écrit dans le même view model que C01 : les résultats derrière sont
 /// déjà à jour quand il se ferme, et revenir en arrière ne perd pas la frappe.
 class SearchOverlay extends StatefulWidget {
-  const SearchOverlay({required this.model, required this.onVoice, super.key});
+  const SearchOverlay({required this.model, super.key});
 
   final ExploreViewModel model;
 
   /// Le micro reste joignable d'ici : c'est le chemin de qui ne lit pas.
-  final Future<void> Function() onVoice;
 
   static Future<void> show(
     BuildContext context, {
     required ExploreViewModel model,
-    required Future<void> Function() onVoice,
   }) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
-        builder: (_) => SearchOverlay(model: model, onVoice: onVoice),
+        builder: (_) => SearchOverlay(model: model),
       ),
     );
   }
@@ -101,12 +99,6 @@ class _SearchOverlayState extends State<SearchOverlay> {
             hint: context.l10n.exploreSearchHint,
             autofocus: true,
             onChanged: widget.model.search,
-            onVoice: () async {
-              await widget.onVoice();
-              if (mounted) {
-                _query.text = widget.model.filters.query;
-              }
-            },
           ),
           const SizedBox(height: WkSpacing.lg),
           Expanded(

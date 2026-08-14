@@ -4,4 +4,9 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug seulement : le backend local tourne en clair sur
+         http://10.0.2.2:3000, que l'émulateur bloque par défaut depuis
+         l'API 28. Le build release reste en HTTPS uniquement. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

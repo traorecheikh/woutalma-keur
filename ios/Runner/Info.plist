@@ -59,6 +59,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Même phrase que la feuille M06 (permissionLocationBody) : l'explication
+	     de l'application et celle du système doivent dire la même chose, sinon
+	     la seconde a l'air d'une demande différente. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Votre position sert à trier les courtiers du plus proche au plus loin. Elle ne quitte pas le téléphone.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

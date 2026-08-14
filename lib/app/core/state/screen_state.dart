@@ -17,6 +17,13 @@ enum WkFailure {
   /// Une donnée demandée par un lien profond n'existe pas.
   notFound,
 
+  /// Le serveur est injoignable et aucune copie hors ligne n'est disponible.
+  ///
+  /// Distinct de [unknown] : « Cause non identifiée » est exactement le mauvais
+  /// message pour quelqu'un dans un tunnel, et c'est le cas d'erreur le plus
+  /// fréquent sur un réseau faible.
+  network,
+
   /// Cause non identifiée. À n'utiliser que faute de mieux.
   unknown,
 }

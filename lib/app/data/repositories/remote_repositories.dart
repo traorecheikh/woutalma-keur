@@ -3,16 +3,17 @@ import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/data/repositories/remote_mappers.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/domain/review_eligibility.dart';
 
-/// Network-backed repository set for `real` mode. Same contracts as
-/// InMemory*/Isar*Repository (lib/app/domain/repositories.dart docstring:
-/// "Une implémentation Isar ou distante se substitue sans qu'un widget
-/// bouge.") — screens and domain services stay unaware which one is wired.
+/// Dépôts branchés sur l'API. Mêmes contrats que les versions InMemory/Isar
+/// (`lib/app/domain/repositories.dart` : « Une implémentation Isar ou distante
+/// se substitue sans qu'un widget bouge ») — aucun écran ne sait laquelle est
+/// câblée.
 ///
-/// Broker/Property *writes*, and review/contact *listing*, are not in the
-/// Phase 1 API surface (see docs/PRODUCT.md §8bis — broker-side management
-/// stays on Isar for now); those methods throw a clear UnimplementedError
-/// rather than silently no-op-ing.
+/// Ces classes ne font que du HTTP : ni cache, ni repli. La politique hors
+/// ligne vit dans `cached_repositories.dart`, qui les enveloppe. Garder les
+/// deux séparées permet de tester la politique sans réseau et le réseau sans
+/// base.
 
 class RemoteBrokerRepository implements BrokerRepository {
   RemoteBrokerRepository(this._api);
@@ -39,10 +40,47 @@ class RemoteBrokerRepository implements BrokerRepository {
     }
   }
 
+  /// Crée le profil au premier enregistrement, le met à jour ensuite.
+  ///
+  /// Le serveur refuse `verification`, `responseRate` et `pinned` : ce sont
+  /// des signaux de confiance que le produit calcule ou qu'un opérateur
+  /// accorde, jamais le courtier lui-même.
   @override
-  Future<void> save(Broker broker) {
-    throw UnimplementedError(
-      'RemoteBrokerRepository.save: broker profile writes are not in the Phase 1 API — see docs/PRODUCT.md §8bis.',
+  Future<void> save(Broker broker) async {
+    final Broker? existing = await byId(broker.id);
+    if (existing == null) {
+      await _api.brokersControllerCreate(
+        createBrokerDto: api.CreateBrokerDto(
+          (b) => b
+            ..kind = api.CreateBrokerDtoKindEnum.valueOf(
+              brokerKindWireName(broker.kind),
+            )
+            ..name = broker.name
+            ..phone = broker.phone
+            ..whatsapp = broker.whatsapp
+            ..latitude = broker.position.latitude
+            ..longitude = broker.position.longitude
+            ..logoAsset = broker.logoAsset
+            ..coverage.addAll(broker.coverage),
+        ),
+      );
+      return;
+    }
+    await _api.brokersControllerUpdate(
+      id: broker.id,
+      updateBrokerDto: api.UpdateBrokerDto(
+        (b) => b
+          ..kind = api.UpdateBrokerDtoKindEnum.valueOf(
+            brokerKindWireName(broker.kind),
+          )
+          ..name = broker.name
+          ..phone = broker.phone
+          ..whatsapp = broker.whatsapp
+          ..latitude = broker.position.latitude
+          ..longitude = broker.position.longitude
+          ..logoAsset = broker.logoAsset
+          ..coverage.addAll(broker.coverage),
+      ),
     );
   }
 }
@@ -106,47 +144,141 @@ class RemotePropertyRepository implements PropertyRepository {
     }
   }
 
+  /// Publie ou met à jour un bien.
+  ///
+  /// Les photos déjà connues du serveur (`demo:…`, `api:…`) repartent telles
+  /// quelles dans `photoAssets` ; celles qui viennent d'être prises sur le
+  /// téléphone sont des chemins de fichier locaux et doivent être téléversées
+  /// séparément — voir `PropertyPhotoUploader`.
   @override
-  Future<void> save(Property property) {
-    throw UnimplementedError(
-      'RemotePropertyRepository.save: property writes are not in the Phase 1 API — see docs/PRODUCT.md §8bis.',
+  Future<void> save(Property property) async {
+    final Property? existing = await byId(property.id);
+    if (existing == null) {
+      await _propertiesApi.propertiesControllerCreate(
+        createPropertyDto: api.CreatePropertyDto(
+          (b) => b
+            ..kind = api.CreatePropertyDtoKindEnum.valueOf(
+              propertyKindWireName(property.kind),
+            )
+            ..transaction = api.CreatePropertyDtoTransactionEnum.valueOf(
+              transactionKindWireName(property.transaction),
+            )
+            ..title = property.title
+            ..description = property.description
+            ..price = property.price
+            ..surface = property.surface
+            ..rooms = property.rooms
+            ..latitude = property.position.latitude
+            ..longitude = property.position.longitude
+            ..neighbourhood = property.neighbourhood
+            ..status = api.CreatePropertyDtoStatusEnum.valueOf(
+              propertyStatusWireName(property.status),
+            )
+            ..photoAssets.addAll(property.photoAssets),
+        ),
+      );
+      return;
+    }
+    await _propertiesApi.propertiesControllerUpdate(
+      id: property.id,
+      updatePropertyDto: api.UpdatePropertyDto(
+        (b) => b
+          ..kind = api.UpdatePropertyDtoKindEnum.valueOf(
+            propertyKindWireName(property.kind),
+          )
+          ..transaction = api.UpdatePropertyDtoTransactionEnum.valueOf(
+            transactionKindWireName(property.transaction),
+          )
+          ..title = property.title
+          ..description = property.description
+          ..price = property.price
+          ..surface = property.surface
+          ..rooms = property.rooms
+          ..latitude = property.position.latitude
+          ..longitude = property.position.longitude
+          ..neighbourhood = property.neighbourhood
+          ..status = api.UpdatePropertyDtoStatusEnum.valueOf(
+            propertyStatusWireName(property.status),
+          )
+          ..photoAssets.addAll(property.photoAssets),
+      ),
     );
   }
 
+  /// Retrait doux : le serveur passe le bien en `CLOSED` au lieu de le
+  /// supprimer, sinon l'historique de contact d'un client cesserait de
+  /// résoudre la fiche qu'il a appelée.
   @override
-  Future<void> delete(String id) {
-    throw UnimplementedError(
-      'RemotePropertyRepository.delete: property writes are not in the Phase 1 API — see docs/PRODUCT.md §8bis.',
-    );
+  Future<void> delete(String id) async {
+    await _propertiesApi.propertiesControllerClose(id: id);
   }
 }
 
 class RemoteReviewRepository implements ReviewRepository {
-  const RemoteReviewRepository();
+  const RemoteReviewRepository(this._api);
+
+  final api.ReviewsApi _api;
 
   @override
-  Future<List<Review>> byBroker(String brokerId, {bool onlyPublic = false}) {
-    // No GET /reviews endpoint in Phase 1 (broker-detail's review list is
-    // still served from Isar/InMemory in real mode this phase) — only the
-    // write path (submitting a review) is remote. See docs/PRODUCT.md §8bis.
-    throw UnimplementedError(
-      'RemoteReviewRepository.byBroker: review listing is not in the Phase 1 API yet — see docs/PRODUCT.md §8bis.',
+  Future<List<Review>> byBroker(
+    String brokerId, {
+    bool onlyPublic = false,
+  }) async {
+    final response = await _api.reviewsControllerByBroker(
+      brokerId: brokerId,
+      onlyPublic: onlyPublic.toString(),
     );
+    return (response.data ?? const <api.ReviewDto>[]).map(mapReview).toList();
   }
 
   @override
-  Future<List<Review>> all() {
-    throw UnimplementedError(
-      'RemoteReviewRepository.all: review listing is not in the Phase 1 API yet — see docs/PRODUCT.md §8bis.',
-    );
+  Future<List<Review>> all() async {
+    final response = await _api.reviewsControllerAll(onlyPublic: 'false');
+    return (response.data ?? const <api.ReviewDto>[]).map(mapReview).toList();
   }
 
+  /// L'identifiant et la modération viennent du serveur : l'éligibilité est
+  /// revérifiée là-bas, et un 403 rapporte laquelle des quatre règles a
+  /// refusé. On la retraduit vers le vocabulaire de
+  /// `review_eligibility.dart` pour que l'écran affiche la même phrase qu'en
+  /// local.
   @override
-  Future<void> save(Review review) {
-    throw UnimplementedError(
-      'RemoteReviewRepository.save: use the review submission flow (POST /reviews) instead — server-side '
-      'eligibility (review_eligibility.dart parity) only runs on that path.',
-    );
+  Future<Review> save(Review review) async {
+    try {
+      final response = await _api.reviewsControllerCreate(
+        createReviewDto: api.CreateReviewDto(
+          (b) => b
+            ..contactId = review.contactId
+            ..rating = review.rating
+            ..responsiveness = review.responsiveness
+            ..accuracy = review.accuracy
+            ..courtesy = review.courtesy
+            ..comment = review.comment,
+        ),
+      );
+      return mapReview(response.data!);
+    } on DioException catch (error) {
+      final ReviewRefusal? refusal = _refusalFrom(error);
+      if (refusal != null) {
+        throw ReviewNotAllowed(refusal);
+      }
+      rethrow;
+    }
+  }
+
+  ReviewRefusal? _refusalFrom(DioException error) {
+    if (error.response?.statusCode != 403) {
+      return null;
+    }
+    final Object? body = error.response?.data;
+    final Object? reason = body is Map ? body['reason'] : null;
+    return switch (reason) {
+      'noContact' => ReviewRefusal.noContact,
+      'notOwner' => ReviewRefusal.notOwner,
+      'notReached' => ReviewRefusal.notReached,
+      'alreadyReviewed' => ReviewRefusal.alreadyReviewed,
+      _ => null,
+    };
   }
 }
 
@@ -156,17 +288,25 @@ class RemoteContactRepository implements ContactRepository {
   final api.ContactsApi _api;
 
   @override
-  Future<List<ContactLog>> all() {
-    throw UnimplementedError(
-      'RemoteContactRepository.all: contact history listing is not in the Phase 1 API yet.',
-    );
+  Future<List<ContactLog>> all() async {
+    final response = await _api.contactsControllerAll();
+    return (response.data ?? const <api.ContactLogDto>[])
+        .map(mapContactLog)
+        .toList();
   }
 
   @override
-  Future<ContactLog?> byId(String id) {
-    throw UnimplementedError(
-      'RemoteContactRepository.byId: not in the Phase 1 API yet.',
-    );
+  Future<ContactLog?> byId(String id) async {
+    try {
+      final response = await _api.contactsControllerById(id: id);
+      final dto = response.data;
+      return dto == null ? null : mapContactLog(dto);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
+    }
   }
 
   /// Mirrors ContactRepository.log — logs BEFORE the caller opens the
@@ -197,20 +337,4 @@ class RemoteContactRepository implements ContactRepository {
       }),
     );
   }
-}
-
-/// Phase 1 has no server-side seed/demo concept for `real` mode — `demo`
-/// stays 100% local (docs/PRODUCT.md §5). Present only so AppDependencies.
-/// remote() can satisfy AppDependencies._assemble's shared signature.
-class RemoteSeedRepository implements SeedRepository {
-  const RemoteSeedRepository();
-
-  @override
-  Future<void> clearAll() async {}
-
-  @override
-  Future<void> loadDemoSeed() async {}
-
-  @override
-  Future<int> itemCount() async => 0;
 }

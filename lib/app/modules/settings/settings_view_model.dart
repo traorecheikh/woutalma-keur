@@ -17,6 +17,10 @@ enum AppMode {
 
   /// Base vide et parcours normal de saisie.
   real,
+
+  /// Le serveur est la source de vérité ; la base locale n'est qu'une copie
+  /// hors ligne. Aucun jeu de démonstration ne peut être chargé par-dessus.
+  remote,
 }
 
 /// Coordonne S01.
@@ -66,7 +70,10 @@ class SettingsViewModel extends ChangeNotifier {
   /// c'est pour ça que la purge et le chargement sont enchaînés ici et pas
   /// répartis dans l'écran.
   Future<bool> toggleMode() async {
-    if (_switching.isSubmitting) {
+    if (_switching.isSubmitting || _mode == AppMode.remote) {
+      // Rien à basculer quand les données viennent du serveur : écrire le jeu
+      // de démonstration par-dessus une copie hors ligne fabriquerait
+      // exactement ce que le mode distant interdit.
       return false;
     }
     _switching = const MutationState.submitting();

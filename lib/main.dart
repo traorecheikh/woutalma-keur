@@ -6,6 +6,9 @@ import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/app_dependencies.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
+import 'package:woutalma_keur/app/data/local/cache_status.dart';
+import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
 import 'package:woutalma_keur/app/routes/app_router.dart';
@@ -58,6 +61,14 @@ class _WoutalmaKeurAppState extends State<WoutalmaKeurApp> {
       providers: [
         Provider<InteractionFeedbackService>.value(value: widget.deps.feedback),
         Provider<AuthService>.value(value: widget.deps.auth),
+        ChangeNotifierProvider<CacheStatus>.value(
+          value: widget.deps.cacheStatus,
+        ),
+        ChangeNotifierProvider<ClientPositionController>.value(
+          value: widget.deps.clientPosition,
+        ),
+        // Nul en mode local : il n'y a rien à réveiller.
+        Provider<BackendWarmup?>.value(value: widget.deps.warmup),
       ],
       child: MaterialApp.router(
         onGenerateTitle: (BuildContext context) => AppL10n.of(context).appTitle,

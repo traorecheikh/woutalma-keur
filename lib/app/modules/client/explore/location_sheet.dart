@@ -9,9 +9,13 @@ import 'package:woutalma_keur/app/shared/widgets/wk_search_bar.dart';
 
 /// M02 — Choisir où chercher.
 ///
-/// La **saisie manuelle est première**, le GPS second. C'est l'inverse de
-/// l'habitude, et c'est volontaire : un refus de position ne doit jamais
-/// donner l'impression d'un parcours dégradé.
+/// Le **GPS est premier**, la saisie manuelle reste juste en dessous.
+///
+/// L'inverse était la règle jusqu'ici, et le commentaire d'origine la
+/// défendait ; la décision a changé (voir docs/screen-contracts/
+/// client-discovery.md). Ce qui ne change pas, et qui portait l'intention de
+/// départ : un refus de position n'ampute rien. La liste des quartiers reste
+/// à sa place, complète, sans dégradation ni relance.
 class LocationSheet extends StatefulWidget {
   const LocationSheet({
     required this.service,
@@ -90,14 +94,19 @@ class _LocationSheetState extends State<LocationSheet> {
               ),
             ),
             const SizedBox(height: WkSpacing.md),
+            WkButton(
+              label: context.l10n.locationUseGps,
+              icon: Icons.my_location,
+              loading: _locating,
+              onPressed: _useGps,
+            ),
+            const SizedBox(height: WkSpacing.md),
             WkSearchBar(
               controller: _query,
               hint: context.l10n.locationSearchHint,
               onChanged: (String value) => setState(() => _filter = value),
               // Le micro n'a pas sa place ici : on choisit dans une liste
               // courte, pas dans un champ libre.
-              onVoice: () {},
-              showVoice: false,
             ),
             if (_error != null) ...<Widget>[
               const SizedBox(height: WkSpacing.sm),
@@ -139,14 +148,6 @@ class _LocationSheetState extends State<LocationSheet> {
                           ),
                       ],
                     ),
-            ),
-            const SizedBox(height: WkSpacing.md),
-            WkButton(
-              label: context.l10n.locationUseGps,
-              icon: Icons.my_location,
-              variant: WkButtonVariant.secondary,
-              loading: _locating,
-              onPressed: _useGps,
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:woutalma_keur/app/data/local/cache_meta_store.dart';
 import 'package:woutalma_keur/app/data/local/isar_rows.dart';
 import 'package:woutalma_keur/app/data/repositories/isar_repositories.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
@@ -12,6 +13,7 @@ class PersistentRepositories {
     required this.reviews,
     required this.contacts,
     required this.seed,
+    required this.meta,
   });
 
   final BrokerRepository brokers;
@@ -19,6 +21,7 @@ class PersistentRepositories {
   final ReviewRepository reviews;
   final ContactRepository contacts;
   final SeedRepository seed;
+  final CacheMetaStore meta;
 }
 
 /// Vrai quand la plateforme sait stocker durablement.
@@ -35,6 +38,7 @@ Future<PersistentRepositories> openPersistentRepositories() async {
     PropertyRowSchema,
     ReviewRowSchema,
     ContactRowSchema,
+    CacheMetaRowSchema,
   ], directory: (await getApplicationDocumentsDirectory()).path);
 
   return PersistentRepositories(
@@ -43,5 +47,6 @@ Future<PersistentRepositories> openPersistentRepositories() async {
     reviews: IsarReviewRepository(isar),
     contacts: IsarContactRepository(isar, now: DateTime.now),
     seed: IsarSeedRepository(isar),
+    meta: IsarCacheMetaStore(isar),
   );
 }

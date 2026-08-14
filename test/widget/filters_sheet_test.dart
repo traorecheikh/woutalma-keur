@@ -14,7 +14,7 @@ void main() {
   setUp(() async {
     final InMemoryStore store = InMemoryStore();
     await InMemorySeedRepository(store).loadDemoSeed();
-    discovery = DiscoveryService(
+    discovery = LocalDiscoveryService(
       brokers: InMemoryBrokerRepository(store),
       properties: InMemoryPropertyRepository(store),
       reviews: InMemoryReviewRepository(store),

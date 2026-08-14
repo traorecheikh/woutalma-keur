@@ -214,6 +214,36 @@ BrokerListing mapBrokerListing(api.BrokerListingDto dto) {
   );
 }
 
+/// Noms filaires pour les écritures.
+///
+/// Le générateur produit un type d'énumération distinct par DTO
+/// (`CreatePropertyDtoKindEnum`, `UpdatePropertyDtoKindEnum`, …) alors que la
+/// valeur transmise est la même chaîne. Passer par le nom filaire évite
+/// d'écrire la même table de correspondance une fois par DTO.
+String brokerKindWireName(BrokerKind kind) => switch (kind) {
+  BrokerKind.individual => 'INDIVIDUAL',
+  BrokerKind.agency => 'AGENCY',
+};
+
+String propertyKindWireName(PropertyKind kind) => switch (kind) {
+  PropertyKind.apartment => 'APARTMENT',
+  PropertyKind.house => 'HOUSE',
+  PropertyKind.land => 'LAND',
+  PropertyKind.studio => 'STUDIO',
+  PropertyKind.room => 'ROOM',
+};
+
+String transactionKindWireName(TransactionKind kind) => switch (kind) {
+  TransactionKind.rent => 'RENT',
+  TransactionKind.sale => 'SALE',
+};
+
+String propertyStatusWireName(PropertyStatus status) => switch (status) {
+  PropertyStatus.available => 'AVAILABLE',
+  PropertyStatus.reserved => 'RESERVED',
+  PropertyStatus.closed => 'CLOSED',
+};
+
 api.CreateContactDtoChannelEnum mapContactChannelToApi(ContactChannel channel) {
   return api.CreateContactDtoChannelEnum.valueOf(
     _contactChannelWireName(channel),

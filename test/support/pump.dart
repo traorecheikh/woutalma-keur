@@ -3,10 +3,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
+import 'package:woutalma_keur/app/data/local/cache_status.dart';
+import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
 import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/main.dart';
 
+import 'fake_location.dart';
 import 'recording_feedback_service.dart';
 
 /// Monte un widget dans le même environnement que l'application : thème,
@@ -20,6 +24,9 @@ Future<RecordingFeedbackService> pumpWk(
   ThemeData? theme,
   double textScale = 1,
   Size surfaceSize = const Size(360, 800),
+  CacheStatus? cacheStatus,
+  ClientPositionController? positions,
+  BackendWarmup? warmup,
 }) async {
   final RecordingFeedbackService service =
       feedback ?? RecordingFeedbackService();
@@ -28,17 +35,37 @@ Future<RecordingFeedbackService> pumpWk(
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
   await tester.pumpWidget(
-    Provider<InteractionFeedbackService>.value(
-      value: service,
+    MultiProvider(
+      providers: [
+        Provider<InteractionFeedbackService>.value(value: service),
+        // Fournis systématiquement : ce sont des services d'application, et un
+        // écran monté sans eux planterait au premier `watch`, ce qui ferait
+        // échouer des tests pour une raison qui n'a rien à voir avec eux.
+        ChangeNotifierProvider<CacheStatus>.value(
+          value: cacheStatus ?? CacheStatus(),
+        ),
+        ChangeNotifierProvider<ClientPositionController>.value(
+          value: positions ?? fakePositions(),
+        ),
+        Provider<BackendWarmup?>.value(value: warmup),
+      ],
       child: MaterialApp(
         theme: theme ?? WkTheme.light(),
         // La même liste que l'application : un harnais qui localise
         // différemment ne peut pas voir un paquet resté en anglais.
         localizationsDelegates: wkLocalizationsDelegates,
         supportedLocales: AppL10n.supportedLocales,
-        home: MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-          child: Material(child: child),
+        // `copyWith` et non un MediaQueryData neuf : construire le nôtre
+        // remettait `size`, `padding` et `viewInsets` à zéro, si bien que tout
+        // ce qui dimensionne d'après MediaQuery — une feuille modale, par
+        // exemple — se croyait dans un écran de taille nulle.
+        home: Builder(
+          builder: (BuildContext context) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: Material(child: child),
+          ),
         ),
       ),
     ),

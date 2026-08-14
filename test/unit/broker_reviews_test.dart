@@ -67,7 +67,7 @@ void main() {
   test(
     'un avis signalé sort de la note publique le temps de l\'examen',
     () async {
-      final DiscoveryService discovery = DiscoveryService(
+      final DiscoveryService discovery = LocalDiscoveryService(
         brokers: InMemoryBrokerRepository(store),
         properties: InMemoryPropertyRepository(store),
         reviews: reviews,

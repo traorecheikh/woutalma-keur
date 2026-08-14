@@ -426,7 +426,7 @@ class _ButtonGallery extends StatelessWidget {
         const _Label('icon-button'),
         Row(
           children: <Widget>[
-            WkIconButton(icon: Icons.mic, label: 'mic', onPressed: () {}),
+            WkIconButton(icon: Icons.phone, label: 'call', onPressed: () {}),
             const SizedBox(width: WkSpacing.sm),
             WkIconButton(icon: Icons.close, label: 'close', onPressed: () {}),
             const SizedBox(width: WkSpacing.sm),
@@ -519,7 +519,7 @@ class _InputGalleryState extends State<_InputGallery> {
           ],
         ),
         const _Label('search-bar'),
-        WkSearchBar(controller: _search, onChanged: (_) {}, onVoice: () {}),
+        WkSearchBar(controller: _search, onChanged: (_) {}),
         const _Label('segmented-control'),
         WkSegmentedControl<bool>(
           segments: <(bool, String)>[
