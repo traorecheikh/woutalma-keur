@@ -9,6 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
+    "start:migrated": "prisma migrate deploy && node dist/main.js",
     "emit:openapi": "ts-node -r tsconfig-paths/register scripts/emit-openapi.ts",
     "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.ts\"",
     "test": "jest",

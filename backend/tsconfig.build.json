@@ -1,4 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    // Without an explicit rootDir, TypeScript infers it from the widest common
+    // ancestor of the compiled files. `scripts/` sits beside `src/`, so that
+    // ancestor was the package root and the build emitted `dist/src/main.js`
+    // while every start command pointed at `dist/main.js`.
+    "rootDir": "./src"
+  },
+  "exclude": ["node_modules", "test", "dist", "scripts", "prisma", "**/*spec.ts"]
 }
