@@ -1101,16 +1101,16 @@ abstract class AppL10n {
   /// **'Supprimer « {title} » ?'**
   String propertyDeleteTitle(String title);
 
-  /// Conséquence de la suppression.
+  /// Conséquence réelle du retrait. Le serveur ferme le bien (statut CLOSED) au lieu de l'effacer, parce que les mises en relation déjà enregistrées le référencent. Le texte promettait une disparition définitive et le bien restait dans la liste : l'écran démentait la phrase juste avant.
   ///
   /// In fr, this message translates to:
-  /// **'Ce bien disparaîtra définitivement de vos annonces.'**
+  /// **'Ce bien ne sera plus proposé aux clients. Il restera dans votre liste, marqué « Vendu ou loué ».'**
   String get propertyDeleteBody;
 
-  /// Confirmation après suppression.
+  /// Confirmation après retrait. Ne dit pas « supprimé » : le bien est toujours là, fermé.
   ///
   /// In fr, this message translates to:
-  /// **'Bien supprimé'**
+  /// **'Bien retiré des recherches'**
   String get propertyDeleted;
 
   /// Ouvre la feuille M08.

@@ -632,10 +632,10 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get propertyDeleteBody =>
-      'Ce bien disparaîtra définitivement de vos annonces.';
+      'Ce bien ne sera plus proposé aux clients. Il restera dans votre liste, marqué « Vendu ou loué ».';
 
   @override
-  String get propertyDeleted => 'Bien supprimé';
+  String get propertyDeleted => 'Bien retiré des recherches';
 
   @override
   String get propertyStatusChange => 'Changer le statut';

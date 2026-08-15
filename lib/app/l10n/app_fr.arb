@@ -694,12 +694,12 @@
     "description": "Confirmation M09 : nomme le bien concerné.",
     "placeholders": { "title": { "type": "String" } }
   },
-  "propertyDeleteBody": "Ce bien disparaîtra définitivement de vos annonces.",
+  "propertyDeleteBody": "Ce bien ne sera plus proposé aux clients. Il restera dans votre liste, marqué « Vendu ou loué ».",
   "@propertyDeleteBody": {
-    "description": "Conséquence de la suppression."
+    "description": "Conséquence réelle du retrait. Le serveur ferme le bien (statut CLOSED) au lieu de l'effacer, parce que les mises en relation déjà enregistrées le référencent. Le texte promettait une disparition définitive et le bien restait dans la liste : l'écran démentait la phrase juste avant."
   },
-  "propertyDeleted": "Bien supprimé",
-  "@propertyDeleted": { "description": "Confirmation après suppression." },
+  "propertyDeleted": "Bien retiré des recherches",
+  "@propertyDeleted": { "description": "Confirmation après retrait. Ne dit pas « supprimé » : le bien est toujours là, fermé." },
   "propertyStatusChange": "Changer le statut",
   "@propertyStatusChange": { "description": "Ouvre la feuille M08." },
   "propertyStatusImpactClosed": "Ce bien disparaîtra des recherches côté client.",
