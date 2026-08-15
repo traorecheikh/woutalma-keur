@@ -85,7 +85,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _openSearch(BuildContext context, ExploreViewModel model) {
-    return SearchOverlay.show(context, model: model);
+    return SearchOverlay.show(
+      context,
+      model: model,
+      onOpenBroker: widget.onOpenBroker,
+      onOpenProperty: widget.onOpenProperty,
+    );
   }
 
   Future<void> _openPlace(BuildContext context, ExploreViewModel model) async {

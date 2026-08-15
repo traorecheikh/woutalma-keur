@@ -13,7 +13,7 @@ class WkTopBar extends StatelessWidget {
     this.onBack,
     this.action,
     this.onListen,
-    this.showListen = true,
+    this.showListen = false,
     super.key,
   });
 
@@ -30,6 +30,12 @@ class WkTopBar extends StatelessWidget {
   /// qu'un écran muet, et assez petit pour ne pas dupliquer du code partout.
   final VoidCallback? onListen;
 
+  /// Bouton « Écouter ».
+  ///
+  /// Faux par défaut depuis le retrait du chemin vocal : il ne faisait
+  /// qu'annoncer le titre au lecteur d'écran, ce qui n'est pas ce que promet
+  /// un haut-parleur bien visible en haut de chaque écran. Le rebrancher
+  /// suppose une vraie lecture de l'écran, pas un titre répété.
   final bool showListen;
 
   static const double height = 64;

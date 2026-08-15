@@ -148,6 +148,21 @@ class AppL10nFr extends AppL10n {
       'Rechercher un quartier, un courtier ou un bien';
 
   @override
+  String exploreSearchCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count résultats',
+      one: '1 résultat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get exploreSearchNoMatch =>
+      'Aucun courtier ni bien ne correspond. Essayez un autre mot, ou l\'une des propositions.';
+
+  @override
   String exploreSearchSubmit(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

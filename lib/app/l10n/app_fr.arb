@@ -197,6 +197,15 @@
   "@exploreSearchOpen": {
     "description": "Étiquette lue par le lecteur d'écran sur la barre de recherche de C01, qui ouvre l'écran de recherche."
   },
+  "exploreSearchCount": "{count, plural, =1{1 résultat} other{{count} résultats}}",
+  "@exploreSearchCount": {
+    "description": "Intertitre entre les complétions et les résultats, dans l'écran de recherche.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "exploreSearchNoMatch": "Aucun courtier ni bien ne correspond. Essayez un autre mot, ou l'une des propositions.",
+  "@exploreSearchNoMatch": {
+    "description": "Écran de recherche : la requête ne donne rien, on propose de reformuler."
+  },
   "exploreSearchSubmit": "{count, plural, =0{Aucun résultat} =1{Voir 1 résultat} other{Voir les {count} résultats}}",
   "@exploreSearchSubmit": {
     "description": "Action qui ferme l'écran de recherche et revient aux résultats.",

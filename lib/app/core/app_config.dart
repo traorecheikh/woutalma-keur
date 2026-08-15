@@ -40,6 +40,13 @@ abstract final class AppConfig {
     'WK_DEV_AUTH_SECRET',
   );
 
+  /// Ouvre le catalogue des composants dans les réglages.
+  ///
+  /// Faux par défaut, y compris en debug : une passe de recette se fait sur un
+  /// build de debug, et une galerie de composants au milieu des réglages n'a
+  /// rien à y faire. `--dart-define=WK_DEV_TOOLS=true` la rend au concepteur.
+  static const bool showDeveloperTools = bool.fromEnvironment('WK_DEV_TOOLS');
+
   /// Vrai quand l'application doit parler au serveur.
   static bool get isRemote => apiBaseUrl.isNotEmpty;
 }

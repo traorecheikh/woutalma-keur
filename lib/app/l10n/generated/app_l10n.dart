@@ -339,6 +339,18 @@ abstract class AppL10n {
   /// **'Rechercher un quartier, un courtier ou un bien'**
   String get exploreSearchOpen;
 
+  /// Intertitre entre les complétions et les résultats, dans l'écran de recherche.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 résultat} other{{count} résultats}}'**
+  String exploreSearchCount(int count);
+
+  /// Écran de recherche : la requête ne donne rien, on propose de reformuler.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun courtier ni bien ne correspond. Essayez un autre mot, ou l\'une des propositions.'**
+  String get exploreSearchNoMatch;
+
   /// Action qui ferme l'écran de recherche et revient aux résultats.
   ///
   /// In fr, this message translates to:

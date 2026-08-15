@@ -85,7 +85,10 @@ void main() {
   ) async {
     await model.load();
 
-    await pumpWk(tester, SearchOverlay(model: model));
+    await pumpWk(
+      tester,
+      SearchOverlay(model: model, onOpenBroker: (_) {}, onOpenProperty: (_) {}),
+    );
     await tester.pumpAndSettle();
 
     // « Aucun résultat » était un mensonge : la requête n'avait pas abouti,
@@ -104,7 +107,10 @@ void main() {
   ) async {
     await model.load();
 
-    await pumpWk(tester, SearchOverlay(model: model));
+    await pumpWk(
+      tester,
+      SearchOverlay(model: model, onOpenBroker: (_) {}, onOpenProperty: (_) {}),
+    );
     await tester.pumpAndSettle();
 
     discovery.offline = false;

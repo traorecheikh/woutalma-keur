@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:woutalma_keur/app/core/app_config.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
@@ -117,28 +119,23 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (bool v) =>
                     model.setPreferences(model.preferences.copyWith(sounds: v)),
               ),
-              _SwitchRow(
-                label: context.l10n.settingsGuidedVoice,
-                icon: Icons.record_voice_over_outlined,
-                // Quand un lecteur d'écran tourne, le guidage se tait. On le dit,
-                // plutôt que de le laisser muet sans raison visible.
-                description: MediaQuery.accessibleNavigationOf(context)
-                    ? context.l10n.settingsGuidedVoiceSuppressed
-                    : null,
-                value: model.preferences.guidedVoice,
-                onChanged: (bool v) => model.setPreferences(
-                  model.preferences.copyWith(guidedVoice: v),
-                ),
-              ),
+              // « Guidage vocal » retiré avec le chemin vocal : le réglage ne
+              // commandait plus rien, et un interrupteur sans effet apprend à
+              // se méfier de tous les autres.
             ],
           ),
-          const SizedBox(height: WkSpacing.lg),
-          _SectionTitle(context.l10n.settingsSectionDeveloper),
-          _ActionRow(
-            label: context.l10n.settingsCatalog,
-            icon: Icons.widgets_outlined,
-            onTap: onOpenCatalog,
-          ),
+          // Le catalogue des composants est un outil de conception, pas une
+          // page de l'application : visible seulement en build de debug, et
+          // jamais dans ce qu'on donne à tester.
+          if (kDebugMode && AppConfig.showDeveloperTools) ...<Widget>[
+            const SizedBox(height: WkSpacing.lg),
+            _SectionTitle(context.l10n.settingsSectionDeveloper),
+            _ActionRow(
+              label: context.l10n.settingsCatalog,
+              icon: Icons.widgets_outlined,
+              onTap: onOpenCatalog,
+            ),
+          ],
         ],
       ),
     );
