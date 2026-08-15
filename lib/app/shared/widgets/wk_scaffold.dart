@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_connection_banner.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 
 /// Coquille de tout écran. Remplace `Scaffold` nu.
@@ -15,6 +16,7 @@ class WkScaffold extends StatelessWidget {
     this.bottomAction,
     this.padHorizontal = true,
     this.extendBody = false,
+    this.showConnectionBanner = true,
     super.key,
   });
 
@@ -36,6 +38,16 @@ class WkScaffold extends StatelessWidget {
   /// marge basse, avec [bottomInset]. Ailleurs, la coquille garde son
   /// comportement sûr et réserve l'indicateur d'accueil.
   final bool extendBody;
+
+  /// Affiche « hors ligne » ou « le service se réveille » sous la barre de
+  /// titre.
+  ///
+  /// Vrai par défaut, et posé ici plutôt que dans chaque écran : le bandeau
+  /// n'a d'intérêt que s'il est partout. Quand il ne vivait que sur Explorer,
+  /// une donnée vieille de deux heures était indiscernable d'une donnée
+  /// fraîche sur tous les autres écrans. Le bandeau ne prend aucune place
+  /// quand tout va bien.
+  final bool showConnectionBanner;
 
   /// Hauteur à réserver au bas d'un contenu pour qu'il ne finisse pas sous le
   /// dock d'onglets ou sous l'indicateur d'accueil.
@@ -59,6 +71,7 @@ class WkScaffold extends StatelessWidget {
           child: Column(
             children: <Widget>[
               ?topBar,
+              if (showConnectionBanner) const WkConnectionBanner(),
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.symmetric(

@@ -8,11 +8,14 @@ import 'package:woutalma_keur/app/data/local/cache_status.dart';
 import 'package:woutalma_keur/app/data/local/persistent_bootstrap.dart'
     if (dart.library.js_interop) 'package:woutalma_keur/app/data/local/persistent_bootstrap_web.dart';
 import 'package:woutalma_keur/app/core/feedback/platform_interaction_feedback.dart';
+import 'package:woutalma_keur/app/data/repositories/cached_discovery.dart';
 import 'package:woutalma_keur/app/data/repositories/cached_repositories.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
 import 'package:woutalma_keur/app/data/repositories/remote_discovery.dart';
 import 'package:woutalma_keur/app/data/repositories/remote_repositories.dart';
+import 'package:flutter_map/flutter_map.dart' show TileProvider;
 import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
+import 'package:woutalma_keur/app/data/services/cached_tile_provider.dart';
 import 'package:woutalma_keur/app/data/services/dev_backend_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/dio_auth_interceptor.dart';
 import 'package:woutalma_keur/app/data/services/geolocator_location_service.dart';
@@ -93,6 +96,10 @@ class AppDependencies {
   /// en mode local, où il n'y a rien à réveiller.
   final BackendWarmup warmup;
 
+  /// Tuiles de carte gardées sur le disque. `null` là où il n'y a pas de
+  /// disque (web) : la carte retombe alors sur le réseau seul.
+  TileProvider? mapTiles;
+
   /// Courtier connecté, déduit de l'identification.
   ///
   /// En mode distant il n'y a pas de repli possible : un identifiant de
@@ -124,7 +131,7 @@ class AppDependencies {
       if (await repos.seed.itemCount() == 0) {
         await repos.seed.loadDemoSeed();
       }
-      return _assemble(
+      final AppDependencies local = _assemble(
         brokers: repos.brokers,
         properties: repos.properties,
         reviews: repos.reviews,
@@ -138,6 +145,8 @@ class AppDependencies {
           reviews: repos.reviews,
         ),
       );
+      local.mapTiles = await _openTileCache();
+      return local;
     }
 
     // Une installation qui tournait en démonstration contient déjà les 28
@@ -164,7 +173,23 @@ class AppDependencies {
       tokens: tokens,
     );
     await deps.clientPosition.restore();
+    deps.mapTiles = await _openTileCache();
     return deps;
+  }
+
+  /// Cache disque des tuiles de carte. Sans lui, chaque ouverture de la carte
+  /// retélécharge tout et le hors-ligne montre un fond vide.
+  static Future<TileProvider?> _openTileCache() async {
+    final String? path = await appSupportDirectory();
+    if (path == null) {
+      return null;
+    }
+    try {
+      return await CachedTileProvider.open(path);
+    } on Object {
+      // Disque plein ou dossier refusé : la carte marche encore, en ligne.
+      return null;
+    }
   }
 
   /// Démarrage en mémoire, pour les tests et les aperçus.
@@ -269,8 +294,16 @@ class AppDependencies {
       mode: AppMode.remote,
       // Le classement part côté serveur : PostGIS pour les distances, index
       // GIN pour le texte, au lieu de trois collections entières rapatriées à
-      // chaque frappe.
-      discovery: RemoteDiscoveryService(searchApi),
+      // chaque frappe. Enveloppé pour que la recherche laisse une trace et
+      // sache se rejouer hors ligne : sans cela, l'écran d'accueil était le
+      // seul de l'application sans version hors ligne.
+      discovery: CachedDiscoveryService(
+        remote: RemoteDiscoveryService(searchApi),
+        brokerCache: cache.brokers,
+        propertyCache: cache.properties,
+        reviewCache: cache.reviews,
+        status: cacheStatus,
+      ),
       cacheStatus: cacheStatus,
       sessionExpiry: sessionExpiry,
       warmup: warmup,

@@ -75,22 +75,29 @@ class SettingsScreen extends StatelessWidget {
                 : Icons.storefront_outlined,
             onTap: () => _switchRole(context, model),
           ),
-          const SizedBox(height: WkSpacing.lg),
-          _SectionTitle(context.l10n.settingsSectionData),
-          _SettingGroup(
-            children: <Widget>[
-              _SwitchRow(
-                label: context.l10n.settingsDemoMode,
-                icon: Icons.storage_outlined,
-                description: model.mode == AppMode.demo
-                    ? context.l10n.settingsDemoModeOn
-                    : context.l10n.settingsDemoModeOff,
-                value: model.mode == AppMode.demo,
-                busy: model.switching.isSubmitting,
-                onChanged: (_) => _confirmToggle(context, model),
-              ),
-            ],
-          ),
+          // L'interrupteur de démonstration appartient au build hors ligne.
+          // Quand les données viennent du serveur il ne peut rien faire :
+          // `toggleMode()` refuse, et confirmer aboutissait à une erreur au
+          // bout d'une feuille destructive. Il disparaît donc de l'application
+          // livrée, au lieu d'y rester en promettant quelque chose de faux.
+          if (model.mode != AppMode.remote) ...<Widget>[
+            const SizedBox(height: WkSpacing.lg),
+            _SectionTitle(context.l10n.settingsSectionData),
+            _SettingGroup(
+              children: <Widget>[
+                _SwitchRow(
+                  label: context.l10n.settingsDemoMode,
+                  icon: Icons.storage_outlined,
+                  description: model.mode == AppMode.demo
+                      ? context.l10n.settingsDemoModeOn
+                      : context.l10n.settingsDemoModeOff,
+                  value: model.mode == AppMode.demo,
+                  busy: model.switching.isSubmitting,
+                  onChanged: (_) => _confirmToggle(context, model),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: WkSpacing.lg),
           _SectionTitle(context.l10n.settingsSectionFeedback),
           _SettingGroup(

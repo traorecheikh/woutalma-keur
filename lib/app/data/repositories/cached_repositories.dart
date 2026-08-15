@@ -26,6 +26,13 @@ import 'package:woutalma_keur/app/domain/repositories.dart';
 /// Aucune durée de péremption : tant qu'il y a du réseau on interroge toujours
 /// le serveur d'abord, donc la copie n'est jamais la référence. `fetchedAt`
 /// ne sert qu'à dire à l'utilisateur de quand date ce qu'il lit.
+/// Vrai quand l'échec est une coupure et non un refus du serveur.
+///
+/// Partagé avec `cached_discovery.dart` : les deux doivent trancher de la même
+/// façon, sinon la découverte se rabattrait sur le cache là où les dépôts
+/// remonteraient l'erreur.
+bool isOfflineFailure(Object error) => _isOffline(error);
+
 bool _isOffline(Object error) {
   if (error is! DioException) {
     return false;

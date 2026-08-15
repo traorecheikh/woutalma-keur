@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
 import 'package:woutalma_keur/app/modules/client/explore/location_permission_flow.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_connection_banner.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/ranking.dart';
@@ -133,7 +132,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const WkConnectionBanner(),
           const SizedBox(height: WkSpacing.sm),
           // Seule pièce épinglée. Filtres, segments et compteur défilent avec
           // les résultats : trois blocs figés au-dessus d'une liste ne

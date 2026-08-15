@@ -27,6 +27,14 @@ class PersistentRepositories {
 /// Vrai quand la plateforme sait stocker durablement.
 const bool supportsPersistence = true;
 
+/// Chemin de travail de l'application, pour tout ce qui n'est pas Isar — les
+/// tuiles de carte notamment.
+///
+/// Un chemin et non un `Directory` : la variante web de ce fichier ne peut pas
+/// importer `dart:io`, et les deux doivent partager la même signature.
+Future<String?> appSupportDirectory() async =>
+    (await getApplicationDocumentsDirectory()).path;
+
 /// Ouvre la base locale et rend les dépôts persistants.
 ///
 /// Isolé derrière un import conditionnel : le code généré d'Isar contient des

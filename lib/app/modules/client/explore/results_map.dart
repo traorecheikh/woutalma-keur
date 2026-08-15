@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
@@ -29,7 +30,8 @@ class ResultsMap extends StatefulWidget {
   final void Function(String id) onSelect;
 
   /// Injecté par les tests pour éprouver le cas où les tuiles n'arrivent pas.
-  /// En production, `null` laisse le paquet utiliser le réseau.
+  /// En production, `null` fait chercher le cache disque fourni par
+  /// l'application ; à défaut, le paquet retombe sur le réseau seul.
   final TileProvider? tileProvider;
 
   @override
@@ -68,7 +70,8 @@ class _ResultsMapState extends State<ResultsMap> {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'sn.lic.woutalma_keur',
-                  tileProvider: widget.tileProvider,
+                  tileProvider:
+                      widget.tileProvider ?? context.watch<TileProvider?>(),
                   errorTileCallback: (_, _, _) {
                     if (!_tilesFailed && mounted) {
                       // Après la frame : le callback part depuis la phase de

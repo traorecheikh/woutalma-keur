@@ -4,6 +4,7 @@ import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_map/flutter_map.dart' show TileProvider;
 import 'package:woutalma_keur/app/core/app_dependencies.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
@@ -69,6 +70,8 @@ class _WoutalmaKeurAppState extends State<WoutalmaKeurApp> {
         ),
         // Inerte en mode local : il n'y a rien à réveiller.
         ChangeNotifierProvider<BackendWarmup>.value(value: widget.deps.warmup),
+        // Nul sur le web, où il n'y a pas de disque à remplir.
+        Provider<TileProvider?>.value(value: widget.deps.mapTiles),
       ],
       child: MaterialApp.router(
         onGenerateTitle: (BuildContext context) => AppL10n.of(context).appTitle,

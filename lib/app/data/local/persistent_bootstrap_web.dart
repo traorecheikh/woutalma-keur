@@ -26,6 +26,9 @@ class PersistentRepositories {
 /// écrans, pas à livrer : la cible reste Android d'entrée de gamme.
 const bool supportsPersistence = false;
 
+/// Aucun disque sur le web : la carte y retombe sur le réseau seul.
+Future<String?> appSupportDirectory() async => null;
+
 Future<PersistentRepositories> openPersistentRepositories() {
   throw UnsupportedError(
     'Aucune persistance sur le web. Utiliser AppDependencies.inMemory().',

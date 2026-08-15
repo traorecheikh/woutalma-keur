@@ -132,12 +132,12 @@ un bien — échouent de la même façon. Une ligne dans vos notes suffit.
 toucher une épingle. Puis activer le mode avion et rouvrir la carte.
 
 **Attendu** — En ligne : une vraie carte, épingles cliquables menant à un
-courtier. Hors ligne : le fond de carte devient vide et une légende explique que
-les tuiles n'ont pas pu être chargées, mais les épingles marchent toujours et la
-liste reste utilisable.
+courtier. **Hors ligne, la carte doit rester lisible aux endroits déjà
+regardés** : les images de carte sont conservées sur le téléphone. Une zone
+jamais ouverte reste vide, avec une légende qui l'explique.
 
-**Pas un bug** — Le fond de carte vide hors ligne. Les images de carte sont
-téléchargées et ne sont pas conservées pour un usage hors ligne.
+**À signaler** — Si une zone que vous venez de regarder en ligne redevient vide
+en mode avion, c'est un défaut.
 
 ### 8. Perdre le réseau en cours d'usage — *Explorer* — devrait marcher
 
@@ -149,9 +149,15 @@ liste.
 téléphone qui n'a **jamais** rien chargé : un simple « Pas de connexion » avec
 un bouton Réessayer. Jamais un écran blanc, jamais des courtiers inventés.
 
-**Pas un bug** — Ce bandeau hors ligne n'existe que sur la liste Explorer. Les
-autres écrans ne l'ont pas encore : sur ceux-là, une donnée ancienne ressemble à
-une donnée fraîche. Connu.
+**À signaler** — Ce bandeau doit apparaître sur **tous** les écrans, pas
+seulement sur la liste. Ouvrez une fiche courtier en mode avion : si elle
+affiche des informations anciennes **sans** le bandeau, c'est un défaut.
+
+**Pas un bug** — Hors ligne, les notes disparaissent des cartes et les
+courtiers affichent « Pas encore d'avis ». Les avis ne font pas partie de ce
+qui est enregistré pour la recherche : hors réseau l'application ne les connaît
+pas, et préfère ne rien afficher plutôt qu'un chiffre périmé. Distances,
+classement et noms restent justes.
 
 ### 9. Grands caractères et petits écrans — partout — devrait marcher
 
@@ -174,7 +180,10 @@ fermés en doublon.
 | **La connexion** | Les deux boutons — Google et le code par SMS — tournent indéfiniment sans jamais signaler d'erreur. Aucun moyen de se connecter ne fonctionne sur ce build. |
 | **Tout ce qui exige un compte** | Contacter un courtier, l'onglet *Contacts* et laisser un avis exigent la connexion : les trois sont donc hors d'atteinte. |
 | **Le côté courtier** | Passer son rôle à *Courtier* dans les réglages affiche quatre écrans identiques « Espace courtier — Se connecter », sans retour possible vers les réglages. Fermer et rouvrir l'application pour récupérer. Rien derrière cette porte n'est testable. |
-| **L'interrupteur mode démonstration** | Toujours visible dans les réglages, sans effet, et se solde par une erreur si on confirme. Vestige de la version hors ligne. |
+
+L'interrupteur « mode démonstration » n'existe plus dans les réglages : il
+appartenait à la version hors ligne et ne pouvait rien faire. Son absence est
+normale.
 
 ## Ce qui a l'air faux et ne l'est pas
 

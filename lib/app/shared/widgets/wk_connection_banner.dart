@@ -20,16 +20,19 @@ class WkConnectionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CacheStatus status = context.watch<CacheStatus>();
-    final BackendWarmup warmup = context.watch<BackendWarmup>();
+    // Lectures nullables : la coquille monte ce bandeau sur *tous* les écrans,
+    // y compris ceux qu'un test construit hors de l'arbre de providers. Absent
+    // le service, il n'y a simplement rien à annoncer.
+    final CacheStatus? status = context.watch<CacheStatus?>();
+    final BackendWarmup? warmup = context.watch<BackendWarmup?>();
 
-    if (status.servedFromCache) {
+    if (status != null && status.servedFromCache) {
       return _Line(
         icon: Icons.cloud_off,
         message: context.l10n.offlineCached(_age(context, status.fetchedAt)),
       );
     }
-    if (warmup.state == WarmupState.warming) {
+    if (warmup != null && warmup.state == WarmupState.warming) {
       return _Line(
         icon: Icons.hourglass_bottom,
         message: context.l10n.backendWakingUp,
