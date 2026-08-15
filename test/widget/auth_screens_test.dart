@@ -15,7 +15,7 @@ void main() {
 
     await pumpWk(
       tester,
-      Provider<AuthService>.value(
+      ChangeNotifierProvider<AuthService>.value(
         value: auth,
         child: PhoneScreen(
           reason: 'Test',
@@ -48,7 +48,7 @@ void main() {
 
       await pumpWk(
         tester,
-        Provider<AuthService>.value(
+        ChangeNotifierProvider<AuthService>.value(
           value: auth,
           child: PhoneScreen(
             reason: 'Test',
@@ -100,7 +100,7 @@ void main() {
 
     await pumpWk(
       tester,
-      Provider<AuthService>.value(
+      ChangeNotifierProvider<AuthService>.value(
         value: SimulatedAuthService(),
         child: OtpScreen(
           phone: '+221771234567',

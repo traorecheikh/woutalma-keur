@@ -148,6 +148,7 @@ GoRouter buildRouter(AppDependencies deps) {
                           AppRoutes.authPhone,
                           extra: context.l10n.authPhoneReasonContact,
                         ),
+                        onSignedOut: () => context.go(AppRoutes.explore),
                         onModeChanged: () => context.go(AppRoutes.explore),
                         onRoleChanged: () => context.go(
                           deps.settings.role == UserRole.broker
@@ -276,6 +277,7 @@ GoRouter buildRouter(AppDependencies deps) {
                       ? context.l10n.authPhoneReasonBroker
                       : context.l10n.authPhoneReasonContact,
                 ),
+                onSignedOut: () => context.go(AppRoutes.explore),
                 // Les données ont changé sous les pieds de l'application :
                 // on repart de la racine plutôt que d'afficher un écran
                 // construit sur l'ancien jeu.

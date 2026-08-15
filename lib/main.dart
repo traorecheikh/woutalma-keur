@@ -75,7 +75,9 @@ class _WoutalmaKeurAppState extends State<WoutalmaKeurApp> {
     return MultiProvider(
       providers: [
         Provider<InteractionFeedbackService>.value(value: widget.deps.feedback),
-        Provider<AuthService>.value(value: widget.deps.auth),
+        // Notifiable : les réglages doivent apprendre l'ouverture de session,
+        // sinon ils continuent d'afficher « M'identifier » une fois connecté.
+        ChangeNotifierProvider<AuthService>.value(value: widget.deps.auth),
         ChangeNotifierProvider<CacheStatus>.value(
           value: widget.deps.cacheStatus,
         ),

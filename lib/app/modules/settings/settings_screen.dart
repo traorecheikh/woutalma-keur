@@ -22,6 +22,7 @@ class SettingsScreen extends StatelessWidget {
     required this.onModeChanged,
     required this.onRoleChanged,
     required this.onSignIn,
+    required this.onSignedOut,
     this.onBack,
     super.key,
   });
@@ -39,6 +40,10 @@ class SettingsScreen extends StatelessWidget {
   /// Ouvre G03. Le numéro n'est jamais demandé à l'ouverture de l'app.
   final VoidCallback onSignIn;
 
+  /// Ramène à l'accueil client : après une déconnexion, rester sur un onglet
+  /// courtier n'a plus de sens.
+  final VoidCallback onSignedOut;
+
   @override
   Widget build(BuildContext context) {
     final SettingsViewModel model = context.watch<SettingsViewModel>();
@@ -54,15 +59,23 @@ class SettingsScreen extends StatelessWidget {
           _SectionTitle(context.l10n.settingsSectionAccount),
           Builder(
             builder: (BuildContext context) {
-              final Account? account = context.read<AuthService>().current;
+              // `watch` et non `read` : la session change pendant que cet
+              // écran est monté, et il doit le voir.
+              final Account? account = context.watch<AuthService>().current;
+              if (account == null) {
+                return _ActionRow(
+                  label: context.l10n.settingsSignIn,
+                  icon: Icons.login,
+                  onTap: onSignIn,
+                );
+              }
               return _ActionRow(
-                label: account == null
-                    ? context.l10n.settingsSignIn
-                    : context.l10n.settingsSignedInAs(account.displayIdentity),
-                icon: account == null
-                    ? Icons.login
-                    : Icons.verified_user_outlined,
-                onTap: onSignIn,
+                label: context.l10n.settingsSignedInAs(account.displayIdentity),
+                icon: Icons.verified_user_outlined,
+                // Connecté, l'action utile est de partir : rouvrir l'écran
+                // d'identification n'avait aucun sens, et il n'existait
+                // nulle part de moyen de fermer sa session.
+                onTap: () => _confirmSignOut(context),
               );
             },
           ),
@@ -139,6 +152,24 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final bool? out = await WkConfirmSheet.show(
+      context,
+      title: context.l10n.settingsSignOutTitle,
+      body: context.l10n.settingsSignOutBody,
+      confirmLabel: context.l10n.settingsSignOut,
+      cancelLabel: context.l10n.commonCancel,
+    );
+    if (out != true || !context.mounted) {
+      return;
+    }
+    context.read<AuthService>().signOut();
+    // Le rôle courtier n'a plus de profil derrière lui une fois la session
+    // fermée : y rester afficherait quatre écrans verrouillés.
+    context.read<SettingsViewModel>().setRole(UserRole.client);
+    onSignedOut();
   }
 
   Future<void> _switchRole(

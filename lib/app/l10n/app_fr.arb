@@ -137,6 +137,18 @@
   "@authFailed": {
     "description": "Échec d'une tentative de connexion, quel que soit le moyen."
   },
+  "settingsSignOut": "Fermer la session",
+  "@settingsSignOut": {
+    "description": "Action de déconnexion depuis les réglages."
+  },
+  "settingsSignOutTitle": "Fermer la session ?",
+  "@settingsSignOutTitle": {
+    "description": "Titre de la confirmation de déconnexion."
+  },
+  "settingsSignOutBody": "Vos contacts et vos avis restent enregistrés. Il faudra vous identifier à nouveau pour contacter un courtier.",
+  "@settingsSignOutBody": {
+    "description": "Conséquence exacte d'une déconnexion, dite avant de la confirmer."
+  },
   "authSmsUnavailable": "Le code par SMS n'est pas disponible dans cette version.",
   "@authSmsUnavailable": {
     "description": "Échec d'identification : le fournisseur OTP n'est pas branché dans ce build."

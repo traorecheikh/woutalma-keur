@@ -21,7 +21,9 @@ void main() {
       tester,
       MultiProvider(
         providers: [
-          Provider<AuthService>.value(value: SimulatedAuthService()),
+          ChangeNotifierProvider<AuthService>.value(
+            value: SimulatedAuthService(),
+          ),
           ChangeNotifierProvider<SettingsViewModel>.value(value: model),
         ],
         child: SettingsScreen(
@@ -29,6 +31,7 @@ void main() {
           onModeChanged: () {},
           onRoleChanged: () {},
           onSignIn: () {},
+          onSignedOut: () {},
         ),
       ),
       textScale: 1.3,

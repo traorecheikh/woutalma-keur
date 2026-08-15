@@ -103,6 +103,16 @@ class AppL10nFr extends AppL10n {
       'Connexion impossible. Vérifiez le réseau et réessayez.';
 
   @override
+  String get settingsSignOut => 'Me déconnecter';
+
+  @override
+  String get settingsSignOutTitle => 'Fermer la session ?';
+
+  @override
+  String get settingsSignOutBody =>
+      'Vos contacts et vos avis restent enregistrés. Il faudra vous identifier à nouveau pour contacter un courtier.';
+
+  @override
   String get authSmsUnavailable =>
       'Le code par SMS n\'est pas disponible dans cette version.';
 
@@ -1010,9 +1020,6 @@ class AppL10nFr extends AppL10n {
   String settingsSignedInAs(String phone) {
     return 'Identifié avec le $phone';
   }
-
-  @override
-  String get settingsSignOut => 'Me déconnecter';
 
   @override
   String get brokerActivityTitle => 'Consultations et contacts';

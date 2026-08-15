@@ -16,7 +16,7 @@ import 'package:woutalma_keur/app/domain/auth_service.dart';
 /// docs/PRODUCT.md §8bis: SMS/WhatsApp OTP and email magic-link are
 /// deferred) throw a clear UnimplementedError rather than silently
 /// pretending to work.
-class GoogleBackendAuthService implements AuthService {
+class GoogleBackendAuthService extends AuthService {
   GoogleBackendAuthService({
     required api.AuthApi authApi,
     required TokenStore tokens,
@@ -97,12 +97,14 @@ class GoogleBackendAuthService implements AuthService {
       brokerId: session.brokerId,
       linkedProviders: const <AuthProvider>{AuthProvider.google},
     );
+    notifyListeners();
     return AuthResult.signedIn;
   }
 
   @override
   void signOut() {
     _current = null;
+    notifyListeners();
     unawaited(_tokens.clear());
     // Fire-and-forget: nothing downstream depends on Google's own sign-out
     // completing before the local session is considered cleared.

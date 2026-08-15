@@ -40,7 +40,12 @@ enum AuthResult { signedIn, linked, cancelled }
 /// Abstrait dès maintenant : le jour où un vrai fournisseur SMS arrive, il
 /// prend cette place sans qu'un écran bouge. Les fournisseurs sociaux suivent
 /// le même contrat : l'UI ne connaît pas le SDK concret.
-abstract class AuthService {
+///
+/// **Observable.** [current] changeait sans que personne ne l'apprenne : les
+/// réglages lisaient le compte une fois à la construction et continuaient
+/// d'afficher « M'identifier » longtemps après la connexion. Toute
+/// implémentation prévient à l'ouverture comme à la fermeture de session.
+abstract class AuthService extends ChangeNotifier {
   /// Envoie un code au numéro. Renvoie le code **seulement** quand l'envoi est
   /// simulé — c'est ce qui permet de le montrer honnêtement à l'écran.
   Future<String?> requestCode(String phone);
@@ -70,7 +75,7 @@ abstract class AuthService {
 /// Aucun SMS n'est envoyé et le code est constant. Il est **affiché à
 /// l'écran** : cacher un code qu'on n'envoie pas rendrait le parcours
 /// intestable, et laisser croire à un vrai SMS serait pire.
-class SimulatedAuthService implements AuthService {
+class SimulatedAuthService extends AuthService {
   SimulatedAuthService({
     this.code = '123456',
     this.maxAttempts = 5,
@@ -118,6 +123,7 @@ class SimulatedAuthService implements AuthService {
       // sinon la personne est un client.
       brokerId: _brokerByPhone[normalised],
     );
+    notifyListeners();
     return OtpResult.verified;
   }
 
@@ -128,6 +134,7 @@ class SimulatedAuthService implements AuthService {
       name: 'Compte Google',
       linkedProviders: <AuthProvider>{AuthProvider.google},
     );
+    notifyListeners();
     return AuthResult.signedIn;
   }
 
@@ -141,6 +148,7 @@ class SimulatedAuthService implements AuthService {
       brokerId: _brokerByEmail[email.trim().toLowerCase()],
       linkedProviders: const <AuthProvider>{AuthProvider.email},
     );
+    notifyListeners();
     return AuthResult.signedIn;
   }
 
@@ -157,12 +165,14 @@ class SimulatedAuthService implements AuthService {
       brokerId: account.brokerId,
       linkedProviders: <AuthProvider>{...account.linkedProviders, provider},
     );
+    notifyListeners();
     return AuthResult.linked;
   }
 
   @override
   void signOut() {
     _current = null;
+    notifyListeners();
     _attempts = 0;
   }
 }

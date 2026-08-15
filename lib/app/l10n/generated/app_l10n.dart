@@ -255,6 +255,24 @@ abstract class AppL10n {
   /// **'Connexion impossible. Vérifiez le réseau et réessayez.'**
   String get authFailed;
 
+  /// Oublie l'identité locale. Les données restent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Me déconnecter'**
+  String get settingsSignOut;
+
+  /// Titre de la confirmation de déconnexion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer la session ?'**
+  String get settingsSignOutTitle;
+
+  /// Conséquence exacte d'une déconnexion, dite avant de la confirmer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos contacts et vos avis restent enregistrés. Il faudra vous identifier à nouveau pour contacter un courtier.'**
+  String get settingsSignOutBody;
+
   /// Échec d'identification : le fournisseur OTP n'est pas branché dans ce build.
   ///
   /// In fr, this message translates to:
@@ -1700,12 +1718,6 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Identifié avec le {phone}'**
   String settingsSignedInAs(String phone);
-
-  /// Oublie l'identité locale. Les données restent.
-  ///
-  /// In fr, this message translates to:
-  /// **'Me déconnecter'**
-  String get settingsSignOut;
 
   /// Titre de B05.
   ///

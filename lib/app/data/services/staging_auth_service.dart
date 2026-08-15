@@ -18,7 +18,7 @@ import 'package:woutalma_keur/app/domain/auth_service.dart';
 /// Le secret n'est pas compilé dans un build ordinaire, et le serveur refuse
 /// ces routes si le déploiement ne les a pas explicitement ouvertes : un APK de
 /// recette pointé sur la production n'ouvre donc rien.
-class StagingAuthService implements AuthService {
+class StagingAuthService extends AuthService {
   StagingAuthService({
     required api.AuthApi authApi,
     required TokenStore tokens,
@@ -78,6 +78,7 @@ class StagingAuthService implements AuthService {
         brokerId: session.brokerId,
         linkedProviders: const <AuthProvider>{AuthProvider.phone},
       );
+      notifyListeners();
       return OtpResult.verified;
     } on Object {
       return OtpResult.wrongCode;
@@ -107,6 +108,7 @@ class StagingAuthService implements AuthService {
       brokerId: session.brokerId,
       linkedProviders: const <AuthProvider>{AuthProvider.google},
     );
+    notifyListeners();
     return AuthResult.signedIn;
   }
 
@@ -128,6 +130,7 @@ class StagingAuthService implements AuthService {
   @override
   void signOut() {
     _current = null;
+    notifyListeners();
     signUpAsBroker = false;
     unawaited(_tokens.clear());
   }
