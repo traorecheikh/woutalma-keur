@@ -21,6 +21,7 @@ docs/
 ├── INTERACTION-FEEDBACK.md        validation, motion, haptic, sound, speech, repetition
 ├── DESIGN.md                      visual identity and tokens only (google-labs-code/design.md format)
 ├── WOUTALMA-UI.md                 Flutter UI, components, accessibility, localization, tests
+├── QA-PASS.md                     recette manuelle : parcours testables, blocages, faux positifs
 └── screen-contracts/
     ├── README.md                  when a screen earns its own contract, approval procedure
     ├── client-discovery.md        C01
