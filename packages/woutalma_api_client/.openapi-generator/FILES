@@ -14,7 +14,10 @@ doc/CreateBrokerDto.md
 doc/CreateContactDto.md
 doc/CreatePropertyDto.md
 doc/CreateReviewDto.md
+doc/DevRequestCodeDto.md
+doc/DevRequestCodeResponseDto.md
 doc/DevSignInDto.md
+doc/DevVerifyCodeDto.md
 doc/GeoPointDto.md
 doc/GoogleSignInDto.md
 doc/HealthApi.md
@@ -57,7 +60,10 @@ lib/src/model/create_contact_dto.dart
 lib/src/model/create_property_dto.dart
 lib/src/model/create_review_dto.dart
 lib/src/model/date.dart
+lib/src/model/dev_request_code_dto.dart
+lib/src/model/dev_request_code_response_dto.dart
 lib/src/model/dev_sign_in_dto.dart
+lib/src/model/dev_verify_code_dto.dart
 lib/src/model/geo_point_dto.dart
 lib/src/model/google_sign_in_dto.dart
 lib/src/model/liveness_dto.dart

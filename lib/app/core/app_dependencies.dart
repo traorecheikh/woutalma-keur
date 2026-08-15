@@ -16,12 +16,12 @@ import 'package:woutalma_keur/app/data/repositories/remote_repositories.dart';
 import 'package:flutter_map/flutter_map.dart' show TileProvider;
 import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
 import 'package:woutalma_keur/app/data/services/cached_tile_provider.dart';
-import 'package:woutalma_keur/app/data/services/dev_backend_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/dio_auth_interceptor.dart';
 import 'package:woutalma_keur/app/data/services/geolocator_location_service.dart';
 import 'package:woutalma_keur/app/data/services/google_backend_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/image_picker_photo_service.dart';
 import 'package:woutalma_keur/app/data/services/session_expiry.dart';
+import 'package:woutalma_keur/app/data/services/staging_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/token_store.dart';
 import 'package:woutalma_keur/app/data/services/url_contact_launcher.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
@@ -307,8 +307,10 @@ class AppDependencies {
       cacheStatus: cacheStatus,
       sessionExpiry: sessionExpiry,
       warmup: warmup,
+      // En recette, le parcours téléphone complet sans SMS : les écrans G03 et
+      // G04 sont ceux de la production, seul le trajet du code change.
       auth: AppConfig.devAuth
-          ? DevBackendAuthService(
+          ? StagingAuthService(
               authApi: authApi,
               tokens: tokens,
               secret: AppConfig.devAuthSecret,

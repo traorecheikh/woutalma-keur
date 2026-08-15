@@ -66,8 +66,10 @@ All URIs are relative to *http://localhost*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 [*AuthApi*](doc/AuthApi.md) | [**authControllerRefresh**](doc/AuthApi.md#authcontrollerrefresh) | **POST** /auth/refresh | Exchange a refresh token for a fresh access/refresh pair.
+[*AuthApi*](doc/AuthApi.md) | [**authControllerRequestDevCode**](doc/AuthApi.md#authcontrollerrequestdevcode) | **POST** /auth/dev/otp/request | Staging only. Returns the six-digit code for a phone number instead of sending an SMS. 404 unless DEV_AUTH_ENABLED&#x3D;true.
 [*AuthApi*](doc/AuthApi.md) | [**authControllerSignInAsDev**](doc/AuthApi.md#authcontrollersigninasdev) | **POST** /auth/dev | Sign in as a seeded demo persona. Returns 404 unless the deployment sets DEV_AUTH_ENABLED&#x3D;true, and 401 without the matching x-dev-auth-secret header.
 [*AuthApi*](doc/AuthApi.md) | [**authControllerSignInWithGoogle**](doc/AuthApi.md#authcontrollersigninwithgoogle) | **POST** /auth/google | Sign in (or sign up) with a Google ID token obtained on-device.
+[*AuthApi*](doc/AuthApi.md) | [**authControllerVerifyDevCode**](doc/AuthApi.md#authcontrollerverifydevcode) | **POST** /auth/dev/otp/verify | Staging only. Verifies the code and opens a session, creating the account on first use. Pass asBroker to also create a broker profile.
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerCreate**](doc/BrokersApi.md#brokerscontrollercreate) | **POST** /brokers | B01 — create the caller’s broker profile. Starts unverified.
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerFindAll**](doc/BrokersApi.md#brokerscontrollerfindall) | **GET** /brokers | Mirrors BrokerRepository.all().
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerFindById**](doc/BrokersApi.md#brokerscontrollerfindbyid) | **GET** /brokers/{id} | Mirrors BrokerRepository.byId.
@@ -104,7 +106,10 @@ Class | Method | HTTP request | Description
  - [CreateContactDto](doc/CreateContactDto.md)
  - [CreatePropertyDto](doc/CreatePropertyDto.md)
  - [CreateReviewDto](doc/CreateReviewDto.md)
+ - [DevRequestCodeDto](doc/DevRequestCodeDto.md)
+ - [DevRequestCodeResponseDto](doc/DevRequestCodeResponseDto.md)
  - [DevSignInDto](doc/DevSignInDto.md)
+ - [DevVerifyCodeDto](doc/DevVerifyCodeDto.md)
  - [GeoPointDto](doc/GeoPointDto.md)
  - [GoogleSignInDto](doc/GoogleSignInDto.md)
  - [LivenessDto](doc/LivenessDto.md)

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/data/services/staging_auth_service.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
@@ -54,6 +55,14 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
   bool get _isValid => _localDigits.length == 9;
 
+  /// Vrai quand la dernière tentative a échoué. Un échec doit se voir.
+  bool _failed = false;
+
+  /// Recette : ouvrir la session avec un profil courtier. Sans cela le
+  /// parcours courtier reste inatteignable, faute d'écran de création de
+  /// profil.
+  bool _asBroker = false;
+
   @override
   Widget build(BuildContext context) {
     return WkScaffold(
@@ -86,6 +95,39 @@ class _PhoneScreenState extends State<PhoneScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          if (context.read<AuthService>() is StagingAuthService) ...<Widget>[
+            const SizedBox(height: WkSpacing.md),
+            // Recette uniquement : absent de tout build ordinaire, puisque le
+            // service de recette n'y est pas branché.
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _asBroker,
+              onChanged: (bool v) => setState(() => _asBroker = v),
+              title: Text(
+                context.l10n.authStagingAsBroker,
+                style: context.text.bodyMedium,
+              ),
+              subtitle: Text(
+                context.l10n.authStagingAsBrokerHelp,
+                style: context.text.bodySmall?.copyWith(
+                  color: context.colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+          if (_failed) ...<Widget>[
+            const SizedBox(height: WkSpacing.md),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                context.l10n.authFailed,
+                style: context.text.bodyMedium?.copyWith(
+                  color: context.colors.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
           const SizedBox(height: WkSpacing.md),
           WkTextField(
             label: context.l10n.authPhoneLabel,
@@ -118,10 +160,33 @@ class _PhoneScreenState extends State<PhoneScreen> {
       return;
     }
 
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _failed = false;
+    });
     final AuthService auth = context.read<AuthService>();
     final String phone = '+221$_localDigits';
-    final String? code = await auth.requestCode(phone);
+
+    // Sans ce catch, un échec laissait `_sending` à vrai pour toujours : le
+    // bouton tournait sans fin et devenait intouchable, sans un mot.
+    String? code;
+    try {
+      if (auth is StagingAuthService) {
+        auth.signUpAsBroker = _asBroker;
+      }
+      code = await auth.requestCode(phone);
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _sending = false;
+        _failed = true;
+      });
+      context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+      return;
+    }
+
     if (!mounted) {
       return;
     }
@@ -130,10 +195,25 @@ class _PhoneScreenState extends State<PhoneScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
-    setState(() => _sending = true);
-    final AuthResult result = await context
-        .read<AuthService>()
-        .signInWithGoogle();
+    setState(() {
+      _sending = true;
+      _failed = false;
+    });
+    AuthResult result;
+    try {
+      result = await context.read<AuthService>().signInWithGoogle();
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _sending = false;
+        _failed = true;
+      });
+      context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+      return;
+    }
+
     if (!mounted) {
       return;
     }
@@ -345,7 +425,14 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _resend() async {
-    await context.read<AuthService>().requestCode(widget.phone);
+    try {
+      await context.read<AuthService>().requestCode(widget.phone);
+    } on Object {
+      if (mounted) {
+        setState(() => _error = context.l10n.authFailed);
+      }
+      return;
+    }
     if (mounted) {
       _startCountdown();
     }
@@ -370,10 +457,22 @@ class _OtpScreenState extends State<OtpScreen> {
       _error = null;
     });
 
-    final OtpResult result = await context.read<AuthService>().verify(
-      widget.phone,
-      entered,
-    );
+    OtpResult result;
+    try {
+      result = await context.read<AuthService>().verify(widget.phone, entered);
+    } on Object {
+      // Sinon `_checking` restait vrai : la pastille « Vérification… » ne
+      // repartait jamais et le champ devenait inerte.
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _checking = false;
+        _error = context.l10n.authFailed;
+      });
+      context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+      return;
+    }
     if (!mounted) {
       return;
     }

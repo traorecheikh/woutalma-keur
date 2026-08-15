@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
@@ -109,11 +110,33 @@ class BrokerViewModel extends ChangeNotifier {
     _contactState = const MutationState.submitting();
     notifyListeners();
 
-    final ContactAttempt attempt = await _contact.contact(
-      broker: detail.broker,
-      channel: channel,
-      propertyId: propertyId,
-    );
+    // Le journal part sur le réseau et exige une session. Sans ce catch, un
+    // 401 laissait `_contactState` en `submitting` : le bouton Contacter
+    // tournait indéfiniment et devenait intouchable, sans un mot à l'écran —
+    // sur l'action la plus importante de l'application.
+    late final ContactAttempt attempt;
+    try {
+      attempt = await _contact.contact(
+        broker: detail.broker,
+        channel: channel,
+        propertyId: propertyId,
+      );
+    } on DioException catch (error) {
+      _contactState = MutationState.failure(
+        error.response?.statusCode == 401
+            ? WkFailure.permission
+            : error.response == null
+            ? WkFailure.network
+            : WkFailure.unknown,
+      );
+      notifyListeners();
+      return false;
+    } on Object {
+      _contactState = const MutationState.failure(WkFailure.unknown);
+      notifyListeners();
+      return false;
+    }
+
     lastContact = attempt.log;
     _contactState = attempt.opened
         ? const MutationState.success()

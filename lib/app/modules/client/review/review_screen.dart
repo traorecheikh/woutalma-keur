@@ -1,9 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
+import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/domain/review_eligibility.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
@@ -71,24 +74,44 @@ class ReviewViewModel extends ChangeNotifier {
     _submission = const MutationState.submitting();
     notifyListeners();
 
-    final String id = 'rev-${_contact.id}';
-    await _reviews.save(
-      Review(
-        id: id,
-        brokerId: _contact.brokerId,
-        contactId: _contact.id,
-        rating: _rating,
-        responsiveness: _optionalScore(_responsiveness),
-        accuracy: _optionalScore(_accuracy),
-        courtesy: _optionalScore(_courtesy),
-        comment: (comment == null || comment.trim().isEmpty)
-            ? null
-            : comment.trim(),
-        createdAt: _now(),
-      ),
-    );
-    // Consomme le contact : un échange n'ouvre qu'un seul avis.
-    await _contacts.update(_contact.copyWith(reviewId: id));
+    // L'identifiant est celui que le serveur attribue : le nôtre n'est qu'une
+    // valeur d'attente pour le dépôt local.
+    try {
+      final Review saved = await _reviews.save(
+        Review(
+          id: 'rev-${_contact.id}',
+          brokerId: _contact.brokerId,
+          contactId: _contact.id,
+          rating: _rating,
+          responsiveness: _optionalScore(_responsiveness),
+          accuracy: _optionalScore(_accuracy),
+          courtesy: _optionalScore(_courtesy),
+          comment: (comment == null || comment.trim().isEmpty)
+              ? null
+              : comment.trim(),
+          createdAt: _now(),
+        ),
+      );
+      // Consomme le contact : un échange n'ouvre qu'un seul avis.
+      await _contacts.update(_contact.copyWith(reviewId: saved.id));
+    } on ReviewNotAllowed catch (refusal) {
+      // Le serveur revérifie l'éligibilité et dit laquelle des quatre règles a
+      // refusé. Sans ce catch, le refus partait au néant et le bouton Envoyer
+      // tournait indéfiniment.
+      _submission = MutationState.failure(_failureFor(refusal.reason));
+      notifyListeners();
+      return false;
+    } on DioException catch (error) {
+      _submission = MutationState.failure(
+        error.response == null ? WkFailure.network : WkFailure.unknown,
+      );
+      notifyListeners();
+      return false;
+    } on Object {
+      _submission = const MutationState.failure(WkFailure.unknown);
+      notifyListeners();
+      return false;
+    }
 
     _submission = const MutationState.success();
     notifyListeners();
@@ -96,6 +119,14 @@ class ReviewViewModel extends ChangeNotifier {
   }
 
   int? _optionalScore(int value) => value == 0 ? null : value;
+
+  /// Un refus d'éligibilité n'est pas une panne : c'est une règle produit.
+  static WkFailure _failureFor(ReviewRefusal reason) => switch (reason) {
+    ReviewRefusal.noContact ||
+    ReviewRefusal.notOwner ||
+    ReviewRefusal.notReached ||
+    ReviewRefusal.alreadyReviewed => WkFailure.permission,
+  };
 }
 
 /// C05 — Donner un avis.

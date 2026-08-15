@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
@@ -93,11 +94,31 @@ class PropertyViewModel extends ChangeNotifier {
     _contactState = const MutationState.submitting();
     notifyListeners();
 
-    final ContactAttempt attempt = await _contact.contact(
-      broker: broker,
-      channel: channel,
-      propertyId: detail.property.id,
-    );
+    // Même garde que sur C02 : le journal exige une session, et un 401 non
+    // rattrapé fige le bouton Contacter pour de bon.
+    late final ContactAttempt attempt;
+    try {
+      attempt = await _contact.contact(
+        broker: broker,
+        channel: channel,
+        propertyId: detail.property.id,
+      );
+    } on DioException catch (error) {
+      _contactState = MutationState.failure(
+        error.response?.statusCode == 401
+            ? WkFailure.permission
+            : error.response == null
+            ? WkFailure.network
+            : WkFailure.unknown,
+      );
+      notifyListeners();
+      return false;
+    } on Object {
+      _contactState = const MutationState.failure(WkFailure.unknown);
+      notifyListeners();
+      return false;
+    }
+
     _contactState = attempt.opened
         ? const MutationState.success()
         : const MutationState.failure(WkFailure.unknown);

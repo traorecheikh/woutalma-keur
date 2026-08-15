@@ -99,6 +99,17 @@ class AppL10nFr extends AppL10n {
   }
 
   @override
+  String get authFailed =>
+      'Connexion impossible. Vérifiez le réseau et réessayez.';
+
+  @override
+  String get authStagingAsBroker => 'Ouvrir un espace courtier';
+
+  @override
+  String get authStagingAsBrokerHelp =>
+      'Recette uniquement. Crée un profil courtier vide rattaché à ce numéro.';
+
+  @override
   String get backendWakingUp => 'Le service se réveille, quelques secondes…';
 
   @override

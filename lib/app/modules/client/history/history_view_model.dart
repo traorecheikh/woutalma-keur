@@ -92,7 +92,16 @@ class HistoryViewModel extends ChangeNotifier {
   ///
   /// C'est ce geste qui ouvre — ou non — le droit de noter.
   Future<void> setOutcome(ContactLog contact, ContactOutcome outcome) async {
-    await _contacts.update(contact.copyWith(outcome: outcome));
+    try {
+      await _contacts.update(contact.copyWith(outcome: outcome));
+    } on Object {
+      // Déclarer un résultat part sur le réseau. Sans garde, l'échec était une
+      // erreur asynchrone non capturée et l'écran restait figé sur l'ancien
+      // état, sans un mot.
+      _state = const ScreenState<List<ContactEntry>>.error(WkFailure.unknown);
+      notifyListeners();
+      return;
+    }
     await load();
   }
 }

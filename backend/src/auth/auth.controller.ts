@@ -5,6 +5,11 @@ import { AuthSessionDto } from './dto/auth-session.dto';
 import { GoogleSignInDto } from './dto/google-sign-in.dto';
 import { DevSignInDto } from './dto/dev-sign-in.dto';
 import { RefreshSessionDto } from './dto/refresh-session.dto';
+import {
+  DevRequestCodeDto,
+  DevRequestCodeResponseDto,
+  DevVerifyCodeDto,
+} from './dto/dev-otp.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,6 +37,34 @@ export class AuthController {
     @Headers('x-dev-auth-secret') secret?: string,
   ): Promise<AuthSessionDto> {
     return this.auth.signInAsDev(dto.persona, secret);
+  }
+
+  @Post('dev/otp/request')
+  @ApiOperation({
+    summary:
+      'Staging only. Returns the six-digit code for a phone number instead of sending an SMS. 404 unless DEV_AUTH_ENABLED=true.',
+  })
+  @ApiHeader({ name: 'x-dev-auth-secret', required: true })
+  @ApiOkResponse({ type: DevRequestCodeResponseDto })
+  requestDevCode(
+    @Body() dto: DevRequestCodeDto,
+    @Headers('x-dev-auth-secret') secret?: string,
+  ): DevRequestCodeResponseDto {
+    return this.auth.requestDevCode(dto.phone, secret);
+  }
+
+  @Post('dev/otp/verify')
+  @ApiOperation({
+    summary:
+      'Staging only. Verifies the code and opens a session, creating the account on first use. Pass asBroker to also create a broker profile.',
+  })
+  @ApiHeader({ name: 'x-dev-auth-secret', required: true })
+  @ApiOkResponse({ type: AuthSessionDto })
+  verifyDevCode(
+    @Body() dto: DevVerifyCodeDto,
+    @Headers('x-dev-auth-secret') secret?: string,
+  ): Promise<AuthSessionDto> {
+    return this.auth.verifyDevCode(dto.phone, dto.code, dto.asBroker ?? false, secret);
   }
 
   @Post('refresh')

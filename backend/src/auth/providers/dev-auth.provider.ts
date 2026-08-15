@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthProvider, VerifiedIdentity } from './auth-provider.interface';
@@ -52,9 +53,17 @@ export class DevAuthProvider implements AuthProvider {
       throw new Error('DEV_AUTH_ENABLED=true requires DEV_AUTH_SECRET of at least 32 characters.');
     }
 
+    // Second lock, for the one mistake that would actually hurt: shipping a
+    // staging config to production. DEV_AUTH_ENABLED is the intent switch;
+    // this refuses the combination outright rather than trusting it.
+    if (this.enabled && config.get<string>('NODE_ENV') === 'production') {
+      throw new Error('DEV_AUTH_ENABLED must not be set when NODE_ENV=production.');
+    }
+
     if (this.enabled) {
       this.logger.warn(
-        `DEV AUTH ENABLED — POST /auth/dev issues real JWTs for personas: ${DEV_PERSONAS.join(', ')}`,
+        'DEV AUTH ENABLED — /auth/dev and /auth/dev/otp/* issue real JWTs without any SMS. ' +
+          `Personas: ${DEV_PERSONAS.join(', ')}. Never enable this on a production deployment.`,
       );
     }
   }
@@ -78,6 +87,36 @@ export class DevAuthProvider implements AuthProvider {
     }
   }
 
+  /// Code à six chiffres pour un numéro, sans SMS.
+  ///
+  /// Dérivé par HMAC du numéro et du secret, donc stable sans rien stocker :
+  /// une instance qui redémarre — ce que fait l'offre gratuite en permanence —
+  /// ne perd pas les codes déjà distribués. Il ne tourne pas, ce qui serait
+  /// inacceptable ailleurs et sans conséquence sur un environnement de recette
+  /// où le code est de toute façon rendu dans la réponse.
+  codeFor(phone: string): string {
+    this.assertEnabled();
+    const digest = createHmac('sha256', this.secret ?? '').update(normalisePhone(phone)).digest();
+    return (digest.readUInt32BE(0) % 1_000_000).toString().padStart(6, '0');
+  }
+
+  verifyCode(phone: string, code: string): void {
+    if (this.codeFor(phone) !== code.trim()) {
+      throw new UnauthorizedException('Invalid code');
+    }
+  }
+
+  /// Identité d'un numéro. Le sujet est préfixé pour ne jamais entrer en
+  /// collision avec un `sub` Google.
+  identityForPhone(phone: string): VerifiedIdentity {
+    this.assertEnabled();
+    return {
+      subject: `dev:phone:${normalisePhone(phone)}`,
+      email: null,
+      emailVerified: false,
+    };
+  }
+
   /// `token` is the persona name. Re-validated here even though the DTO
   /// already restricts it — the provider is the thing that must be safe.
   async verify(token: string): Promise<VerifiedIdentity> {
@@ -92,4 +131,10 @@ export class DevAuthProvider implements AuthProvider {
       emailVerified: true,
     };
   }
+}
+
+/// Un seul numéro doit toujours donner la même identité, qu'il ait été saisi
+/// avec un « + », des espaces ou des tirets.
+export function normalisePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, '');
 }

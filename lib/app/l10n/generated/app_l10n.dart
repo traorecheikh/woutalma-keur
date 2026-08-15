@@ -249,6 +249,24 @@ abstract class AppL10n {
   /// **'il y a {count} j'**
   String offlineDaysAgo(int count);
 
+  /// Échec d'une tentative de connexion, quel que soit le moyen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion impossible. Vérifiez le réseau et réessayez.'**
+  String get authFailed;
+
+  /// Recette : crée un profil courtier à la connexion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir un espace courtier'**
+  String get authStagingAsBroker;
+
+  /// Précision sous l'interrupteur courtier de recette.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recette uniquement. Crée un profil courtier vide rattaché à ce numéro.'**
+  String get authStagingAsBrokerHelp;
+
   /// Attente longue annoncée pendant le démarrage à froid du serveur.
   ///
   /// In fr, this message translates to:

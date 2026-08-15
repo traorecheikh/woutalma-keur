@@ -128,6 +128,88 @@
         ]
       }
     },
+    "/auth/dev/otp/request": {
+      "post": {
+        "operationId": "AuthController_requestDevCode",
+        "summary": "Staging only. Returns the six-digit code for a phone number instead of sending an SMS. 404 unless DEV_AUTH_ENABLED=true.",
+        "parameters": [
+          {
+            "name": "x-dev-auth-secret",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevRequestCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevRequestCodeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/dev/otp/verify": {
+      "post": {
+        "operationId": "AuthController_verifyDevCode",
+        "summary": "Staging only. Verifies the code and opens a session, creating the account on first use. Pass asBroker to also create a broker profile.",
+        "parameters": [
+          {
+            "name": "x-dev-auth-secret",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevVerifyCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/refresh": {
       "post": {
         "operationId": "AuthController_refresh",
@@ -1276,6 +1358,58 @@
         },
         "required": [
           "persona"
+        ]
+      },
+      "DevRequestCodeDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+221771234567"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "DevRequestCodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The code, returned in the response because no SMS is sent. Only ever exposed on a deployment that has explicitly enabled dev auth.",
+            "example": "481920"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+221771234567"
+          }
+        },
+        "required": [
+          "code",
+          "phone"
+        ]
+      },
+      "DevVerifyCodeDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+221771234567"
+          },
+          "code": {
+            "type": "string",
+            "example": "481920"
+          },
+          "asBroker": {
+            "type": "boolean",
+            "description": "Give this account a broker profile if it has none, so the broker side is reachable without an operator. Dev auth only.",
+            "default": false
+          }
+        },
+        "required": [
+          "phone",
+          "code"
         ]
       },
       "RefreshSessionDto": {

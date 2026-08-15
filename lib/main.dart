@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +17,20 @@ import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Dernier filet. En debug une erreur non capturée s'affiche en console ; en
+  // release elle disparaissait sans laisser de trace, ce qui a rendu invisibles
+  // des pannes de session entières. On ne peut pas montrer une boîte de
+  // dialogue à quelqu'un qui déchiffre difficilement, mais on peut au moins
+  // consigner.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[wk] erreur de rendu : ${details.exceptionAsString()}');
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[wk] erreur non capturée : $error');
+    return true;
+  };
   if (kDebugMode) {
     // Matérialise l'arbre sémantique en debug. L'accessibilité est une
     // contrainte produit ici : elle doit être inspectable à tout moment, pas

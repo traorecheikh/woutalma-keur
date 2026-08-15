@@ -23,7 +23,10 @@ import 'package:woutalma_api_client/src/model/create_broker_dto.dart';
 import 'package:woutalma_api_client/src/model/create_contact_dto.dart';
 import 'package:woutalma_api_client/src/model/create_property_dto.dart';
 import 'package:woutalma_api_client/src/model/create_review_dto.dart';
+import 'package:woutalma_api_client/src/model/dev_request_code_dto.dart';
+import 'package:woutalma_api_client/src/model/dev_request_code_response_dto.dart';
 import 'package:woutalma_api_client/src/model/dev_sign_in_dto.dart';
+import 'package:woutalma_api_client/src/model/dev_verify_code_dto.dart';
 import 'package:woutalma_api_client/src/model/geo_point_dto.dart';
 import 'package:woutalma_api_client/src/model/google_sign_in_dto.dart';
 import 'package:woutalma_api_client/src/model/liveness_dto.dart';
@@ -50,7 +53,10 @@ part 'serializers.g.dart';
   CreateContactDto,
   CreatePropertyDto,
   CreateReviewDto,
+  DevRequestCodeDto,
+  DevRequestCodeResponseDto,
   DevSignInDto,
+  DevVerifyCodeDto,
   GeoPointDto,
   GoogleSignInDto,
   LivenessDto,

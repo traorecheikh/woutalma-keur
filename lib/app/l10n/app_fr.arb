@@ -133,6 +133,18 @@
       }
     }
   },
+  "authFailed": "Connexion impossible. Vérifiez le réseau et réessayez.",
+  "@authFailed": {
+    "description": "Échec d'une tentative de connexion, quel que soit le moyen."
+  },
+  "authStagingAsBroker": "Ouvrir un espace courtier",
+  "@authStagingAsBroker": {
+    "description": "Recette : crée un profil courtier à la connexion."
+  },
+  "authStagingAsBrokerHelp": "Recette uniquement. Crée un profil courtier vide rattaché à ce numéro.",
+  "@authStagingAsBrokerHelp": {
+    "description": "Précision sous l'interrupteur courtier de recette."
+  },
   "backendWakingUp": "Le service se réveille, quelques secondes…",
   "@backendWakingUp": {
     "description": "Attente longue annoncée pendant le démarrage à froid du serveur."
