@@ -3,6 +3,7 @@ import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart'
 import 'package:woutalma_keur/app/data/seed/demo_seed.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_view_model.dart';
 
@@ -12,6 +13,10 @@ void main() {
   late DiscoveryService discovery;
 
   DateTime clock() => DateTime.utc(2026, 8, 1, 12);
+
+  /// Un quartier de la liste produit, tel qu'on le choisit à l'écran.
+  Neighbourhood area(String name) =>
+      dakarNeighbourhoods.firstWhere((Neighbourhood n) => n.name == name);
 
   PropertyEditorViewModel editor({Property? existing, Property? previous}) {
     return PropertyEditorViewModel(
@@ -36,10 +41,9 @@ void main() {
   });
 
   test('un bien publié apparaît dans la découverte client', () async {
-    final String? id = await editor().save(
+    final String? id = await (editor()..setNeighbourhood(area('Ouakam'))).save(
       title: 'Villa 5 pièces à Ouakam',
       priceText: '650000',
-      neighbourhood: 'Ouakam',
     );
 
     expect(id, isNotNull);
@@ -51,12 +55,12 @@ void main() {
 
   test('un bien publié clos n\'apparaît pas côté client', () async {
     final PropertyEditorViewModel model = editor()
-      ..setStatus(PropertyStatus.closed);
+      ..setStatus(PropertyStatus.closed)
+      ..setNeighbourhood(area('Médina'));
 
     final String? id = await model.save(
       title: 'Maison déjà louée',
       priceText: '200000',
-      neighbourhood: 'Médina',
     );
 
     final List<Property> visible = await discovery.findProperties(
@@ -69,31 +73,28 @@ void main() {
   });
 
   test('un titre vide bloque la publication', () async {
-    final String? id = await editor().save(
+    final String? id = await (editor()..setNeighbourhood(area('Fann'))).save(
       title: '   ',
       priceText: '300000',
-      neighbourhood: 'Fann',
     );
 
     expect(id, isNull);
   });
 
   test('un prix nul bloque la publication', () async {
-    final String? id = await editor().save(
+    final String? id = await (editor()..setNeighbourhood(area('Fann'))).save(
       title: 'Chambre à Fann',
       priceText: '0',
-      neighbourhood: 'Fann',
     );
 
     expect(id, isNull);
   });
 
   test('le prix accepte une saisie avec espaces', () async {
-    final String? id = await editor().save(
+    final String? id = await (editor()..setNeighbourhood(area('Fann'))).save(
       title: 'Appartement à Fann',
       // Ce que quelqu'un tape réellement.
       priceText: '450 000',
-      neighbourhood: 'Fann',
     );
 
     final Property? saved = await properties.byId(id!);
@@ -103,11 +104,9 @@ void main() {
   test('modifier conserve l\'identifiant et la date de création', () async {
     final Property original = (await properties.byId('prp-001'))!;
 
-    final String? id = await editor(existing: original).save(
-      title: 'Maison 4 pièces à Médina, rénovée',
-      priceText: '380000',
-      neighbourhood: original.neighbourhood,
-    );
+    final String? id = await editor(
+      existing: original,
+    ).save(title: 'Maison 4 pièces à Médina, rénovée', priceText: '380000');
 
     expect(id, original.id);
     final Property? updated = await properties.byId(original.id);

@@ -20,7 +20,7 @@ void main() {
         child: PhoneScreen(
           reason: 'Test',
           onBack: () {},
-          onCodeSent: (String phone, String? _) => sentPhone = phone,
+          onCodeSent: (String phone, String? _, bool _) => sentPhone = phone,
           onSignedIn: () {},
         ),
       ),
@@ -53,7 +53,7 @@ void main() {
           child: PhoneScreen(
             reason: 'Test',
             onBack: () {},
-            onCodeSent: (_, _) {},
+            onCodeSent: (_, _, _) {},
             onSignedIn: () => signedIn = true,
           ),
         ),

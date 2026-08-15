@@ -34,6 +34,10 @@
   "@commonNext": {
     "description": "Action de passer à l'étape suivante."
   },
+  "commonUnspecified": "Non précisé",
+  "@commonUnspecified": {
+    "description": "Option d'un sélecteur facultatif laissé sans réponse."
+  },
   "commonDelete": "Supprimer",
   "@commonDelete": {
     "description": "Action destructive courte, dans une ligne de liste."
@@ -177,6 +181,10 @@
   "brokerSignInRequiredTitle": "Espace courtier",
   "@brokerSignInRequiredTitle": {
     "description": "Titre affiché quand on ouvre un écran courtier sans profil courtier."
+  },
+  "brokerSignInRequiredHeading": "Connexion nécessaire",
+  "@brokerSignInRequiredHeading": {
+    "description": "Titre du corps de l'écran courtier verrouillé. La barre du haut nomme déjà l'espace : répéter « Espace courtier » juste en dessous n'apprenait rien."
   },
   "brokerSignInRequiredBody": "Connectez-vous avec le compte de votre profil courtier pour gérer vos biens.",
   "@brokerSignInRequiredBody": {
@@ -644,14 +652,35 @@
       "total": { "type": "int" }
     }
   },
-  "propertyEditorStepBasics": "Type et opération",
-  "@propertyEditorStepBasics": { "description": "Titre de l'étape 1 de B03." },
+  "propertyEditorStepKind": "Le bien et son quartier",
+  "@propertyEditorStepKind": {
+    "description": "Titre de l'étape 1 de B03 : opération, type et quartier, tous au choix."
+  },
   "propertyEditorStepDetails": "Infos essentielles",
   "@propertyEditorStepDetails": { "description": "Titre de l'étape 2 de B03." },
-  "propertyEditorStepLocation": "Quartier",
-  "@propertyEditorStepLocation": { "description": "Titre de l'étape 3 de B03." },
   "propertyEditorStepMedia": "Photos et publication",
-  "@propertyEditorStepMedia": { "description": "Titre de l'étape 4 de B03." },
+  "@propertyEditorStepMedia": { "description": "Titre de l'étape 3 de B03." },
+  "propertyTextSuggested": "Écrit d'après vos réponses. Corrigez-le si besoin.",
+  "@propertyTextSuggested": {
+    "description": "Signale un titre ou une description proposés par l'écran, encore modifiables."
+  },
+  "propertyTitleFromKind": "{kind} à {area}",
+  "@propertyTitleFromKind": {
+    "description": "Titre proposé sans nombre de pièces, par exemple « Terrain à Yoff ».",
+    "placeholders": {
+      "kind": { "type": "String" },
+      "area": { "type": "String" }
+    }
+  },
+  "propertyTitleFromRooms": "{kind} {rooms} à {area}",
+  "@propertyTitleFromRooms": {
+    "description": "Titre proposé avec le nombre de pièces, par exemple « Appartement 3 pièces à Mermoz ».",
+    "placeholders": {
+      "kind": { "type": "String" },
+      "rooms": { "type": "String" },
+      "area": { "type": "String" }
+    }
+  },
   "propertyEditorNext": "Suivant",
   "@propertyEditorNext": { "description": "Action principale des étapes 1 à 3 de B03." },
   "propertySave": "Publier le bien",
@@ -684,14 +713,14 @@
 
   "fieldTitle": "Titre",
   "@fieldTitle": { "description": "Champ titre d'un bien." },
-  "fieldTitleHint": "Maison 3 pièces à Médina",
-  "@fieldTitleHint": {
-    "description": "Exemple de titre, montrant le niveau de détail attendu."
-  },
   "fieldPrice": "Prix",
   "@fieldPrice": { "description": "Champ prix d'un bien, en francs." },
   "fieldSurface": "Surface en m²",
   "@fieldSurface": { "description": "Champ surface d'un bien." },
+  "fieldSurfaceChoice": "Surface",
+  "@fieldSurfaceChoice": {
+    "description": "Sélecteur de surface : l'unité est déjà dans chaque option."
+  },
   "fieldRooms": "Nombre de pièces",
   "@fieldRooms": { "description": "Champ nombre de pièces." },
   "fieldNeighbourhood": "Quartier",
@@ -1217,6 +1246,11 @@
   "@photosCount": {
     "description": "Photos déjà ajoutées sur le maximum autorisé.",
     "placeholders": { "used": { "type": "int" }, "max": { "type": "int" } }
+  },
+  "photoCountBadge": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@photoCountBadge": {
+    "description": "Nombre de photos d'un bien, sur sa vignette. La carte montre une seule photo et ne se feuillette pas : « 1/3 » promettait un geste qui n'existe pas.",
+    "placeholders": { "count": { "type": "int" } }
   },
   "photosServerLimit": "{count} photos maximum par bien pour l'instant.",
   "@photosServerLimit": {

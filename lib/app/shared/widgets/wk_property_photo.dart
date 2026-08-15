@@ -19,7 +19,12 @@ import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 ///   envoyée, donc un chemin de fichier local (un blob sur le web).
 ///
 /// Une photo qui ne charge pas ne laisse jamais un trou : le repli est un aplat
-/// de marque avec le pictogramme du type de bien.
+/// de marque avec le pictogramme du type de bien. **Une photo qui n'est pas
+/// encore arrivée non plus.** Un asset embarqué se décode dans la frame, mais
+/// une photo `api:` traverse le réseau : sur une 2G de quartier, la galerie
+/// d'un bien fraîchement publié restait un rectangle transparent pendant
+/// plusieurs secondes, sans rien derrière pour le remplir. Le repli tient la
+/// place jusqu'à la première frame.
 class WkPropertyPhoto extends StatelessWidget {
   const WkPropertyPhoto({
     required this.path,
@@ -57,13 +62,24 @@ class WkPropertyPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String resolved = resolve(path);
-    final Widget fallback = _Fallback(icon: fallbackIcon);
+    final Widget fallback = WkPropertyPhotoFallback(icon: fallbackIcon);
+
+    // Tant qu'aucune frame n'est décodée, on rend l'aplat plutôt que du vide.
+    Widget waiting(
+      BuildContext context,
+      Widget child,
+      int? frame,
+      bool wasSynchronouslyLoaded,
+    ) {
+      return wasSynchronouslyLoaded || frame != null ? child : fallback;
+    }
 
     if (resolved.startsWith('assets/')) {
       return Image.asset(
         resolved,
         fit: fit,
         cacheWidth: cacheWidth,
+        frameBuilder: waiting,
         errorBuilder: (_, _, _) => fallback,
       );
     }
@@ -74,6 +90,7 @@ class WkPropertyPhoto extends StatelessWidget {
         resolved,
         fit: fit,
         cacheWidth: cacheWidth,
+        frameBuilder: waiting,
         errorBuilder: (_, _, _) => fallback,
       );
     }
@@ -82,13 +99,22 @@ class WkPropertyPhoto extends StatelessWidget {
       File(resolved),
       fit: fit,
       cacheWidth: cacheWidth,
+      frameBuilder: waiting,
       errorBuilder: (_, _, _) => fallback,
     );
   }
 }
 
-class _Fallback extends StatelessWidget {
-  const _Fallback({required this.icon});
+/// Ce qui tient la place d'une photo : aplat de marque et pictogramme centré.
+///
+/// Public parce qu'un bien peut n'avoir **aucune** photo — c'est le cas
+/// ordinaire d'une annonce qu'un courtier vient de publier depuis son
+/// téléphone. La carte de résultat et la galerie de C03 décidaient chacune de
+/// leur propre repli : un pictogramme décalé à 10 % d'opacité pour l'une, un
+/// autre centré à 20 % pour l'autre. Les deux se lisaient comme une image
+/// cassée plutôt que comme « pas de photo ». Un seul repli, partout.
+class WkPropertyPhotoFallback extends StatelessWidget {
+  const WkPropertyPhotoFallback({required this.icon, super.key});
 
   final IconData icon;
 

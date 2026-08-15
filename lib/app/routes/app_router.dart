@@ -28,15 +28,42 @@ import 'package:woutalma_keur/app/modules/settings/settings_screen.dart';
 import 'package:woutalma_keur/app/modules/settings/settings_view_model.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/routes/app_routes.dart';
+import 'package:woutalma_keur/app/routes/reload_on_return.dart';
+import 'package:woutalma_keur/app/routes/session_landing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 
 /// Routeur de l'application.
 ///
 /// Seuls les chemins réellement implémentés sont déclarés : une route sans
 /// écran casse un lien profond sans prévenir.
-GoRouter buildRouter(AppDependencies deps) {
+/// Ce qu'on demande à G03 selon l'endroit d'où l'on vient.
+///
+/// Le rôle choisi décide : quelqu'un qui se dit courtier et n'a pas encore de
+/// profil doit en ouvrir un en s'identifiant, sinon il retombe indéfiniment
+/// sur l'écran verrouillé.
+AuthRequest _authRequest(BuildContext context, AppDependencies deps) {
+  final bool broker = deps.settings.role == UserRole.broker;
+  return AuthRequest(
+    reason: broker
+        ? context.l10n.authPhoneReasonBroker
+        : context.l10n.authPhoneReasonContact,
+    asBroker: broker && deps.currentBrokerId == null,
+  );
+}
+
+GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
   final GlobalKey<NavigatorState> rootKey = GlobalKey<NavigatorState>();
+
+  /// Où se rouvrir quand une session dormait sur le téléphone.
+  final SessionLanding landing = SessionLanding(
+    restore: deps.sessionRestore,
+    // La condition est celle de `requireBroker`, exprès : on ne peut pas
+    // atterrir sur un espace qui se verrouillerait aussitôt.
+    belongsToBrokerSpace: () => deps.auth.current?.brokerId != null,
+    window: sessionLandingWindow ?? SessionLanding.defaultWindow,
+  );
 
   /// Les écrans courtier ont besoin d'un profil qui existe vraiment.
   ///
@@ -48,19 +75,55 @@ GoRouter buildRouter(AppDependencies deps) {
     BuildContext context,
     Widget Function(String brokerId) build,
   ) {
+    // `watch` : les branches d'un StatefulShellRoute sont construites une fois
+    // et gardées vivantes. L'onglet Accueil, construit avant l'ouverture de
+    // session, restait donc verrouillé pendant que les autres — construits
+    // après — fonctionnaient.
+    context.watch<AuthService>();
     final String? brokerId = deps.currentBrokerId;
     if (brokerId == null) {
+      // Sortie de secours. Les quatre onglets courtier se verrouillent
+      // ensemble : sans porte, il ne restait qu'à tuer l'application. Une
+      // session expirée en cours d'usage suffisait à y tomber.
+      void leave() {
+        if (context.canPop()) {
+          // Écran poussé : l'espace d'où l'on vient est encore dessous.
+          context.pop();
+          return;
+        }
+        // Racine d'onglet : on quitte l'espace courtier, et le rôle repasse
+        // en client puisque aucun profil ne le porte.
+        deps.syncRoleWithSession();
+        context.go(AppRoutes.explore);
+      }
+
       return Scaffold(
         body: SafeArea(
-          child: WkEmptyState(
-            icon: Icons.storefront_outlined,
-            title: context.l10n.brokerSignInRequiredTitle,
-            body: context.l10n.brokerSignInRequiredBody,
-            actionLabel: context.l10n.brokerSignInRequiredAction,
-            onAction: () => context.push(
-              AppRoutes.authPhone,
-              extra: context.l10n.authPhoneReasonContact,
-            ),
+          child: Column(
+            children: <Widget>[
+              WkTopBar(
+                title: context.l10n.brokerSignInRequiredTitle,
+                onBack: leave,
+              ),
+              Expanded(
+                child: WkEmptyState(
+                  icon: Icons.storefront_outlined,
+                  title: context.l10n.brokerSignInRequiredHeading,
+                  body: context.l10n.brokerSignInRequiredBody,
+                  actionLabel: context.l10n.brokerSignInRequiredAction,
+                  // Avec le motif client, on rouvrait une session cliente et
+                  // cette même porte se refermait derrière : la boucle
+                  // signalée.
+                  onAction: () => context.push(
+                    AppRoutes.authPhone,
+                    extra: AuthRequest(
+                      reason: context.l10n.authPhoneReasonBroker,
+                      asBroker: true,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -68,9 +131,33 @@ GoRouter buildRouter(AppDependencies deps) {
     return build(brokerId);
   }
 
+  /// Après un changement de rôle en S01.
+  ///
+  /// Se dire courtier sans profil ouvrait l'espace courtier entièrement
+  /// verrouillé : on demande d'abord l'identification, sans quitter l'espace
+  /// client, et c'est `_postAuthRoute` qui décide ensuite où l'on atterrit.
+  void goToRoleHome(BuildContext context) {
+    if (deps.settings.role == UserRole.broker && deps.currentBrokerId == null) {
+      context.push(AppRoutes.authPhone, extra: _authRequest(context, deps));
+      return;
+    }
+    // Changer de rôle change tout l'arbre : on repart de la racine du nouveau
+    // rôle plutôt que d'empiler deux mondes.
+    context.go(
+      deps.settings.role == UserRole.broker
+          ? AppRoutes.brokerHome
+          : AppRoutes.explore,
+    );
+  }
+
   return GoRouter(
     navigatorKey: rootKey,
+    // La découverte est publique : on la peint sans rien attendre, puis
+    // `landing` corrige la destination si une session courtier se réveille.
     initialLocation: AppRoutes.explore,
+    refreshListenable: landing,
+    redirect: (BuildContext context, GoRouterState state) =>
+        landing.redirect(state.matchedLocation),
     routes: <RouteBase>[
       StatefulShellRoute.indexedStack(
         builder:
@@ -94,6 +181,13 @@ GoRouter buildRouter(AppDependencies deps) {
               GoRoute(
                 path: AppRoutes.explore,
                 builder: (BuildContext context, GoRouterState state) =>
+                    // Pas de `ReloadOnReturn` ici : une recherche est un
+                    // instantané demandé par l'utilisateur, et revenir d'une
+                    // fiche courtier est le geste le plus fréquent de
+                    // l'application. La relancer à chaque retour coûterait une
+                    // requête et effacerait la liste sous les yeux, sur des
+                    // réseaux qui ne le supportent pas. Rien d'autre que
+                    // l'utilisateur ne périme ces résultats.
                     ChangeNotifierProvider<ExploreViewModel>(
                       create: (_) => ExploreViewModel(
                         discovery: deps.discovery,
@@ -122,12 +216,17 @@ GoRouter buildRouter(AppDependencies deps) {
                         brokers: deps.brokers,
                         eligibility: deps.eligibility,
                       )..load(),
-                      child: Builder(
-                        builder: (BuildContext inner) => HistoryScreen(
-                          onSearch: () => inner.go(AppRoutes.explore),
-                          onReview: (ContactEntry entry) => inner.push(
-                            AppRoutes.reviewPath(entry.contact.id),
-                            extra: entry,
+                      // Un avis déposé en C05, un contact enregistré depuis
+                      // une fiche : l'historique doit dire vrai au retour.
+                      child: ReloadOnReturn<HistoryViewModel>(
+                        reload: (HistoryViewModel model) => model.load(),
+                        child: Builder(
+                          builder: (BuildContext inner) => HistoryScreen(
+                            onSearch: () => inner.go(AppRoutes.explore),
+                            onReview: (ContactEntry entry) => inner.push(
+                              AppRoutes.reviewPath(entry.contact.id),
+                              extra: entry,
+                            ),
                           ),
                         ),
                       ),
@@ -146,15 +245,11 @@ GoRouter buildRouter(AppDependencies deps) {
                         onOpenCatalog: () => context.push(AppRoutes.catalog),
                         onSignIn: () => context.push(
                           AppRoutes.authPhone,
-                          extra: context.l10n.authPhoneReasonContact,
+                          extra: _authRequest(context, deps),
                         ),
                         onSignedOut: () => context.go(AppRoutes.explore),
                         onModeChanged: () => context.go(AppRoutes.explore),
-                        onRoleChanged: () => context.go(
-                          deps.settings.role == UserRole.broker
-                              ? AppRoutes.brokerHome
-                              : AppRoutes.explore,
-                        ),
+                        onRoleChanged: () => goToRoleHome(context),
                       ),
                     ),
               ),
@@ -233,30 +328,45 @@ GoRouter buildRouter(AppDependencies deps) {
       GoRoute(
         parentNavigatorKey: rootKey,
         path: AppRoutes.authPhone,
-        builder: (BuildContext context, GoRouterState state) => PhoneScreen(
-          reason:
-              (state.extra as String?) ?? context.l10n.authPhoneReasonContact,
-          onBack: () => context.pop(),
-          onSignedIn: () => context.go(_postAuthRoute(deps)),
-          onCodeSent: (String phone, String? code) => context.push(
-            AppRoutes.authOtp,
-            extra: <String, String?>{'phone': phone, 'code': code},
-          ),
-        ),
+        builder: (BuildContext context, GoRouterState state) {
+          final Object? extra = state.extra;
+          final AuthRequest request = switch (extra) {
+            AuthRequest() => extra,
+            // Tolère l'ancien appel qui ne passait qu'un motif.
+            final String reason => AuthRequest(reason: reason),
+            _ => AuthRequest(reason: context.l10n.authPhoneReasonContact),
+          };
+          return PhoneScreen(
+            reason: request.reason,
+            asBroker: request.asBroker,
+            onBack: () => context.pop(),
+            onSignedIn: () => context.go(_postAuthRoute(deps)),
+            onCodeSent: (String phone, String? code, bool asBroker) =>
+                context.push(
+                  AppRoutes.authOtp,
+                  extra: <String, Object?>{
+                    'phone': phone,
+                    'code': code,
+                    'asBroker': asBroker,
+                  },
+                ),
+          );
+        },
       ),
       GoRoute(
         parentNavigatorKey: rootKey,
         path: AppRoutes.authOtp,
         builder: (BuildContext context, GoRouterState state) {
-          final Map<String, String?> args =
-              (state.extra as Map<String, String?>?) ?? <String, String?>{};
-          final String? phone = args['phone'];
+          final Map<String, Object?> args =
+              (state.extra as Map<String, Object?>?) ?? <String, Object?>{};
+          final String? phone = args['phone'] as String?;
           if (phone == null) {
             return const WkErrorState(failure: WkFailure.notFound);
           }
           return OtpScreen(
             phone: phone,
-            simulatedCode: args['code'],
+            simulatedCode: args['code'] as String?,
+            asBroker: args['asBroker'] == true,
             onBack: () => context.pop(),
             onVerified: () => context.go(_postAuthRoute(deps)),
           );
@@ -273,22 +383,14 @@ GoRouter buildRouter(AppDependencies deps) {
                 onOpenCatalog: () => context.push(AppRoutes.catalog),
                 onSignIn: () => context.push(
                   AppRoutes.authPhone,
-                  extra: deps.settings.role == UserRole.broker
-                      ? context.l10n.authPhoneReasonBroker
-                      : context.l10n.authPhoneReasonContact,
+                  extra: _authRequest(context, deps),
                 ),
                 onSignedOut: () => context.go(AppRoutes.explore),
                 // Les données ont changé sous les pieds de l'application :
                 // on repart de la racine plutôt que d'afficher un écran
                 // construit sur l'ancien jeu.
                 onModeChanged: () => context.go(AppRoutes.explore),
-                // Changer de rôle change tout l'arbre : on repart de la
-                // racine du nouveau rôle plutôt que d'empiler deux mondes.
-                onRoleChanged: () => context.go(
-                  deps.settings.role == UserRole.broker
-                      ? AppRoutes.brokerHome
-                      : AppRoutes.explore,
-                ),
+                onRoleChanged: () => goToRoleHome(context),
               ),
             ),
       ),
@@ -324,19 +426,23 @@ GoRouter buildRouter(AppDependencies deps) {
                               contacts: deps.contacts,
                               brokerId: brokerId,
                             )..load(),
-                            child: BrokerHomeScreen(
-                              onAddProperty: () =>
-                                  context.push(AppRoutes.propertyEditor),
-                              onOpenSettings: () =>
-                                  context.push(AppRoutes.settings),
-                              onOpenReviews: () =>
-                                  context.push(AppRoutes.brokerReviews),
-                              onOpenActivity: () =>
-                                  context.go(AppRoutes.brokerActivity),
-                              onOpenVerification: () =>
-                                  context.push(AppRoutes.brokerVerification),
-                              onOpenRanking: () =>
-                                  context.push(AppRoutes.brokerRanking),
+                            child: ReloadOnReturn<BrokerHomeViewModel>(
+                              reload: (BrokerHomeViewModel model) =>
+                                  model.load(),
+                              child: BrokerHomeScreen(
+                                onAddProperty: () =>
+                                    context.push(AppRoutes.propertyEditor),
+                                onOpenSettings: () =>
+                                    context.push(AppRoutes.settings),
+                                onOpenReviews: () =>
+                                    context.push(AppRoutes.brokerReviews),
+                                onOpenActivity: () =>
+                                    context.go(AppRoutes.brokerActivity),
+                                onOpenVerification: () =>
+                                    context.push(AppRoutes.brokerVerification),
+                                onOpenRanking: () =>
+                                    context.push(AppRoutes.brokerRanking),
+                              ),
                             ),
                           ),
                     ),
@@ -356,21 +462,28 @@ GoRouter buildRouter(AppDependencies deps) {
                               properties: deps.properties,
                               brokerId: brokerId,
                             )..load(),
-                            child: Builder(
-                              builder: (BuildContext inner) =>
-                                  BrokerPropertiesScreen(
-                                    onAdd: () =>
-                                        inner.push(AppRoutes.propertyEditor),
-                                    onEdit: (Property property) => inner.push(
-                                      AppRoutes.propertyEditor,
-                                      extra: property,
+                            // Le défaut signalé : un bien publié n'apparaissait
+                            // pas au retour de l'éditeur, la branche étant
+                            // construite une fois pour toutes.
+                            child: ReloadOnReturn<BrokerPropertiesViewModel>(
+                              reload: (BrokerPropertiesViewModel model) =>
+                                  model.load(),
+                              child: Builder(
+                                builder: (BuildContext inner) =>
+                                    BrokerPropertiesScreen(
+                                      onAdd: () =>
+                                          inner.push(AppRoutes.propertyEditor),
+                                      onEdit: (Property property) => inner.push(
+                                        AppRoutes.propertyEditor,
+                                        extra: property,
+                                      ),
+                                      onPreview: (Property property) =>
+                                          inner.push(
+                                            AppRoutes.propertyPreview,
+                                            extra: property,
+                                          ),
                                     ),
-                                    onPreview: (Property property) =>
-                                        inner.push(
-                                          AppRoutes.propertyPreview,
-                                          extra: property,
-                                        ),
-                                  ),
+                              ),
                             ),
                           ),
                     ),
@@ -391,7 +504,13 @@ GoRouter buildRouter(AppDependencies deps) {
                               properties: deps.properties,
                               brokerId: brokerId,
                             )..load(),
-                            child: const BrokerActivityScreen(),
+                            // Un contact reçu pendant qu'on regardait
+                            // ailleurs : l'onglet le montre au retour.
+                            child: ReloadOnReturn<BrokerActivityViewModel>(
+                              reload: (BrokerActivityViewModel model) =>
+                                  model.load(),
+                              child: const BrokerActivityScreen(),
+                            ),
                           ),
                     ),
               ),
@@ -414,21 +533,27 @@ GoRouter buildRouter(AppDependencies deps) {
                               contact: deps.contact,
                               from: deps.clientPosition.position,
                             )..load(),
-                            child: BrokerProfileScreen(
-                              onEditProfile: () => context.push<void>(
-                                AppRoutes.brokerProfileEdit,
+                            // B08 revient par un `pop` : sans relecture, le
+                            // profil modifié affichait encore l'ancien numéro
+                            // et on doutait d'avoir enregistré.
+                            child: ReloadOnReturn<BrokerViewModel>(
+                              reload: (BrokerViewModel model) => model.load(),
+                              child: BrokerProfileScreen(
+                                onEditProfile: () => context.push<void>(
+                                  AppRoutes.brokerProfileEdit,
+                                ),
+                                onOpenSettings: () =>
+                                    context.push(AppRoutes.settings),
+                                onOpenVerification: () =>
+                                    context.push(AppRoutes.brokerVerification),
+                                onOpenRanking: () =>
+                                    context.push(AppRoutes.brokerRanking),
+                                onOpenProperty: (Property property) =>
+                                    context.push(
+                                      AppRoutes.propertyPreview,
+                                      extra: property,
+                                    ),
                               ),
-                              onOpenSettings: () =>
-                                  context.push(AppRoutes.settings),
-                              onOpenVerification: () =>
-                                  context.push(AppRoutes.brokerVerification),
-                              onOpenRanking: () =>
-                                  context.push(AppRoutes.brokerRanking),
-                              onOpenProperty: (Property property) =>
-                                  context.push(
-                                    AppRoutes.propertyPreview,
-                                    extra: property,
-                                  ),
                             ),
                           ),
                     ),
@@ -559,14 +684,19 @@ GoRouter buildRouter(AppDependencies deps) {
   );
 }
 
-String _postAuthRoute(AppDependencies deps) {
-  final Account? account = deps.auth.current;
-  if (account?.brokerId != null) {
-    return AppRoutes.brokerHome;
-  }
-  if (deps.settings.role == UserRole.broker &&
-      account?.needsProfileSetup == true) {
-    return AppRoutes.brokerProfile;
-  }
-  return AppRoutes.explore;
-}
+/// Où atterrir après G03/G04.
+///
+/// La règle de rôle est celle de `AppDependencies.syncRoleWithSession` — la
+/// même qu'à la reprise de session — et la destination en découle :
+///
+/// - profil courtier rattaché : espace courtier, avec S01 qui dit « Courtier »
+///   au lieu de continuer d'afficher « Client » derrière un shell courtier ;
+/// - rôle courtier sans profil : on renvoyait vers l'espace courtier, lui-même
+///   verrouillé faute de profil, et la personne revenait à l'écran
+///   « Se connecter » qu'elle venait de quitter. On repasse en client, ce qui
+///   est la vérité de son compte, plutôt que de la garder dans une porte
+///   tournante.
+String _postAuthRoute(AppDependencies deps) =>
+    deps.syncRoleWithSession() == UserRole.broker
+    ? AppRoutes.brokerHome
+    : AppRoutes.explore;

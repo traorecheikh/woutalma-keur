@@ -19,9 +19,27 @@ import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 ///
 /// Demandé **juste avant** une action qui l'exige, jamais à l'ouverture : on
 /// ne bloque pas la découverte avec un formulaire.
+/// Ce qu'on vient chercher sur G03.
+///
+/// La raison seule ne suffisait pas : la porte de l'espace courtier envoyait
+/// ici avec le motif client et l'interrupteur courtier éteint, si bien qu'on
+/// ouvrait une session **cliente**, qu'on se retrouvait sans profil courtier,
+/// et que la même porte renvoyait au même écran. Une boucle fermée.
+@immutable
+class AuthRequest {
+  const AuthRequest({required this.reason, this.asBroker = false});
+
+  /// Pourquoi on demande à s'identifier, dit à la première personne.
+  final String reason;
+
+  /// Vrai quand la session doit ouvrir un espace courtier.
+  final bool asBroker;
+}
+
 class PhoneScreen extends StatefulWidget {
   const PhoneScreen({
     required this.reason,
+    this.asBroker = false,
     required this.onBack,
     required this.onCodeSent,
     required this.onSignedIn,
@@ -30,8 +48,13 @@ class PhoneScreen extends StatefulWidget {
 
   /// Pourquoi le numéro est demandé, en une phrase. Déjà localisé.
   final String reason;
+
+  /// Pré-coche « Ouvrir un espace courtier » : on vient de l'espace courtier.
+  final bool asBroker;
+
   final VoidCallback onBack;
-  final void Function(String phone, String? simulatedCode) onCodeSent;
+  final void Function(String phone, String? simulatedCode, bool asBroker)
+  onCodeSent;
   final VoidCallback onSignedIn;
 
   @override
@@ -64,10 +87,10 @@ class _PhoneScreenState extends State<PhoneScreen> {
   /// qui n'existe pas sur ce serveur.
   String? _failure;
 
-  /// Recette : ouvrir la session avec un profil courtier. Sans cela le
-  /// parcours courtier reste inatteignable, faute d'écran de création de
-  /// profil.
-  bool _asBroker = false;
+  /// Recette : ouvrir la session avec un profil courtier. Pré-coché quand on
+  /// arrive depuis l'espace courtier, sinon on rouvre une session cliente et
+  /// la porte se referme aussitôt.
+  late bool _asBroker = widget.asBroker;
 
   @override
   Widget build(BuildContext context) {
@@ -177,9 +200,6 @@ class _PhoneScreenState extends State<PhoneScreen> {
     // bouton tournait sans fin et devenait intouchable, sans un mot.
     String? code;
     try {
-      if (auth is StagingAuthService) {
-        auth.signUpAsBroker = _asBroker;
-      }
       code = await auth.requestCode(phone);
     } on Object catch (error) {
       if (!mounted) {
@@ -197,7 +217,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
       return;
     }
     setState(() => _sending = false);
-    widget.onCodeSent(phone, auth.isSimulated ? code : null);
+    widget.onCodeSent(phone, auth.isSimulated ? code : null, _asBroker);
   }
 
   /// Traduit un échec d'identification en une phrase vraie.
@@ -331,10 +351,19 @@ class OtpScreen extends StatefulWidget {
     required this.simulatedCode,
     required this.onBack,
     required this.onVerified,
+    this.asBroker = false,
     super.key,
   });
 
   final String phone;
+
+  /// Ouvre un espace courtier à la vérification.
+  ///
+  /// Porté par l'écran plutôt que retenu dans le service : le drapeau était
+  /// posé sur G03 et lu sur G04, donc une reconstruction ou un retour en
+  /// arrière entre les deux le perdait, et on rouvrait une session cliente
+  /// sans que rien ne le signale.
+  final bool asBroker;
 
   /// Affiché tant qu'aucun SMS réel n'est envoyé.
   final String? simulatedCode;
@@ -487,7 +516,11 @@ class _OtpScreenState extends State<OtpScreen> {
 
     OtpResult result;
     try {
-      result = await context.read<AuthService>().verify(widget.phone, entered);
+      final AuthService auth = context.read<AuthService>();
+      if (auth is StagingAuthService) {
+        auth.signUpAsBroker = widget.asBroker;
+      }
+      result = await auth.verify(widget.phone, entered);
     } on Object {
       // Sinon `_checking` restait vrai : la pastille « Vérification… » ne
       // repartait jamais et le champ devenait inerte.

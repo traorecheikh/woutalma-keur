@@ -141,6 +141,12 @@ abstract class AppL10n {
   /// **'Suivant'**
   String get commonNext;
 
+  /// Option d'un sélecteur facultatif laissé sans réponse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non précisé'**
+  String get commonUnspecified;
+
   /// Action destructive courte, dans une ligne de liste.
   ///
   /// In fr, this message translates to:
@@ -314,6 +320,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Espace courtier'**
   String get brokerSignInRequiredTitle;
+
+  /// Titre du corps de l'écran courtier verrouillé. La barre du haut nomme déjà l'espace : répéter « Espace courtier » juste en dessous n'apprenait rien.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion nécessaire'**
+  String get brokerSignInRequiredHeading;
 
   /// Explication affichée quand aucun profil courtier n'est rattaché au compte.
   ///
@@ -1023,11 +1035,11 @@ abstract class AppL10n {
   /// **'Étape {current} sur {total}'**
   String propertyEditorStep(int current, int total);
 
-  /// Titre de l'étape 1 de B03.
+  /// Titre de l'étape 1 de B03 : opération, type et quartier, tous au choix.
   ///
   /// In fr, this message translates to:
-  /// **'Type et opération'**
-  String get propertyEditorStepBasics;
+  /// **'Le bien et son quartier'**
+  String get propertyEditorStepKind;
 
   /// Titre de l'étape 2 de B03.
   ///
@@ -1038,14 +1050,26 @@ abstract class AppL10n {
   /// Titre de l'étape 3 de B03.
   ///
   /// In fr, this message translates to:
-  /// **'Quartier'**
-  String get propertyEditorStepLocation;
-
-  /// Titre de l'étape 4 de B03.
-  ///
-  /// In fr, this message translates to:
   /// **'Photos et publication'**
   String get propertyEditorStepMedia;
+
+  /// Signale un titre ou une description proposés par l'écran, encore modifiables.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrit d\'après vos réponses. Corrigez-le si besoin.'**
+  String get propertyTextSuggested;
+
+  /// Titre proposé sans nombre de pièces, par exemple « Terrain à Yoff ».
+  ///
+  /// In fr, this message translates to:
+  /// **'{kind} à {area}'**
+  String propertyTitleFromKind(String kind, String area);
+
+  /// Titre proposé avec le nombre de pièces, par exemple « Appartement 3 pièces à Mermoz ».
+  ///
+  /// In fr, this message translates to:
+  /// **'{kind} {rooms} à {area}'**
+  String propertyTitleFromRooms(String kind, String rooms, String area);
 
   /// Action principale des étapes 1 à 3 de B03.
   ///
@@ -1113,12 +1137,6 @@ abstract class AppL10n {
   /// **'Titre'**
   String get fieldTitle;
 
-  /// Exemple de titre, montrant le niveau de détail attendu.
-  ///
-  /// In fr, this message translates to:
-  /// **'Maison 3 pièces à Médina'**
-  String get fieldTitleHint;
-
   /// Champ prix d'un bien, en francs.
   ///
   /// In fr, this message translates to:
@@ -1130,6 +1148,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Surface en m²'**
   String get fieldSurface;
+
+  /// Sélecteur de surface : l'unité est déjà dans chaque option.
+  ///
+  /// In fr, this message translates to:
+  /// **'Surface'**
+  String get fieldSurfaceChoice;
 
   /// Champ nombre de pièces.
   ///
@@ -2006,6 +2030,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'{used} sur {max}'**
   String photosCount(int used, int max);
+
+  /// Nombre de photos d'un bien, sur sa vignette. La carte montre une seule photo et ne se feuillette pas : « 1/3 » promettait un geste qui n'existe pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String photoCountBadge(int count);
 
   /// Limite réellement acceptée par le serveur, dite avant la sélection.
   ///

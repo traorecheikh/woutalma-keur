@@ -12,6 +12,7 @@ import 'package:woutalma_keur/app/domain/repositories.dart';
 class BrokerDetail {
   const BrokerDetail({
     required this.broker,
+    required this.from,
     required this.distanceMeters,
     required this.properties,
     required this.reviews,
@@ -19,6 +20,14 @@ class BrokerDetail {
   });
 
   final Broker broker;
+
+  /// Point depuis lequel on mesure.
+  ///
+  /// Le seed pose les biens d'un courtier autour de son bureau, si bien qu'une
+  /// distance unique passait pour juste. Un bien réel est publié là où il est :
+  /// une agence de Sacré-Cœur qui vend un terrain à Mermoz annonçait la
+  /// distance de son bureau sur la carte du terrain.
+  final GeoPoint from;
   final double distanceMeters;
 
   /// Seulement ce qui est encore proposé : un bien clos n'apparaît pas dans
@@ -98,6 +107,7 @@ class BrokerViewModel extends ChangeNotifier {
     _state = ScreenState<BrokerDetail>.data(
       BrokerDetail(
         broker: broker,
+        from: _from,
         distanceMeters: distanceMeters(_from, broker.position),
         properties: owned,
         reviews: published,

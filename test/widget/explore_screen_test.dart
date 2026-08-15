@@ -126,7 +126,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(WkPropertyPhoto), findsWidgets);
-    expect(find.textContaining('1/'), findsWidgets);
+    // La pastille compte les photos, elle n'annonce plus « 1/3 » : la carte
+    // n'affiche qu'une photo et ne se feuillette pas.
+    expect(find.textContaining(' photos'), findsWidgets);
   });
 
   // La recherche est devenue un écran : C01 n'expose plus qu'un déclencheur,

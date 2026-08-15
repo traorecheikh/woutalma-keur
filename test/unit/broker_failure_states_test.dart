@@ -4,6 +4,7 @@ import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_activity_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_home_screen.dart';
@@ -371,11 +372,7 @@ void main() {
       );
       addTearDown(model.dispose);
 
-      final String? id = await model.save(
-        title: '',
-        priceText: '0',
-        neighbourhood: '',
-      );
+      final String? id = await model.save(title: '', priceText: '0');
 
       expect(id, isNull);
       // C'est ce qui distingue « corrigez le formulaire » d'un échec réseau.
@@ -383,15 +380,17 @@ void main() {
     });
 
     test('un enregistrement refusé porte la cause réelle', () async {
-      final PropertyEditorViewModel model = editor(
-        _BrokenProperties(_offline()),
-      );
+      final PropertyEditorViewModel model =
+          editor(_BrokenProperties(_offline()))..setNeighbourhood(
+            dakarNeighbourhoods.firstWhere(
+              (Neighbourhood n) => n.name == 'Yoff',
+            ),
+          );
       addTearDown(model.dispose);
 
       final String? id = await model.save(
         title: 'Studio à Yoff',
         priceText: '120000',
-        neighbourhood: 'Yoff',
       );
 
       expect(id, isNull);

@@ -340,18 +340,14 @@ class _PhotoGalleryState extends State<_PhotoGallery> {
   Widget build(BuildContext context) {
     final List<String> photos = widget.property.photoAssets;
     if (photos.isEmpty) {
+      // Sans photo, la fiche garde un bloc de la hauteur d'une galerie : la
+      // rabattre ferait commencer l'écran par un prix flottant, et le même
+      // bien paraîtrait plus pauvre qu'il ne l'est.
       return AspectRatio(
         aspectRatio: 16 / 9,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.colors.primaryContainer,
-            borderRadius: BorderRadius.circular(WkRadius.lg),
-          ),
-          child: Icon(
-            Icons.home_work_outlined,
-            size: 96,
-            color: context.colors.onPrimaryContainer.withValues(alpha: 0.20),
-          ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(WkRadius.lg),
+          child: const WkPropertyPhotoFallback(icon: Icons.home_work_outlined),
         ),
       );
     }

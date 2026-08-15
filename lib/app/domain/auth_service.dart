@@ -68,6 +68,14 @@ abstract class AuthService extends ChangeNotifier {
 
   /// Vrai quand aucun SMS n'est réellement envoyé.
   bool get isSimulated;
+
+  /// Reprend la session d'un lancement précédent, s'il en reste une.
+  ///
+  /// Les jetons survivaient au redémarrage mais [current] repartait à `null` :
+  /// l'application se croyait déconnectée alors qu'elle avait de quoi
+  /// continuer, et renvoyait un courtier vers l'espace client. Par défaut il
+  /// n'y a rien à reprendre.
+  Future<void> restoreSession() async {}
 }
 
 /// Implémentation de la phase UX.

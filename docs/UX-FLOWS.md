@@ -86,7 +86,8 @@ flowchart TD
   subgraph Courtier
     B01 --> B02[B02 Mes biens]
     B02 --> B03[B03 Éditeur de bien]
-    B03 --> B04[B04 Aperçu du bien]
+    B03 --> B02
+    B02 --> B04[B04 Aperçu du bien]
     B01 --> B05[B05 Activité]
     B05 --> B06[B06 Avis reçus]
     B06 --> M12{{M12 Répondre / signaler}}
@@ -180,7 +181,7 @@ d'écran à voix haute restent obligatoires, en français.
 |:--|:--|:--|:--|
 | B01 | Accueil : que dois-je traiter maintenant ? | statut de vérification, vues et contacts récents, biens disponibles/réservés, avis à répondre, rang local, action Ajouter un bien | shell → B02/B03/B05/B06/B09/B10 |
 | B02 | Mes biens | filtres Tous/Disponible/Réservé/Clos, cartes compactes, recherche, action Ajouter, menu d'action par bien | onglet/B01 → B03/B04/M08 ; vide → B03 |
-| B03 | Ajouter ou modifier un bien | une route avec 4 étapes : type+transaction ; détails+prix ; position ; photos+aperçu. Dictée par champ, sauvegarde brouillon automatique | B02/B04 → B04 ; retour avec changements → M09 |
+| B03 | Ajouter ou modifier un bien | une route avec 3 étapes : bien+transaction+quartier ; titre+prix+surface+pièces+description ; photos+publication. Quartier, surface et pièces sont des choix ; le titre est composé et corrigeable ; pas de brouillon persistant | B02/B04 → B02 ; retour à l'étape 1 quitte |
 | B04 | Aperçu et gestion du bien | rendu proche de C03, statut, modifier, partager l'aperçu, changer statut, supprimer | B02/B03 → B03/M08/M09 ; retour B02 |
 | B05 | Activité | deux segments Consultations/Contacts, date, bien concerné, canal, état lu ; aucune donnée privée inutile | onglet/B01 → B06 ou B04 |
 | B06 | Avis reçus | note moyenne, répartition, avis récents, réponse, signalement et statut de modération | B05/B01 → M12 ; retour restaure filtre |
@@ -262,16 +263,16 @@ sequenceDiagram
   actor M as Moussa
   participant L as B02 Mes biens
   participant E as B03 Éditeur
-  participant I as Isar
+  participant S as Serveur
   participant P as B04 Aperçu
   M->>L: Ajouter un bien
-  L->>E: ouvre l'étape Type
-  E->>I: sauvegarde un brouillon à chaque étape
-  M->>E: dicte description et choisit position/photos
-  E->>P: prévisualiser
-  M->>P: publier Disponible
-  P->>I: statut disponible
-  I-->>P: le bien alimente C01 et C02
+  L->>E: étape 1 — transaction, type, quartier
+  E->>E: compose le titre à partir des choix
+  M->>E: étape 2 — prix, surface, pièces ; étape 3 — photos
+  E->>S: enregistre le bien, statut Disponible
+  S-->>L: retour à B02, qui se recharge
+  L->>P: ouvrir l'aperçu du bien publié
+  Note over S: le bien alimente C01 et C02
 ```
 
 ### Bascule du mode démo
@@ -328,7 +329,9 @@ sequenceDiagram
   devient une route cachée.
 - Les transitions de page restent celles de la plateforme. Seul M03 utilise un fondu court.
 - Retour depuis C02/C03/B04 conserve recherche, filtres, segment, carte/liste et position de scroll.
-- Retour depuis B03/B08/C05 avec modifications ouvre M09. Sans modification, `pop()` direct.
+- Retour depuis B08/C05 avec modifications ouvre M09. Sans modification, `pop()` direct.
+  B03 en est exclu : il n'a pas de brouillon persistant à protéger, son retour recule d'une étape
+  puis quitte (voir `screen-contracts/property-editor.md`, § Conflits résolus).
 - Retour depuis M03 pendant écoute stoppe d'abord le service vocal puis ferme l'overlay.
 - Un deep link vers une donnée absente ouvre `WkErrorState` dans la route demandée, puis revient à
   la racine du rôle ; il ne redirige pas silencieusement.

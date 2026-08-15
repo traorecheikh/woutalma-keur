@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
@@ -51,7 +53,19 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
   /// affichait « Bien supprimé » et laissait le bien dans la liste.
   MutationState get mutation => _mutation;
 
-  Future<void> load() async {
+  /// Lecture déjà en cours, s'il y en a une.
+  ///
+  /// L'écran se recharge au retour, et la route peut demander la même chose
+  /// au même moment : sans ce verrou, revenir de l'éditeur déclencherait deux
+  /// requêtes identiques sur un réseau qu'on sait faible. La seconde rejoint
+  /// la première au lieu de la doubler.
+  Future<void>? _loading;
+
+  Future<void> load() {
+    return _loading ??= _load().whenComplete(() => _loading = null);
+  }
+
+  Future<void> _load() async {
     _state = const ScreenState<List<Property>>.loading();
     notifyListeners();
 
@@ -130,6 +144,20 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
 }
 
 /// B02 — Mes biens.
+///
+/// L'écran se recharge quand on **revient** dessus. B02 vit dans une branche
+/// de `StatefulShellRoute` : son `ChangeNotifierProvider.create` n'a lieu
+/// qu'une fois, donc le `load()` initial aussi. Publier un bien depuis B03 —
+/// une route posée sur le navigateur racine — puis revenir laissait la liste
+/// telle qu'elle était à l'ouverture de l'onglet : le bien existait bel et
+/// bien côté serveur, et l'écran affichait « Aucun bien publié ».
+///
+/// Le rechargement lui-même n'est pas ici : la route enveloppe cet écran dans
+/// `ReloadOnReturn<BrokerPropertiesViewModel>`
+/// (`lib/app/routes/reload_on_return.dart`), qui porte la même règle pour B01,
+/// B05, B07 et C04. L'écran a d'abord eu sa propre copie du mécanisme ; deux
+/// implémentations d'une seule règle, c'est une de trop, et seule celle du
+/// routeur couvre les autres branches.
 class BrokerPropertiesScreen extends StatelessWidget {
   const BrokerPropertiesScreen({
     required this.onAdd,

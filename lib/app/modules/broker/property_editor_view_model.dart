@@ -1,13 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/domain/location_service.dart';
+import 'package:woutalma_keur/app/domain/property_surface.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
+
+/// Nombres de pièces proposés.
+///
+/// Au-delà de six, on ne compte plus les pièces d'une annonce : la valeur est
+/// gardée telle quelle si elle existe déjà, mais rien ne la propose.
+const List<int> kRoomSteps = <int>[1, 2, 3, 4, 5, 6];
 
 /// Coordonne B03, l'éditeur de bien.
 ///
 /// Sert la création comme la modification : ce sont les mêmes champs et les
 /// mêmes règles, seuls le titre de l'écran et l'identifiant changent.
+///
+/// Le quartier, la surface et le nombre de pièces sont des **choix**, pas des
+/// saisies : ils vivent donc ici, typés, plutôt que dans des contrôleurs de
+/// texte que l'écran devrait reparser à chaque enregistrement.
 class PropertyEditorViewModel extends ChangeNotifier {
   PropertyEditorViewModel({
     required PropertyRepository properties,
@@ -25,12 +37,25 @@ class PropertyEditorViewModel extends ChangeNotifier {
       kind = existing.kind;
       transaction = existing.transaction;
       status = existing.status;
+      surface = existing.surface;
+      rooms = existing.rooms;
+      // La position **déjà enregistrée** voyage avec le nom : rouvrir une
+      // annonce pour corriger son prix ne doit pas la déplacer au centre
+      // approximatif de son quartier.
+      neighbourhood = Neighbourhood(
+        name: existing.neighbourhood,
+        position: existing.position,
+      );
     } else if (previous != null) {
       // Deuxième bien : on reprend ce qui se répète d'une annonce à l'autre.
       // Les valeurs reprises sont signalées à l'écran — une valeur devinée
       // qu'on ne remarque pas devient une annonce fausse publiée sous son nom.
       kind = previous.kind;
       transaction = previous.transaction;
+      neighbourhood = Neighbourhood(
+        name: previous.neighbourhood,
+        position: previous.position,
+      );
       prefilledFromPrevious = true;
     }
   }
@@ -44,6 +69,17 @@ class PropertyEditorViewModel extends ChangeNotifier {
   PropertyKind kind = PropertyKind.apartment;
   TransactionKind transaction = TransactionKind.rent;
   PropertyStatus status = PropertyStatus.available;
+
+  /// Quartier choisi. Porte son propre point : c'est ce qui remplace l'étape
+  /// « position » du contrat, qui n'a jamais rien demandé d'autre.
+  Neighbourhood? neighbourhood;
+
+  /// Surface en m², facultative : un terrain et une chambre ne se décrivent
+  /// pas avec la même exigence.
+  int? surface;
+
+  /// Nombre de pièces, facultatif et sans objet pour un terrain.
+  int? rooms;
 
   /// Vrai quand des valeurs viennent du bien précédent.
   bool prefilledFromPrevious = false;
@@ -64,8 +100,49 @@ class PropertyEditorViewModel extends ChangeNotifier {
   bool get isEditing => _existing != null;
   Property? get existing => _existing;
 
+  /// Un terrain n'a pas de pièces. Le demander quand même, c'est faire lire
+  /// une question qui n'a pas de réponse.
+  bool get asksRooms => propertyKindHasRooms(kind);
+
+  /// Quartiers proposables.
+  ///
+  /// La liste canonique, plus le quartier déjà enregistré s'il n'en fait pas
+  /// partie : une annonce ancienne ne perd pas son quartier parce que la
+  /// liste a changé.
+  List<Neighbourhood> get neighbourhoodOptions {
+    final Neighbourhood? current = neighbourhood;
+    if (current == null || dakarNeighbourhoods.contains(current)) {
+      return dakarNeighbourhoods;
+    }
+    return <Neighbourhood>[current, ...dakarNeighbourhoods];
+  }
+
+  /// Paliers de surface pour le type de bien courant.
+  ///
+  /// Le barème appartient au domaine — une chambre, un appartement et un
+  /// terrain ne se mesurent pas à la même échelle, et le composeur de
+  /// description s'appuie sur le même fichier. L'éditeur ne redéfinit donc pas
+  /// ses propres paliers : il passe la valeur déjà enregistrée pour qu'elle
+  /// garde sa place même si elle tombe entre deux crans.
+  List<int> get surfaceOptions =>
+      PropertySurfaceCatalogue.valuesFor(kind, include: surface);
+
+  /// Nombres de pièces proposables, valeur déjà enregistrée comprise.
+  List<int> get roomOptions {
+    final int? current = rooms;
+    if (current == null || kRoomSteps.contains(current)) {
+      return kRoomSteps;
+    }
+    return <int>[...kRoomSteps, current]..sort();
+  }
+
   void setKind(PropertyKind value) {
     kind = value;
+    if (!asksRooms) {
+      // Sinon un bien passé en terrain garderait « 3 pièces » invisible dans
+      // le formulaire et visible dans l'annonce publiée.
+      rooms = null;
+    }
     prefilledFromPrevious = false;
     notifyListeners();
   }
@@ -73,6 +150,22 @@ class PropertyEditorViewModel extends ChangeNotifier {
   void setTransaction(TransactionKind value) {
     transaction = value;
     prefilledFromPrevious = false;
+    notifyListeners();
+  }
+
+  void setNeighbourhood(Neighbourhood value) {
+    neighbourhood = value;
+    prefilledFromPrevious = false;
+    notifyListeners();
+  }
+
+  void setSurface(int? value) {
+    surface = value;
+    notifyListeners();
+  }
+
+  void setRooms(int? value) {
+    rooms = value;
     notifyListeners();
   }
 
@@ -92,16 +185,11 @@ class PropertyEditorViewModel extends ChangeNotifier {
   Future<String?> save({
     required String title,
     required String priceText,
-    required String neighbourhood,
     String description = '',
-    String surfaceText = '',
-    String roomsText = '',
   }) async {
     final int? price = int.tryParse(priceText.replaceAll(RegExp(r'\D'), ''));
-    if (title.trim().isEmpty ||
-        neighbourhood.trim().isEmpty ||
-        price == null ||
-        price <= 0) {
+    final Neighbourhood? area = neighbourhood;
+    if (title.trim().isEmpty || area == null || price == null || price <= 0) {
       // Rien n'est parti sur le réseau : la soumission repart de zéro, sinon
       // un échec précédent resterait affiché comme s'il venait d'arriver.
       _submission = const MutationState.idle();
@@ -121,13 +209,12 @@ class PropertyEditorViewModel extends ChangeNotifier {
       title: title.trim(),
       description: description.trim(),
       price: price,
-      surface: int.tryParse(surfaceText.replaceAll(RegExp(r'\D'), '')),
-      rooms: int.tryParse(roomsText.replaceAll(RegExp(r'\D'), '')),
-      // La position précise se choisira sur la carte ; en attendant, le bien
-      // est rattaché à la position connue plutôt qu'à des coordonnées nulles
-      // qui le placeraient au large du golfe de Guinée.
-      position: _existing?.position ?? _fallbackPosition,
-      neighbourhood: neighbourhood.trim(),
+      surface: surface,
+      rooms: asksRooms ? rooms : null,
+      // Le quartier choisi porte son point : plus besoin d'une étape carte
+      // pour éviter des coordonnées nulles au large du golfe de Guinée.
+      position: area.position,
+      neighbourhood: area.name,
       photoAssets: photos,
       status: status,
       createdAt: _existing?.createdAt ?? _now(),
@@ -150,4 +237,12 @@ class PropertyEditorViewModel extends ChangeNotifier {
     notifyListeners();
     return savedId;
   }
+
+  /// Position connue du téléphone, fournie par la route.
+  ///
+  /// Elle ne place plus aucun bien : depuis que le quartier est un choix, il
+  /// porte son propre point. Conservée parce que la route la fournit et
+  /// qu'une position d'appareil restera utile le jour où l'éditeur proposera
+  /// le quartier le plus proche.
+  GeoPoint get devicePosition => _fallbackPosition;
 }

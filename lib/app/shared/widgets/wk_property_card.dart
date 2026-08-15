@@ -114,22 +114,11 @@ class _PhotoStrip extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
+          // Un bien fraîchement publié n'a souvent aucune photo : la bande
+          // garde sa hauteur — sinon la liste sauterait d'une carte à l'autre
+          // — et porte le même repli que partout ailleurs.
           if (property.photoAssets.isEmpty)
-            Stack(
-              children: <Widget>[
-                PositionedDirectional(
-                  end: -24,
-                  top: -18,
-                  child: Icon(
-                    Icons.home_work_outlined,
-                    size: 112,
-                    color: context.colors.onPrimaryContainer.withValues(
-                      alpha: 0.10,
-                    ),
-                  ),
-                ),
-              ],
-            )
+            const WkPropertyPhotoFallback(icon: Icons.home_work_outlined)
           else
             WkPropertyPhoto(
               path: property.photoAssets.first,
@@ -149,7 +138,7 @@ class _PhotoStrip extends StatelessWidget {
               end: WkSpacing.sm,
               bottom: WkSpacing.sm,
               child: WkBadge(
-                label: '1/$photoCount',
+                label: context.l10n.photoCountBadge(photoCount),
                 icon: Icons.photo_library_outlined,
                 tone: WkBadgeTone.neutral,
               ),

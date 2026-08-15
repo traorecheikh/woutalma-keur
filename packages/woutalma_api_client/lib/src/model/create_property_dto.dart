@@ -15,14 +15,14 @@ part 'create_property_dto.g.dart';
 /// Properties:
 /// * [kind]
 /// * [transaction]
-/// * [title]
-/// * [description]
-/// * [price] - CFA francs, integer.
-/// * [surface]
-/// * [rooms]
+/// * [title] - Trimmed, and runs of whitespace collapsed to one space, before storage. Accents and non-Latin scripts are preserved. Must not be empty once trimmed.
+/// * [description] - Composed by the editor from the entered data, overridable by the broker. Trimmed at the ends; internal line breaks are kept.
+/// * [price] - CFA francs, integer. At least 1 — a free listing is not a product feature — and at most 10000000000.
+/// * [surface] - Square metres. Omit or send null when unknown, never 0. At most 1000000.
+/// * [rooms] - Room count. 0 is accepted and meaningful for a LAND listing; null/omitted means unstated. At most 50.
 /// * [latitude]
 /// * [longitude]
-/// * [neighbourhood]
+/// * [neighbourhood] - Quartier name. The client offers a picker of known Dakar quartiers, but any non-empty name is accepted — the list is not exhaustive. Trimmed and whitespace-collapsed before storage.
 /// * [status]
 /// * [photoAssets]
 /// * [newPhotos]
@@ -37,19 +37,23 @@ abstract class CreatePropertyDto
   CreatePropertyDtoTransactionEnum get transaction;
   // enum transactionEnum {  RENT,  SALE,  };
 
+  /// Trimmed, and runs of whitespace collapsed to one space, before storage. Accents and non-Latin scripts are preserved. Must not be empty once trimmed.
   @BuiltValueField(wireName: r'title')
   String get title;
 
+  /// Composed by the editor from the entered data, overridable by the broker. Trimmed at the ends; internal line breaks are kept.
   @BuiltValueField(wireName: r'description')
   String? get description;
 
-  /// CFA francs, integer.
+  /// CFA francs, integer. At least 1 — a free listing is not a product feature — and at most 10000000000.
   @BuiltValueField(wireName: r'price')
   num get price;
 
+  /// Square metres. Omit or send null when unknown, never 0. At most 1000000.
   @BuiltValueField(wireName: r'surface')
   num? get surface;
 
+  /// Room count. 0 is accepted and meaningful for a LAND listing; null/omitted means unstated. At most 50.
   @BuiltValueField(wireName: r'rooms')
   num? get rooms;
 
@@ -59,6 +63,7 @@ abstract class CreatePropertyDto
   @BuiltValueField(wireName: r'longitude')
   num get longitude;
 
+  /// Quartier name. The client offers a picker of known Dakar quartiers, but any non-empty name is accepted — the list is not exhaustive. Trimmed and whitespace-collapsed before storage.
   @BuiltValueField(wireName: r'neighbourhood')
   String get neighbourhood;
 

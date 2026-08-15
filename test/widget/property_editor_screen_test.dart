@@ -50,21 +50,22 @@ void main() {
     );
   }
 
-  Future<void> goToDetails(WidgetTester tester) async {
-    await tester.tap(find.text('Suivant'));
+  /// Le quartier est un choix, pas une frappe : c'est le geste réel.
+  Future<void> chooseNeighbourhood(WidgetTester tester, String name) async {
+    await tester.tap(find.text('Quartier'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(name).last);
     await tester.pumpAndSettle();
   }
 
-  Future<void> goToLocation(WidgetTester tester) async {
-    await goToDetails(tester);
+  Future<void> next(WidgetTester tester) async {
     await tester.tap(find.text('Suivant'));
     await tester.pumpAndSettle();
   }
 
   Future<void> goToPublish(WidgetTester tester) async {
-    await goToLocation(tester);
-    await tester.tap(find.text('Suivant'));
-    await tester.pumpAndSettle();
+    await next(tester);
+    await next(tester);
   }
 
   testWidgets('soumettre un formulaire vide montre ce qui manque', (
@@ -79,8 +80,11 @@ void main() {
     // Le bouton n'était pas grisé : c'est en appuyant qu'on apprend. Encore
     // faut-il que quelque chose s'affiche — sans déclencheur de
     // revalidation, l'écran restait muet et le bouton semblait cassé.
-    expect(find.text('Ce champ est nécessaire'), findsWidgets);
-    expect(find.text('Indiquez un nombre plus grand que zéro'), findsOneWidget);
+    //
+    // La première étape fautive est ici l'étape 1 : sans quartier, rien
+    // d'autre ne peut être jugé, et le sélecteur porte son propre message.
+    expect(find.text('Étape 1 sur 3'), findsOneWidget);
+    expect(find.text('Ce champ est nécessaire'), findsOneWidget);
     // Une erreur pour la soumission entière, pas une par champ vide.
     expect(feedback.countOf(FeedbackIntent.error), 1);
     expect(
@@ -93,7 +97,12 @@ void main() {
     WidgetTester tester,
   ) async {
     await pumpEditor(tester);
-    await goToPublish(tester);
+    await chooseNeighbourhood(tester, 'Ouakam');
+    await next(tester);
+    // Le titre est écrit par l'écran ; on l'efface pour se retrouver dans le
+    // cas qui nous intéresse, un champ requis vide.
+    await tester.enterText(find.byType(TextField).at(0), '');
+    await next(tester);
 
     await tester.tap(find.text('Publier le bien'));
     await tester.pumpAndSettle();
@@ -116,14 +125,11 @@ void main() {
   ) async {
     final RecordingFeedbackService feedback = await pumpEditor(tester);
 
-    await goToDetails(tester);
+    await chooseNeighbourhood(tester, 'Ouakam');
+    await next(tester);
     await tester.enterText(find.byType(TextField).at(0), 'Villa à Ouakam');
     await tester.enterText(find.byType(TextField).at(1), '650000');
-    await tester.tap(find.text('Suivant'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(0), 'Ouakam');
-    await tester.tap(find.text('Suivant'));
-    await tester.pumpAndSettle();
+    await next(tester);
 
     await tester.tap(find.text('Publier le bien'));
     await tester.pumpAndSettle();

@@ -33,6 +33,9 @@ class AppL10nFr extends AppL10n {
   String get commonNext => 'Suivant';
 
   @override
+  String get commonUnspecified => 'Non précisé';
+
+  @override
   String get commonDelete => 'Supprimer';
 
   @override
@@ -136,6 +139,9 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get brokerSignInRequiredTitle => 'Espace courtier';
+
+  @override
+  String get brokerSignInRequiredHeading => 'Connexion nécessaire';
 
   @override
   String get brokerSignInRequiredBody =>
@@ -585,16 +591,27 @@ class AppL10nFr extends AppL10n {
   }
 
   @override
-  String get propertyEditorStepBasics => 'Type et opération';
+  String get propertyEditorStepKind => 'Le bien et son quartier';
 
   @override
   String get propertyEditorStepDetails => 'Infos essentielles';
 
   @override
-  String get propertyEditorStepLocation => 'Quartier';
+  String get propertyEditorStepMedia => 'Photos et publication';
 
   @override
-  String get propertyEditorStepMedia => 'Photos et publication';
+  String get propertyTextSuggested =>
+      'Écrit d\'après vos réponses. Corrigez-le si besoin.';
+
+  @override
+  String propertyTitleFromKind(String kind, String area) {
+    return '$kind à $area';
+  }
+
+  @override
+  String propertyTitleFromRooms(String kind, String rooms, String area) {
+    return '$kind $rooms à $area';
+  }
 
   @override
   String get propertyEditorNext => 'Suivant';
@@ -635,13 +652,13 @@ class AppL10nFr extends AppL10n {
   String get fieldTitle => 'Titre';
 
   @override
-  String get fieldTitleHint => 'Maison 3 pièces à Médina';
-
-  @override
   String get fieldPrice => 'Prix';
 
   @override
   String get fieldSurface => 'Surface en m²';
+
+  @override
+  String get fieldSurfaceChoice => 'Surface';
 
   @override
   String get fieldRooms => 'Nombre de pièces';
@@ -1181,6 +1198,17 @@ class AppL10nFr extends AppL10n {
   @override
   String photosCount(int used, int max) {
     return '$used sur $max';
+  }
+
+  @override
+  String photoCountBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
   }
 
   @override

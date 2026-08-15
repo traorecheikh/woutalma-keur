@@ -90,6 +90,7 @@ class GoogleBackendAuthService extends AuthService {
     await _tokens.save(
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
+      identity: googleUser.email,
     );
     _current = Account(
       email: googleUser.email,
@@ -99,6 +100,33 @@ class GoogleBackendAuthService extends AuthService {
     );
     notifyListeners();
     return AuthResult.signedIn;
+  }
+
+  @override
+  Future<void> restoreSession() async {
+    final String? refresh = _tokens.refreshToken;
+    if (refresh == null || _current != null) {
+      return;
+    }
+    try {
+      final api.AuthSessionDto session = (await _authApi.authControllerRefresh(
+        refreshSessionDto: api.RefreshSessionDto(
+          (b) => b.refreshToken = refresh,
+        ),
+      )).data!;
+      await _tokens.save(
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      );
+      _current = Account(
+        email: _tokens.identity,
+        brokerId: session.brokerId,
+        linkedProviders: const <AuthProvider>{AuthProvider.google},
+      );
+      notifyListeners();
+    } on Object {
+      await _tokens.clear();
+    }
   }
 
   @override

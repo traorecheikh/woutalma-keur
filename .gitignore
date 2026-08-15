@@ -61,3 +61,6 @@ console/.env*.local
 # Claude Code session-local runtime state (not shared project config)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# Sorties de comparaison des goldens : régénérées à chaque échec, jamais une source.
+test/**/failures/

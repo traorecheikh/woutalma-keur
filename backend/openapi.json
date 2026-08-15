@@ -1928,22 +1928,35 @@
             ]
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Trimmed, and runs of whitespace collapsed to one space, before storage. Accents and non-Latin scripts are preserved. Must not be empty once trimmed.",
+            "minLength": 1,
+            "maxLength": 120
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Composed by the editor from the entered data, overridable by the broker. Trimmed at the ends; internal line breaks are kept.",
+            "maxLength": 2000
           },
           "price": {
             "type": "number",
-            "description": "CFA francs, integer."
+            "description": "CFA francs, integer. At least 1 — a free listing is not a product feature — and at most 10000000000.",
+            "minimum": 1,
+            "maximum": 10000000000
           },
           "surface": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Square metres. Omit or send null when unknown, never 0. At most 1000000.",
+            "minimum": 1,
+            "maximum": 1000000
           },
           "rooms": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Room count. 0 is accepted and meaningful for a LAND listing; null/omitted means unstated. At most 50.",
+            "minimum": 0,
+            "maximum": 50
           },
           "latitude": {
             "type": "number"
@@ -1952,7 +1965,10 @@
             "type": "number"
           },
           "neighbourhood": {
-            "type": "string"
+            "type": "string",
+            "description": "Quartier name. The client offers a picker of known Dakar quartiers, but any non-empty name is accepted — the list is not exhaustive. Trimmed and whitespace-collapsed before storage.",
+            "minLength": 1,
+            "maxLength": 120
           },
           "status": {
             "type": "string",
@@ -2006,22 +2022,35 @@
             ]
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Trimmed, and runs of whitespace collapsed to one space, before storage. Accents and non-Latin scripts are preserved. Must not be empty once trimmed.",
+            "minLength": 1,
+            "maxLength": 120
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Composed by the editor from the entered data, overridable by the broker. Trimmed at the ends; internal line breaks are kept.",
+            "maxLength": 2000
           },
           "price": {
             "type": "number",
-            "description": "CFA francs, integer."
+            "description": "CFA francs, integer. At least 1 — a free listing is not a product feature — and at most 10000000000.",
+            "minimum": 1,
+            "maximum": 10000000000
           },
           "surface": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Square metres. Omit or send null when unknown, never 0. At most 1000000.",
+            "minimum": 1,
+            "maximum": 1000000
           },
           "rooms": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Room count. 0 is accepted and meaningful for a LAND listing; null/omitted means unstated. At most 50.",
+            "minimum": 0,
+            "maximum": 50
           },
           "latitude": {
             "type": "number"
@@ -2030,7 +2059,10 @@
             "type": "number"
           },
           "neighbourhood": {
-            "type": "string"
+            "type": "string",
+            "description": "Quartier name. The client offers a picker of known Dakar quartiers, but any non-empty name is accepted — the list is not exhaustive. Trimmed and whitespace-collapsed before storage.",
+            "minLength": 1,
+            "maxLength": 120
           },
           "status": {
             "type": "string",

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/domain/location_service.dart';
+import 'package:woutalma_keur/app/domain/property_description.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_view_model.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
@@ -65,15 +67,35 @@ class PropertyEditorScreen extends StatefulWidget {
   State<PropertyEditorScreen> createState() => _PropertyEditorScreenState();
 }
 
+/// Nombre d'étapes du formulaire.
+///
+/// Trois, et non quatre : le quartier est devenu un choix qui porte son propre
+/// point, donc l'ancienne étape « quartier et point carte » n'avait plus qu'un
+/// champ à montrer. Elle rejoint le type et l'opération, qui sont eux aussi
+/// des choix — la première étape se traverse maintenant sans clavier.
+const int _kStepCount = 3;
+
 class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
   final TextEditingController _title = TextEditingController();
   final TextEditingController _price = TextEditingController();
-  final TextEditingController _neighbourhood = TextEditingController();
-  final TextEditingController _surface = TextEditingController();
-  final TextEditingController _rooms = TextEditingController();
   final TextEditingController _description = TextEditingController();
   int _step = 0;
   bool _submitted = false;
+
+  /// Titre proposé par l'écran, tant que personne ne l'a corrigé.
+  ///
+  /// Gardé pour pouvoir dire « c'est nous qui l'avons écrit » : une valeur
+  /// devinée qu'on ne remarque pas devient une annonce fausse publiée sous
+  /// son nom.
+  String? _suggestedTitle;
+
+  /// Dernière description écrite par l'écran.
+  ///
+  /// Sert de droit de réécriture : tant que le champ contient mot pour mot ce
+  /// que l'écran y a mis, une nouvelle réponse — le prix, la surface — le
+  /// remet à jour. Dès la première frappe du courtier, la phrase est la
+  /// sienne et n'est plus jamais touchée.
+  String? _composedDescription;
 
   /// Incrémenté à chaque soumission : c'est ce qui fait rejouer la validation
   /// de tous les champs d'un coup.
@@ -86,10 +108,13 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     if (existing != null) {
       _title.text = existing.title;
       _price.text = existing.price.toString();
-      _neighbourhood.text = existing.neighbourhood;
-      _surface.text = existing.surface?.toString() ?? '';
-      _rooms.text = existing.rooms?.toString() ?? '';
       _description.text = existing.description;
+      // Une description déjà composée reste réécrivable ; une phrase écrite
+      // par le courtier ne l'est pas. Le composeur le sait sans qu'on ait à
+      // poser un drapeau sur l'entité.
+      if (PropertyDescriptionComposer.isComposedFor(existing)) {
+        _composedDescription = existing.description;
+      }
     }
   }
 
@@ -97,9 +122,6 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
   void dispose() {
     _title.dispose();
     _price.dispose();
-    _neighbourhood.dispose();
-    _surface.dispose();
-    _rooms.dispose();
     _description.dispose();
     super.dispose();
   }
@@ -125,9 +147,8 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
   }
 
   String _stepTitle(BuildContext context) => switch (_step) {
-    0 => context.l10n.propertyEditorStepBasics,
+    0 => context.l10n.propertyEditorStepKind,
     1 => context.l10n.propertyEditorStepDetails,
-    2 => context.l10n.propertyEditorStepLocation,
     _ => context.l10n.propertyEditorStepMedia,
   };
 
@@ -144,16 +165,20 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
         onBack: _step == 0 ? widget.onBack : _previous,
       ),
       bottomAction: WkButton(
-        label: _step == 3
+        label: _isLastStep
             ? context.l10n.propertySave
             : context.l10n.propertyEditorNext,
         loading: model.submission.isSubmitting,
-        onPressed: () => _step == 3 ? _save(context, model) : _next(),
+        onPressed: () => _isLastStep ? _save(context, model) : _next(model),
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: WkSpacing.lg),
         children: <Widget>[
-          _StepHeader(current: _step + 1, total: 4, title: _stepTitle(context)),
+          _StepHeader(
+            current: _step + 1,
+            total: _kStepCount,
+            title: _stepTitle(context),
+          ),
           const SizedBox(height: WkSpacing.lg),
           if (model.prefilledFromPrevious)
             Padding(
@@ -167,14 +192,15 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
             ),
           ...switch (_step) {
             0 => _buildBasics(context, model),
-            1 => _buildDetails(context),
-            2 => _buildLocation(context),
+            1 => _buildDetails(context, model),
             _ => _buildMedia(context, model),
           },
         ],
       ),
     );
   }
+
+  bool get _isLastStep => _step == _kStepCount - 1;
 
   List<Widget> _buildBasics(
     BuildContext context,
@@ -183,7 +209,8 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     WkSelectField<TransactionKind>(
       label: context.l10n.fieldTransaction,
       value: model.transaction,
-      onChanged: model.setTransaction,
+      onChanged: (TransactionKind value) =>
+          _answer(model, model.setTransaction, value),
       options: <WkOption<TransactionKind>>[
         WkOption<TransactionKind>(
           value: TransactionKind.rent,
@@ -201,7 +228,7 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     WkSelectField<PropertyKind>(
       label: context.l10n.fieldKind,
       value: model.kind,
-      onChanged: model.setKind,
+      onChanged: (PropertyKind value) => _answer(model, model.setKind, value),
       options: <WkOption<PropertyKind>>[
         for (final PropertyKind kind in PropertyKind.values)
           WkOption<PropertyKind>(
@@ -211,16 +238,47 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
           ),
       ],
     ),
+    const SizedBox(height: WkSpacing.md),
+    // Le quartier était le champ libre le plus coûteux du formulaire : dix à
+    // vingt frappes au clavier, une orthographe par courtier — « Medina »,
+    // « Médina », « médina » — et une recherche client qui ne les rapproche
+    // pas. La liste est celle du produit, et chaque entrée porte son point.
+    WkSelectField<Neighbourhood>(
+      label: context.l10n.fieldNeighbourhood,
+      value: model.neighbourhood,
+      onChanged: (Neighbourhood value) =>
+          _answer(model, model.setNeighbourhood, value),
+      options: <WkOption<Neighbourhood>>[
+        for (final Neighbourhood area in model.neighbourhoodOptions)
+          WkOption<Neighbourhood>(
+            value: area,
+            label: area.name,
+            icon: Icons.place_outlined,
+          ),
+      ],
+    ),
+    if (_submitted && model.neighbourhood == null)
+      _FieldError(message: context.l10n.validationRequired),
   ];
 
-  List<Widget> _buildDetails(BuildContext context) => <Widget>[
+  List<Widget> _buildDetails(
+    BuildContext context,
+    PropertyEditorViewModel model,
+  ) => <Widget>[
     WkTextField(
       label: context.l10n.fieldTitle,
-      hint: context.l10n.fieldTitleHint,
+      // Aucun exemple gris : dès qu'un quartier est choisi, le champ arrive
+      // déjà rempli d'un vrai titre, qui montre mieux qu'un placeholder ce
+      // qu'on attend — et un exemple complet ne tient pas sur une ligne à
+      // ×1.3.
       controller: _title,
+      // Le serveur refuse au-delà de 120 caractères : couper à la frappe vaut
+      // mieux qu'un 400 après avoir choisi ses photos.
+      maxLength: 120,
       validator: _requiredValidator,
       revalidateTick: _revalidateTick,
     ),
+    _SuggestedNote(source: _title, written: _suggestedTitle),
     WkTextField(
       label: context.l10n.fieldPrice,
       controller: _price,
@@ -228,35 +286,47 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
       inputFormatters: <TextInputFormatter>[
         FilteringTextInputFormatter.digitsOnly,
       ],
+      // Onze chiffres : le plafond du serveur est de dix milliards.
+      maxLength: 11,
       validator: _priceValidator,
+      // Le prix est la dernière donnée de la phrase composée : la description
+      // le suit pendant qu'on le tape.
+      onChanged: (_) => setState(() => _composeDescription(model)),
       revalidateTick: _revalidateTick,
     ),
-    WkTextField(
-      label: context.l10n.fieldSurface,
-      controller: _surface,
-      keyboardType: TextInputType.number,
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.digitsOnly,
+    // Surface et pièces restent facultatives — un terrain et une chambre ne
+    // s'annoncent pas avec la même exigence — mais elles se répondent
+    // désormais d'un geste, jamais au clavier.
+    WkSelectField<int?>(
+      label: context.l10n.fieldSurfaceChoice,
+      value: model.surface,
+      onChanged: (int? value) => _answer(model, model.setSurface, value),
+      options: <WkOption<int?>>[
+        WkOption<int?>(value: null, label: context.l10n.commonUnspecified),
+        for (final int step in model.surfaceOptions)
+          WkOption<int?>(value: step, label: context.l10n.surfaceValue(step)),
       ],
     ),
-    WkTextField(
-      label: context.l10n.fieldRooms,
-      controller: _rooms,
-      keyboardType: TextInputType.number,
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.digitsOnly,
-      ],
-    ),
+    if (model.asksRooms) ...<Widget>[
+      const SizedBox(height: WkSpacing.md),
+      // Gardé malgré la remarque « c'est déjà dans le titre » : la recherche
+      // client indexe `rooms` (docs → `discovery.dart`, champ « N pieces »)
+      // et la fiche l'affiche en pastille. Le supprimer retirerait
+      // « 3 pièces » des résultats. Il sert d'ailleurs à écrire le titre.
+      WkSelectField<int?>(
+        label: context.l10n.fieldRooms,
+        value: model.rooms,
+        onChanged: (int? value) => _answer(model, model.setRooms, value),
+        options: <WkOption<int?>>[
+          WkOption<int?>(value: null, label: context.l10n.commonUnspecified),
+          for (final int step in model.roomOptions)
+            WkOption<int?>(value: step, label: context.l10n.roomCount(step)),
+        ],
+      ),
+    ],
+    const SizedBox(height: WkSpacing.md),
     WkTextField(label: context.l10n.fieldDescription, controller: _description),
-  ];
-
-  List<Widget> _buildLocation(BuildContext context) => <Widget>[
-    WkTextField(
-      label: context.l10n.fieldNeighbourhood,
-      controller: _neighbourhood,
-      validator: _requiredValidator,
-      revalidateTick: _revalidateTick,
-    ),
+    _SuggestedNote(source: _description, written: _composedDescription),
   ];
 
   List<Widget> _buildMedia(
@@ -277,24 +347,31 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
       ),
     ),
     const SizedBox(height: WkSpacing.md),
-    WkSelectField<PropertyStatus>(
-      label: context.l10n.fieldStatus,
-      value: model.status,
-      onChanged: model.setStatus,
-      options: <WkOption<PropertyStatus>>[
-        for (final PropertyStatus status in PropertyStatus.values)
-          WkOption<PropertyStatus>(
-            value: status,
-            label: WkFormat.propertyStatus(context.l10n, status),
-            icon: switch (status) {
-              PropertyStatus.available => Icons.check_circle_outline,
-              PropertyStatus.reserved => Icons.schedule,
-              PropertyStatus.closed => Icons.do_not_disturb_on_outlined,
-            },
-          ),
-      ],
-    ),
-    const SizedBox(height: WkSpacing.sm),
+    // Publier, c'est rendre disponible. Demander le statut à la création
+    // faisait choisir « Disponible » à chaque annonce, et offrait « Vendu »
+    // à un bien qui n'existait pas encore. B02 porte déjà « Changer le
+    // statut », avec sa confirmation. Ici, le champ n'apparaît qu'en
+    // modification, là où il répond à une vraie question.
+    if (model.isEditing) ...<Widget>[
+      WkSelectField<PropertyStatus>(
+        label: context.l10n.fieldStatus,
+        value: model.status,
+        onChanged: model.setStatus,
+        options: <WkOption<PropertyStatus>>[
+          for (final PropertyStatus status in PropertyStatus.values)
+            WkOption<PropertyStatus>(
+              value: status,
+              label: WkFormat.propertyStatus(context.l10n, status),
+              icon: switch (status) {
+                PropertyStatus.available => Icons.check_circle_outline,
+                PropertyStatus.reserved => Icons.schedule,
+                PropertyStatus.closed => Icons.do_not_disturb_on_outlined,
+              },
+            ),
+        ],
+      ),
+      const SizedBox(height: WkSpacing.sm),
+    ],
     Text(
       model.status == PropertyStatus.closed
           ? context.l10n.propertyStatusImpactClosed
@@ -305,14 +382,94 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     ),
   ];
 
-  void _next() {
+  void _next(PropertyEditorViewModel model) {
     setState(() {
       _step++;
+      if (_step == 1) {
+        _suggestTitle(model);
+      }
+      // À chaque passage d'étape : la description gagne ce qui vient d'être
+      // répondu — le quartier en arrivant à l'étape 2, le prix et la surface
+      // en la quittant.
+      _composeDescription(model);
     });
     context.read<InteractionFeedbackService?>()?.emit(
       FeedbackIntent.stepValid,
       eventId: 'B03:step:$_step',
     );
+  }
+
+  /// Écrit un titre à partir de ce qui vient d'être choisi.
+  ///
+  /// « Appartement 3 pièces à Mermoz » : c'est exactement la phrase que le
+  /// courtier tapait au clavier après avoir déjà répondu aux trois questions
+  /// qui la composent. L'écran la propose, elle reste corrigeable, et le
+  /// signalement disparaît dès la première frappe.
+  ///
+  /// Réécrit tant que le champ contient encore sa propre phrase : le nombre de
+  /// pièces se choisit à l'étape 2, après la première écriture, et un titre
+  /// figé à « Appartement à Mermoz » aurait perdu ce que le courtier venait de
+  /// répondre. Sans quartier choisi, ou sur un titre saisi à la main, l'écran
+  /// n'écrit rien.
+  void _suggestTitle(PropertyEditorViewModel model) {
+    final Neighbourhood? area = model.neighbourhood;
+    final String current = _title.text.trim();
+    if (area == null ||
+        (current.isNotEmpty && current != _suggestedTitle?.trim())) {
+      return;
+    }
+    final String kind = WkFormat.propertyKind(context.l10n, model.kind);
+    final int? rooms = model.asksRooms ? model.rooms : null;
+    final String suggestion = rooms == null
+        ? context.l10n.propertyTitleFromKind(kind, area.name)
+        : context.l10n.propertyTitleFromRooms(
+            kind,
+            context.l10n.roomCount(rooms),
+            area.name,
+          );
+    _title.text = suggestion;
+    _suggestedTitle = suggestion;
+  }
+
+  /// Enregistre une réponse, puis remet la description à jour.
+  ///
+  /// Chaque choix change ce que la phrase devrait dire. La réécrire au
+  /// changement, et pas seulement au passage d'étape, évite de publier une
+  /// description qui décrit l'avant-dernière version du bien.
+  void _answer<T>(
+    PropertyEditorViewModel model,
+    void Function(T value) apply,
+    T value,
+  ) {
+    apply(value);
+    setState(() {
+      _suggestTitle(model);
+      _composeDescription(model);
+    });
+  }
+
+  /// Écrit la description à partir des mêmes réponses.
+  ///
+  /// La phrase vient de `lib/app/domain/property_description.dart` : rien
+  /// qui ne soit dans les données, aucun agrément inventé au nom du courtier.
+  /// N'écrit que sur un champ vide ou sur sa propre phrase précédente.
+  void _composeDescription(PropertyEditorViewModel model) {
+    final String current = _description.text.trim();
+    if (current.isNotEmpty && current != _composedDescription?.trim()) {
+      return;
+    }
+    final String composed = PropertyDescriptionComposer.compose(
+      PropertyDescriptionDraft(
+        kind: model.kind,
+        transaction: model.transaction,
+        price: int.tryParse(_price.text.replaceAll(RegExp(r'\D'), '')) ?? 0,
+        surface: model.surface,
+        rooms: model.asksRooms ? model.rooms : null,
+        neighbourhood: model.neighbourhood?.name ?? '',
+      ),
+    );
+    _description.text = composed;
+    _composedDescription = composed;
   }
 
   void _previous() {
@@ -335,10 +492,7 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     final String? id = await model.save(
       title: _title.text,
       priceText: _price.text,
-      neighbourhood: _neighbourhood.text,
       description: _description.text,
-      surfaceText: _surface.text,
-      roomsText: _rooms.text,
     );
 
     if (!context.mounted) {
@@ -363,7 +517,14 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
       }
 
       setState(() {
-        _step = _detailsInvalid() ? 1 : 2;
+        // La **première** étape fautive, dans l'ordre où on l'a traversée :
+        // renvoyer au titre quelqu'un à qui il manque le quartier lui fait
+        // relire un champ correct.
+        _step = model.neighbourhood == null
+            ? 0
+            : _detailsInvalid()
+            ? 1
+            : _kStepCount - 1;
       });
       // Une erreur pour la soumission entière, pas une par champ vide.
       feedback?.emit(FeedbackIntent.error);
@@ -382,6 +543,80 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
   bool _detailsInvalid() {
     final int? price = int.tryParse(_price.text.replaceAll(RegExp(r'\D'), ''));
     return _title.text.trim().isEmpty || price == null || price <= 0;
+  }
+}
+
+/// Dit qu'un texte a été écrit par l'écran, tant qu'il l'est encore.
+///
+/// Une valeur devinée qu'on ne remarque pas devient une annonce fausse publiée
+/// sous son nom. La mention disparaît à la première frappe : à ce moment-là,
+/// la phrase est bien celle du courtier.
+class _SuggestedNote extends StatelessWidget {
+  const _SuggestedNote({required this.source, required this.written});
+
+  final TextEditingController source;
+
+  /// Ce que l'écran a écrit, ou `null` s'il n'a rien écrit.
+  final String? written;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: source,
+      builder: (BuildContext context, TextEditingValue value, _) {
+        if (written == null || value.text != written) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: WkSpacing.sm),
+          child: Text(
+            context.l10n.propertyTextSuggested,
+            style: context.text.bodySmall?.copyWith(
+              color: context.colors.onSurfaceVariant,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Message d'erreur d'un champ qui n'est pas un [WkTextField].
+///
+/// Un sélecteur n'a pas de ligne d'aide : sans ce complément, un quartier
+/// manquant renvoyait à l'étape 1 sans rien y montrer.
+class _FieldError extends StatelessWidget {
+  const _FieldError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.only(top: WkSpacing.xs),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(
+              Icons.error_outline,
+              size: WkIconSize.md,
+              color: context.colors.error,
+            ),
+            const SizedBox(width: WkSpacing.xs),
+            Expanded(
+              child: Text(
+                message,
+                style: context.text.bodySmall?.copyWith(
+                  color: context.colors.error,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

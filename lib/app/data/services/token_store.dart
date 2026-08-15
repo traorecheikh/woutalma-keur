@@ -63,35 +63,52 @@ class TokenStore {
 
   static const String _accessKey = 'wk.accessToken';
   static const String _refreshKey = 'wk.refreshToken';
+  static const String _identityKey = 'wk.identity';
 
   final TokenStorage _storage;
 
   String? _accessToken;
   String? _refreshToken;
+  String? _identity;
 
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
+
+  /// Numéro ou courriel de la session, gardé pour pouvoir l'afficher au
+  /// prochain lancement sans redemander au serveur.
+  String? get identity => _identity;
 
   /// Recharge la session depuis le stockage sûr. Lecture locale, rapide :
   /// `bootstrap()` peut l'attendre sans retarder le premier écran.
   Future<void> restore() async {
     _accessToken = await _storage.read(_accessKey);
     _refreshToken = await _storage.read(_refreshKey);
+    _identity = await _storage.read(_identityKey);
   }
 
-  Future<void> save({required String accessToken, String? refreshToken}) async {
+  Future<void> save({
+    required String accessToken,
+    String? refreshToken,
+    String? identity,
+  }) async {
     _accessToken = accessToken;
     await _storage.write(_accessKey, accessToken);
     if (refreshToken != null) {
       _refreshToken = refreshToken;
       await _storage.write(_refreshKey, refreshToken);
     }
+    if (identity != null) {
+      _identity = identity;
+      await _storage.write(_identityKey, identity);
+    }
   }
 
   Future<void> clear() async {
     _accessToken = null;
     _refreshToken = null;
+    _identity = null;
     await _storage.delete(_accessKey);
     await _storage.delete(_refreshKey);
+    await _storage.delete(_identityKey);
   }
 }

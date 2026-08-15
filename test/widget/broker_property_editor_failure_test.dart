@@ -84,15 +84,16 @@ void main() {
   }
 
   Future<void> fillAndPublish(WidgetTester tester) async {
+    // Étape 1 : le quartier est un choix, et il porte la position du bien.
+    await tester.tap(find.text('Quartier'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yoff').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Suivant'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'Studio à Yoff');
     await tester.enterText(find.byType(TextField).at(1), '120000');
-    await tester.tap(find.text('Suivant'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'Yoff');
     await tester.tap(find.text('Suivant'));
     await tester.pumpAndSettle();
 
@@ -105,8 +106,8 @@ void main() {
   ) async {
     await pumpEditor(tester, properties: InMemoryPropertyRepository(store));
 
-    // Trois étapes plus loin, l'étape média.
-    for (int i = 0; i < 3; i++) {
+    // Deux étapes plus loin, l'étape média.
+    for (int i = 0; i < 2; i++) {
       await tester.tap(find.text('Suivant'));
       await tester.pumpAndSettle();
     }
@@ -131,7 +132,7 @@ void main() {
 
     // L'écran restait sur l'étape 2 ou 3 en réclamant une correction : le
     // formulaire était pourtant complet.
-    expect(find.text('Étape 4 sur 4'), findsOneWidget);
+    expect(find.text('Étape 3 sur 3'), findsOneWidget);
     expect(
       find.text('Pas de connexion. Réessayez quand le réseau revient.'),
       findsOneWidget,
@@ -144,14 +145,15 @@ void main() {
   ) async {
     await pumpEditor(tester, properties: InMemoryPropertyRepository(store));
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
       await tester.tap(find.text('Suivant'));
       await tester.pumpAndSettle();
     }
     await tester.tap(find.text('Publier le bien'));
     await tester.pumpAndSettle();
 
-    // Là, « corrigez d'abord » est la bonne réponse : rien n'a été saisi.
-    expect(find.text('Étape 2 sur 4'), findsOneWidget);
+    // Là, « corrigez d'abord » est la bonne réponse : rien n'a été saisi. La
+    // première étape fautive est celle du quartier.
+    expect(find.text('Étape 1 sur 3'), findsOneWidget);
   });
 }

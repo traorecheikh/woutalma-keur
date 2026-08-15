@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
 import 'package:woutalma_keur/app/modules/client/broker/contact_sheet.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
@@ -128,7 +129,8 @@ class _Content extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: WkSpacing.sm),
               child: WkPropertyCard(
                 property: property,
-                distanceMeters: detail.distanceMeters,
+                // La distance du bien, pas celle du bureau qui le propose.
+                distanceMeters: distanceMeters(detail.from, property.position),
                 onOpen: () => onOpenProperty(property.id),
               ),
             ),

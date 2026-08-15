@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
@@ -102,6 +104,52 @@ class AppDependencies {
   /// disque (web) : la carte retombe alors sur le réseau seul.
   TileProvider? mapTiles;
 
+  /// Reprise de la session précédente, lancée au démarrage.
+  ///
+  /// Déjà terminée quand il n'y a rien à reprendre — mode local, ou aucun
+  /// jeton sur le téléphone. Elle n'est **jamais** attendue avant le premier
+  /// écran : la découverte est publique et doit se peindre tout de suite. Le
+  /// routeur s'y abonne pour rejoindre l'espace courtier dès que la réponse
+  /// arrive, au lieu de laisser un courtier dans l'espace client.
+  ///
+  /// Ne rejette jamais : une reprise impossible est un événement normal
+  /// (avion, jeton révoqué) et se solde par une session close, pas par une
+  /// erreur qui remonterait jusqu'au routeur.
+  Future<void> sessionRestore = Future<void>.value();
+
+  /// Aligne le rôle affiché sur ce que dit vraiment le compte, et renvoie le
+  /// rôle retenu.
+  ///
+  /// Une seule règle, à un seul endroit : le démarrage et le routeur la
+  /// suivaient chacun de leur côté et pouvaient diverger — l'espace courtier
+  /// ouvert alors que S01 affichait encore « Client ».
+  ///
+  /// - un compte porteur d'un profil courtier ouvre l'espace courtier : c'est
+  ///   ce qui rend une session reprise visible au bon endroit ;
+  /// - se dire courtier sans profil enfermait la personne sur l'écran
+  ///   verrouillé, alors on repasse en client, qui est la vérité du compte.
+  UserRole syncRoleWithSession() {
+    if (auth.current?.brokerId != null) {
+      settings.setRole(UserRole.broker);
+    } else if (settings.role == UserRole.broker) {
+      settings.setRole(UserRole.client);
+    }
+    return settings.role;
+  }
+
+  /// Reprend la session puis remet le rôle d'accord avec elle.
+  Future<void> _restoreSession() async {
+    try {
+      await auth.restoreSession();
+    } on Object catch (error) {
+      // Rien à reprendre, ou serveur injoignable : l'application continue en
+      // visiteur. Le dire une fois vaut mieux qu'une erreur asynchrone
+      // perdue.
+      debugPrint('[wk] reprise de session impossible : $error');
+    }
+    syncRoleWithSession();
+  }
+
   /// Courtier connecté, déduit de l'identification.
   ///
   /// En mode distant il n'y a pas de repli possible : un identifiant de
@@ -176,6 +224,15 @@ class AppDependencies {
     );
     await deps.clientPosition.restore();
     deps.mapTiles = await _openTileCache();
+
+    // Reprend la session précédente. Sans cela les jetons survivaient au
+    // redémarrage mais le compte non : l'application se rouvrait déconnectée,
+    // et un courtier repartait dans l'espace client. Non bloquant pour le
+    // premier écran — la découverte est publique — mais lancé tout de suite,
+    // pour que les réglages et l'espace courtier soient justes dès qu'on les
+    // ouvre. Le rôle suit dans `_restoreSession`, pas ici : c'est la même
+    // règle que celle du routeur après une identification.
+    deps.sessionRestore = deps._restoreSession();
     return deps;
   }
 
@@ -196,8 +253,13 @@ class AppDependencies {
 
   /// Démarrage en mémoire, pour les tests et les aperçus.
   ///
-  /// Même chemin de code métier : seuls les dépôts changent.
-  static Future<AppDependencies> inMemory({bool loadDemoSeed = true}) async {
+  /// Même chemin de code métier : seuls les dépôts changent. [location] reste
+  /// nul dans l'application ; un test qui monte l'arbre complet le fournit,
+  /// faute de quoi C01 réveille le vrai GPS et son canal de plateforme.
+  static Future<AppDependencies> inMemory({
+    bool loadDemoSeed = true,
+    LocationService? location,
+  }) async {
     final InMemoryStore store = InMemoryStore();
     final SeedRepository seed = InMemorySeedRepository(store);
     if (loadDemoSeed) {
@@ -221,6 +283,7 @@ class AppDependencies {
         properties: properties,
         reviews: reviews,
       ),
+      location: location,
     );
   }
 

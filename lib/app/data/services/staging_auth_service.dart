@@ -72,6 +72,7 @@ class StagingAuthService extends AuthService {
       await _tokens.save(
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
+        identity: phone,
       );
       _current = Account(
         phone: phone,
@@ -101,6 +102,7 @@ class StagingAuthService extends AuthService {
     await _tokens.save(
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
+      identity: 'demo.client@demo.woutalma.sn',
     );
     _current = Account(
       email: 'demo.client@demo.woutalma.sn',
@@ -110,6 +112,42 @@ class StagingAuthService extends AuthService {
     );
     notifyListeners();
     return AuthResult.signedIn;
+  }
+
+  /// Reprend la session laissée par un lancement précédent.
+  ///
+  /// Le jeton de rafraîchissement est la seule chose qui survit ; l'échanger
+  /// rend aussi le rôle et le profil courtier à jour, ce qu'un jeton d'accès
+  /// périmé ne dirait plus.
+  @override
+  Future<void> restoreSession() async {
+    final String? refresh = _tokens.refreshToken;
+    if (refresh == null || _current != null) {
+      return;
+    }
+    try {
+      final api.AuthSessionDto session = (await _authApi.authControllerRefresh(
+        refreshSessionDto: api.RefreshSessionDto(
+          (b) => b.refreshToken = refresh,
+        ),
+      )).data!;
+      await _tokens.save(
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      );
+      final String? identity = _tokens.identity;
+      _current = Account(
+        phone: identity != null && identity.startsWith('+') ? identity : null,
+        email: identity != null && identity.contains('@') ? identity : null,
+        brokerId: session.brokerId,
+        linkedProviders: const <AuthProvider>{AuthProvider.phone},
+      );
+      notifyListeners();
+    } on Object {
+      // Jeton révoqué ou expiré : on repart proprement déconnecté plutôt que
+      // de garder une session morte qui échouerait à la première requête.
+      await _tokens.clear();
+    }
   }
 
   @override
