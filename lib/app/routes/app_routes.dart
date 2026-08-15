@@ -28,6 +28,9 @@ abstract final class AppRoutes {
   /// B07 — Profil public / réglages courtier.
   static const String brokerProfile = '/broker/profile';
 
+  /// B08 — Modifier le profil courtier.
+  static const String brokerProfileEdit = '/broker/profile/edit';
+
   /// B09 — Vérification.
   static const String brokerVerification = '/broker/verification';
 

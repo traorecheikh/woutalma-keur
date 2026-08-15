@@ -73,7 +73,9 @@ Class | Method | HTTP request | Description
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerCreate**](doc/BrokersApi.md#brokerscontrollercreate) | **POST** /brokers | B01 — create the caller’s broker profile. Starts unverified.
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerFindAll**](doc/BrokersApi.md#brokerscontrollerfindall) | **GET** /brokers | Mirrors BrokerRepository.all().
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerFindById**](doc/BrokersApi.md#brokerscontrollerfindbyid) | **GET** /brokers/{id} | Mirrors BrokerRepository.byId.
+[*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerFindContacts**](doc/BrokersApi.md#brokerscontrollerfindcontacts) | **GET** /brokers/{id}/contacts | Contacts this broker RECEIVED — the broker-side counterpart of GET /contacts, which only ever lists what the caller sent as a client. Owner-only, and without any client-identifying field (PRODUCT.md §4 rule 7).
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerFindProperties**](doc/BrokersApi.md#brokerscontrollerfindproperties) | **GET** /brokers/{id}/properties | Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).
+[*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerRequestVerification**](doc/BrokersApi.md#brokerscontrollerrequestverification) | **POST** /brokers/{id}/verification-request | B02 — puts the caller’s own profile in the verification queue (NONE/REJECTED → PENDING). A request, never a grant: PENDING is the only status it can write, and calling it again while PENDING or VERIFIED just returns the current state.
 [*BrokersApi*](doc/BrokersApi.md) | [**brokersControllerUpdate**](doc/BrokersApi.md#brokerscontrollerupdate) | **PATCH** /brokers/{id} | Edit the caller’s own broker profile. 403 for someone else’s.
 [*ContactsApi*](doc/ContactsApi.md) | [**contactsControllerAll**](doc/ContactsApi.md#contactscontrollerall) | **GET** /contacts | 
 [*ContactsApi*](doc/ContactsApi.md) | [**contactsControllerById**](doc/ContactsApi.md#contactscontrollerbyid) | **GET** /contacts/{id} | 
@@ -87,9 +89,11 @@ Class | Method | HTTP request | Description
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerFindById**](doc/PropertiesApi.md#propertiescontrollerfindbyid) | **GET** /properties/{id} | Mirrors PropertyRepository.byId.
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerFindPhoto**](doc/PropertiesApi.md#propertiescontrollerfindphoto) | **GET** /properties/photos/{photoId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; photoAssets entry. Public, like the listing itself.
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerUpdate**](doc/PropertiesApi.md#propertiescontrollerupdate) | **PATCH** /properties/{id} | Edit one of the caller’s own listings. 403 for someone else’s.
-[*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerAll**](doc/ReviewsApi.md#reviewscontrollerall) | **GET** /reviews | 
-[*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerByBroker**](doc/ReviewsApi.md#reviewscontrollerbybroker) | **GET** /reviews/broker/{brokerId} | 
+[*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerAll**](doc/ReviewsApi.md#reviewscontrollerall) | **GET** /reviews | Published reviews only, every broker together — feeds the client-side averages.
+[*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerByBroker**](doc/ReviewsApi.md#reviewscontrollerbybroker) | **GET** /reviews/broker/{brokerId} | Published reviews of one broker. &#x60;onlyPublic&#x3D;false&#x60; additionally returns the pending/rejected ones, and only to the broker who owns the profile — for anyone else it is ignored.
 [*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerCreate**](doc/ReviewsApi.md#reviewscontrollercreate) | **POST** /reviews | Port of ReviewEligibilityService — 403s with a &#x60;reason&#x60; (noContact/notReached/alreadyReviewed/notOwner) when not eligible.
+[*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerReply**](doc/ReviewsApi.md#reviewscontrollerreply) | **PATCH** /reviews/{id}/reply | B05 — the broker answers a review about them. 403 for a review about someone else.
+[*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerReport**](doc/ReviewsApi.md#reviewscontrollerreport) | **POST** /reviews/{id}/report | B05 — the broker asks for a review to be re-moderated. Sets PENDING and nothing else: a broker cannot reject a review about them.
 [*SearchApi*](doc/SearchApi.md) | [**searchControllerFindBrokers**](doc/SearchApi.md#searchcontrollerfindbrokers) | **GET** /search/brokers | Mirrors DiscoveryService.findBrokers, ranked server-side via PostGIS.
 [*SearchApi*](doc/SearchApi.md) | [**searchControllerFindProperties**](doc/SearchApi.md#searchcontrollerfindproperties) | **GET** /search/properties | Mirrors DiscoveryService.findProperties, sorted by distance.
 [*SearchApi*](doc/SearchApi.md) | [**searchControllerSuggestions**](doc/SearchApi.md#searchcontrollersuggestions) | **GET** /search/suggestions | Returns ranked server-side search suggestions.
@@ -98,6 +102,7 @@ Class | Method | HTTP request | Description
 ## Documentation For Models
 
  - [AuthSessionDto](doc/AuthSessionDto.md)
+ - [BrokerContactLogDto](doc/BrokerContactLogDto.md)
  - [BrokerDto](doc/BrokerDto.md)
  - [BrokerListingDto](doc/BrokerListingDto.md)
  - [BrokerSearchResultsDto](doc/BrokerSearchResultsDto.md)
@@ -117,6 +122,8 @@ Class | Method | HTTP request | Description
  - [PropertySearchResultsDto](doc/PropertySearchResultsDto.md)
  - [ReadinessDto](doc/ReadinessDto.md)
  - [RefreshSessionDto](doc/RefreshSessionDto.md)
+ - [ReplyReviewDto](doc/ReplyReviewDto.md)
+ - [ReportReviewDto](doc/ReportReviewDto.md)
  - [ReviewDto](doc/ReviewDto.md)
  - [SearchSuggestionsDto](doc/SearchSuggestionsDto.md)
  - [UpdateBrokerDto](doc/UpdateBrokerDto.md)

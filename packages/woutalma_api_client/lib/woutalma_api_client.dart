@@ -19,6 +19,7 @@ export 'package:woutalma_api_client/src/api/reviews_api.dart';
 export 'package:woutalma_api_client/src/api/search_api.dart';
 
 export 'package:woutalma_api_client/src/model/auth_session_dto.dart';
+export 'package:woutalma_api_client/src/model/broker_contact_log_dto.dart';
 export 'package:woutalma_api_client/src/model/broker_dto.dart';
 export 'package:woutalma_api_client/src/model/broker_listing_dto.dart';
 export 'package:woutalma_api_client/src/model/broker_search_results_dto.dart';
@@ -38,6 +39,8 @@ export 'package:woutalma_api_client/src/model/property_dto.dart';
 export 'package:woutalma_api_client/src/model/property_search_results_dto.dart';
 export 'package:woutalma_api_client/src/model/readiness_dto.dart';
 export 'package:woutalma_api_client/src/model/refresh_session_dto.dart';
+export 'package:woutalma_api_client/src/model/reply_review_dto.dart';
+export 'package:woutalma_api_client/src/model/report_review_dto.dart';
 export 'package:woutalma_api_client/src/model/review_dto.dart';
 export 'package:woutalma_api_client/src/model/search_suggestions_dto.dart';
 export 'package:woutalma_api_client/src/model/update_broker_dto.dart';

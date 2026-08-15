@@ -21,6 +21,7 @@ class BrokerProfileScreen extends StatelessWidget {
     required this.onOpenVerification,
     required this.onOpenRanking,
     required this.onOpenProperty,
+    required this.onEditProfile,
     super.key,
   });
 
@@ -28,6 +29,10 @@ class BrokerProfileScreen extends StatelessWidget {
   final VoidCallback onOpenVerification;
   final VoidCallback onOpenRanking;
   final void Function(Property property) onOpenProperty;
+
+  /// Ouvre B08 et se termine au retour : le profil se relit alors, sinon
+  /// l'écran continuerait d'afficher l'ancien numéro.
+  final Future<void> Function() onEditProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +61,10 @@ class BrokerProfileScreen extends StatelessWidget {
           onOpenVerification: onOpenVerification,
           onOpenRanking: onOpenRanking,
           onOpenProperty: onOpenProperty,
+          onEditProfile: () async {
+            await onEditProfile();
+            await model.load();
+          },
         ),
       ),
     );
@@ -69,6 +78,7 @@ class _ProfileBody extends StatelessWidget {
     required this.onOpenVerification,
     required this.onOpenRanking,
     required this.onOpenProperty,
+    required this.onEditProfile,
   });
 
   final BrokerDetail detail;
@@ -76,6 +86,7 @@ class _ProfileBody extends StatelessWidget {
   final VoidCallback onOpenVerification;
   final VoidCallback onOpenRanking;
   final void Function(Property property) onOpenProperty;
+  final VoidCallback onEditProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +178,14 @@ class _ProfileBody extends StatelessWidget {
               ),
             ),
         const SizedBox(height: WkSpacing.lg),
+        // Premier de la série : c'est le seul geste qui change quelque chose
+        // au profil qu'on est en train de lire.
+        _LinkButton(
+          label: context.l10n.brokerProfileEditorTitle,
+          icon: Icons.edit_outlined,
+          onPressed: onEditProfile,
+        ),
+        const SizedBox(height: WkSpacing.sm),
         _LinkButton(
           label: context.l10n.brokerVerificationTitle,
           icon: Icons.verified_user_outlined,

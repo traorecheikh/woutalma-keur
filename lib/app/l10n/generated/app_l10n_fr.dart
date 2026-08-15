@@ -312,6 +312,29 @@ class AppL10nFr extends AppL10n {
   }
 
   @override
+  String get brokerProfileEditorTitle => 'Modifier mon profil';
+
+  @override
+  String get brokerProfileEditorSave => 'Enregistrer';
+
+  @override
+  String get brokerProfileEditorSaved => 'Profil enregistré';
+
+  @override
+  String get brokerProfileEditorNotEditable =>
+      'Le statut de vérification et la mise en avant ne se modifient pas ici.';
+
+  @override
+  String get brokerProfileEditorLeaveTitle => 'Quitter sans enregistrer ?';
+
+  @override
+  String get brokerProfileEditorLeaveBody =>
+      'Vos modifications de profil seront perdues.';
+
+  @override
+  String get brokerProfileEditorLeaveConfirm => 'Quitter';
+
+  @override
   String get brokerProfileTitle => 'Profil';
 
   @override
@@ -602,6 +625,41 @@ class AppL10nFr extends AppL10n {
   String get fieldStatus => 'Statut';
 
   @override
+  String get fieldBrokerKind => 'Type de profil';
+
+  @override
+  String get brokerKindIndividual => 'Courtier indépendant';
+
+  @override
+  String get brokerKindAgency => 'Agence';
+
+  @override
+  String get fieldBrokerName => 'Nom affiché';
+
+  @override
+  String get fieldBrokerNameHint => 'Moussa Diop';
+
+  @override
+  String get fieldBrokerPhone => 'Téléphone';
+
+  @override
+  String get fieldBrokerWhatsapp => 'WhatsApp';
+
+  @override
+  String get fieldBrokerWhatsappHelper =>
+      'Laissez vide si vous n\'avez pas WhatsApp.';
+
+  @override
+  String get fieldBrokerCoverage => 'Zone couverte';
+
+  @override
+  String get fieldBrokerCoverageHint => 'Yoff, Ngor';
+
+  @override
+  String get fieldBrokerCoverageHelper =>
+      'Séparez les quartiers par une virgule.';
+
+  @override
   String get validationRequired => 'Ce champ est nécessaire';
 
   @override
@@ -640,6 +698,13 @@ class AppL10nFr extends AppL10n {
     );
     return '$_temp0';
   }
+
+  @override
+  String get filtersApplyUnknown => 'Appliquer les filtres';
+
+  @override
+  String get filtersCountUnavailable =>
+      'Le nombre de résultats n\'a pas pu être compté.';
 
   @override
   String get filtersReset => 'Tout enlever';
@@ -962,6 +1027,10 @@ class AppL10nFr extends AppL10n {
   String get brokerVerificationSent => 'Demande envoyée';
 
   @override
+  String get brokerVerificationNotSent =>
+      'La demande n\'a pas été enregistrée. Réessayez.';
+
+  @override
   String get brokerVerificationWaiting =>
       'Un modérateur examine votre demande.';
 
@@ -1078,6 +1147,11 @@ class AppL10nFr extends AppL10n {
   @override
   String photosCount(int used, int max) {
     return '$used sur $max';
+  }
+
+  @override
+  String photosServerLimit(int count) {
+    return '$count photos maximum par bien pour l\'instant.';
   }
 
   @override

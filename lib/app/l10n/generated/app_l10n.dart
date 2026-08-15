@@ -555,6 +555,48 @@ abstract class AppL10n {
   /// **'Répond à {percent} % des demandes'**
   String brokerResponseRate(int percent);
 
+  /// Titre de B08 et libellé du bouton qui l'ouvre depuis B07.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier mon profil'**
+  String get brokerProfileEditorTitle;
+
+  /// Action principale de B08.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get brokerProfileEditorSave;
+
+  /// Confirmation après enregistrement du profil.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil enregistré'**
+  String get brokerProfileEditorSaved;
+
+  /// Dit ce que l'écran ne change pas, pour ne pas le chercher.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le statut de vérification et la mise en avant ne se modifient pas ici.'**
+  String get brokerProfileEditorNotEditable;
+
+  /// Titre de M09 au retour depuis B08 modifié.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter sans enregistrer ?'**
+  String get brokerProfileEditorLeaveTitle;
+
+  /// Conséquence de quitter B08 sans enregistrer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos modifications de profil seront perdues.'**
+  String get brokerProfileEditorLeaveBody;
+
+  /// Confirme la sortie de B08 sans enregistrer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter'**
+  String get brokerProfileEditorLeaveConfirm;
+
   /// Titre de B07, profil public du courtier.
   ///
   /// In fr, this message translates to:
@@ -1077,6 +1119,72 @@ abstract class AppL10n {
   /// **'Statut'**
   String get fieldStatus;
 
+  /// Sélecteur individuel/agence dans B08.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de profil'**
+  String get fieldBrokerKind;
+
+  /// Profil d'une personne seule.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courtier indépendant'**
+  String get brokerKindIndividual;
+
+  /// Profil d'une agence immobilière.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agence'**
+  String get brokerKindAgency;
+
+  /// Nom que les clients voient dans les résultats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom affiché'**
+  String get fieldBrokerName;
+
+  /// Exemple de nom affiché.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moussa Diop'**
+  String get fieldBrokerNameHint;
+
+  /// Numéro sur lequel les clients appellent le courtier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone'**
+  String get fieldBrokerPhone;
+
+  /// Numéro WhatsApp du courtier, facultatif.
+  ///
+  /// In fr, this message translates to:
+  /// **'WhatsApp'**
+  String get fieldBrokerWhatsapp;
+
+  /// Dit qu'un champ vide est une réponse valable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Laissez vide si vous n\'avez pas WhatsApp.'**
+  String get fieldBrokerWhatsappHelper;
+
+  /// Quartiers dans lesquels le courtier travaille.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zone couverte'**
+  String get fieldBrokerCoverage;
+
+  /// Exemple de zone couverte.
+  ///
+  /// In fr, this message translates to:
+  /// **'Yoff, Ngor'**
+  String get fieldBrokerCoverageHint;
+
+  /// Explique comment saisir plusieurs quartiers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séparez les quartiers par une virgule.'**
+  String get fieldBrokerCoverageHelper;
+
   /// Champ obligatoire vide. Dit ce qui manque, pas « invalide ».
   ///
   /// In fr, this message translates to:
@@ -1136,6 +1244,18 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'{count, plural, =0{Aucun résultat} =1{Voir 1 résultat} other{Voir {count} résultats}}'**
   String filtersApply(int count);
+
+  /// Bouton d'application quand le nombre de résultats n'a pas pu être compté. Appliquer reste possible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appliquer les filtres'**
+  String get filtersApplyUnknown;
+
+  /// Message affiché dans M01 quand l'aperçu du compteur échoue, à la place d'un chargement sans fin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nombre de résultats n\'a pas pu être compté.'**
+  String get filtersCountUnavailable;
 
   /// Retire tous les filtres. Demande un appui explicite.
   ///
@@ -1629,6 +1749,12 @@ abstract class AppL10n {
   /// **'Demande envoyée'**
   String get brokerVerificationSent;
 
+  /// La vérification n'est pas passée en attente : ne pas féliciter dans le vide.
+  ///
+  /// In fr, this message translates to:
+  /// **'La demande n\'a pas été enregistrée. Réessayez.'**
+  String get brokerVerificationNotSent;
+
   /// État en attente : dit ce qui se passe, pas juste « en cours ».
   ///
   /// In fr, this message translates to:
@@ -1838,6 +1964,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'{used} sur {max}'**
   String photosCount(int used, int max);
+
+  /// Limite réellement acceptée par le serveur, dite avant la sélection.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} photos maximum par bien pour l\'instant.'**
+  String photosServerLimit(int count);
 
   /// Dit pourquoi les photos sont compressées : la data coûte cher à la cible.
   ///

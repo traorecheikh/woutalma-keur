@@ -347,6 +347,33 @@
     "description": "Taux de réponse du courtier, en clair.",
     "placeholders": { "percent": { "type": "int" } }
   },
+  "brokerProfileEditorTitle": "Modifier mon profil",
+  "@brokerProfileEditorTitle": {
+    "description": "Titre de B08 et libellé du bouton qui l'ouvre depuis B07."
+  },
+  "brokerProfileEditorSave": "Enregistrer",
+  "@brokerProfileEditorSave": { "description": "Action principale de B08." },
+  "brokerProfileEditorSaved": "Profil enregistré",
+  "@brokerProfileEditorSaved": {
+    "description": "Confirmation après enregistrement du profil."
+  },
+  "brokerProfileEditorNotEditable": "Le statut de vérification et la mise en avant ne se modifient pas ici.",
+  "@brokerProfileEditorNotEditable": {
+    "description": "Dit ce que l'écran ne change pas, pour ne pas le chercher."
+  },
+  "brokerProfileEditorLeaveTitle": "Quitter sans enregistrer ?",
+  "@brokerProfileEditorLeaveTitle": {
+    "description": "Titre de M09 au retour depuis B08 modifié."
+  },
+  "brokerProfileEditorLeaveBody": "Vos modifications de profil seront perdues.",
+  "@brokerProfileEditorLeaveBody": {
+    "description": "Conséquence de quitter B08 sans enregistrer."
+  },
+  "brokerProfileEditorLeaveConfirm": "Quitter",
+  "@brokerProfileEditorLeaveConfirm": {
+    "description": "Confirme la sortie de B08 sans enregistrer."
+  },
+
   "brokerProfileTitle": "Profil",
   "@brokerProfileTitle": {
     "description": "Titre de B07, profil public du courtier."
@@ -645,6 +672,43 @@
   "fieldStatus": "Statut",
   "@fieldStatus": { "description": "Sélecteur de disponibilité du bien." },
 
+  "fieldBrokerKind": "Type de profil",
+  "@fieldBrokerKind": {
+    "description": "Sélecteur individuel/agence dans B08."
+  },
+  "brokerKindIndividual": "Courtier indépendant",
+  "@brokerKindIndividual": { "description": "Profil d'une personne seule." },
+  "brokerKindAgency": "Agence",
+  "@brokerKindAgency": { "description": "Profil d'une agence immobilière." },
+  "fieldBrokerName": "Nom affiché",
+  "@fieldBrokerName": {
+    "description": "Nom que les clients voient dans les résultats."
+  },
+  "fieldBrokerNameHint": "Moussa Diop",
+  "@fieldBrokerNameHint": { "description": "Exemple de nom affiché." },
+  "fieldBrokerPhone": "Téléphone",
+  "@fieldBrokerPhone": {
+    "description": "Numéro sur lequel les clients appellent le courtier."
+  },
+  "fieldBrokerWhatsapp": "WhatsApp",
+  "@fieldBrokerWhatsapp": {
+    "description": "Numéro WhatsApp du courtier, facultatif."
+  },
+  "fieldBrokerWhatsappHelper": "Laissez vide si vous n'avez pas WhatsApp.",
+  "@fieldBrokerWhatsappHelper": {
+    "description": "Dit qu'un champ vide est une réponse valable."
+  },
+  "fieldBrokerCoverage": "Zone couverte",
+  "@fieldBrokerCoverage": {
+    "description": "Quartiers dans lesquels le courtier travaille."
+  },
+  "fieldBrokerCoverageHint": "Yoff, Ngor",
+  "@fieldBrokerCoverageHint": { "description": "Exemple de zone couverte." },
+  "fieldBrokerCoverageHelper": "Séparez les quartiers par une virgule.",
+  "@fieldBrokerCoverageHelper": {
+    "description": "Explique comment saisir plusieurs quartiers."
+  },
+
   "validationRequired": "Ce champ est nécessaire",
   "@validationRequired": {
     "description": "Champ obligatoire vide. Dit ce qui manque, pas « invalide »."
@@ -678,6 +742,14 @@
   "@filtersApply": {
     "description": "Bouton d'application, portant le nombre de résultats en direct.",
     "placeholders": { "count": { "type": "int" } }
+  },
+  "filtersApplyUnknown": "Appliquer les filtres",
+  "@filtersApplyUnknown": {
+    "description": "Bouton d'application quand le nombre de résultats n'a pas pu être compté. Appliquer reste possible."
+  },
+  "filtersCountUnavailable": "Le nombre de résultats n'a pas pu être compté.",
+  "@filtersCountUnavailable": {
+    "description": "Message affiché dans M01 quand l'aperçu du compteur échoue, à la place d'un chargement sans fin."
   },
   "filtersReset": "Tout enlever",
   "@filtersReset": {
@@ -988,6 +1060,10 @@
   "@brokerVerificationSent": {
     "description": "Confirmation après soumission de la vérification."
   },
+  "brokerVerificationNotSent": "La demande n'a pas été enregistrée. Réessayez.",
+  "@brokerVerificationNotSent": {
+    "description": "La vérification n'est pas passée en attente : ne pas féliciter dans le vide."
+  },
   "brokerVerificationWaiting": "Un modérateur examine votre demande.",
   "@brokerVerificationWaiting": {
     "description": "État en attente : dit ce qui se passe, pas juste « en cours »."
@@ -1108,6 +1184,11 @@
   "@photosCount": {
     "description": "Photos déjà ajoutées sur le maximum autorisé.",
     "placeholders": { "used": { "type": "int" }, "max": { "type": "int" } }
+  },
+  "photosServerLimit": "{count} photos maximum par bien pour l'instant.",
+  "@photosServerLimit": {
+    "description": "Limite réellement acceptée par le serveur, dite avant la sélection.",
+    "placeholders": { "count": { "type": "int" } }
   },
   "photosCompressed": "Les photos sont allégées pour économiser vos données.",
   "@photosCompressed": {

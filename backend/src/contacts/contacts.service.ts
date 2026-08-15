@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactOutcomeDto } from './dto/update-contact-outcome.dto';
 import { ContactLogDto } from './dto/contact-log.dto';
+import { BrokerContactLogDto } from './dto/broker-contact-log.dto';
 import { mapContactLog } from './contact-log-row.mapper';
 
 @Injectable()
@@ -37,6 +38,42 @@ export class ContactsService {
       }
       throw error;
     }
+  }
+
+  /// The other side of the same table: contacts a broker *received*.
+  ///
+  /// `all()` below answers "who did I contact" and filters on `clientId`, so
+  /// it can never answer this — a broker calling it sees their own outgoing
+  /// contacts as a client, which is why the broker activity screen was
+  /// counting zero. Ownership is checked by the caller (BrokersController);
+  /// this method only ever runs against one brokerId.
+  ///
+  /// The projection is explicit rather than `include`-and-strip so that a
+  /// later field added to ContactLog cannot silently reach the broker: the
+  /// client's identity is not selected at all.
+  async byBrokerForOwner(brokerId: string): Promise<BrokerContactLogDto[]> {
+    const rows = await this.prisma.contactLog.findMany({
+      where: { brokerId },
+      select: {
+        id: true,
+        brokerId: true,
+        propertyId: true,
+        channel: true,
+        outcome: true,
+        createdAt: true,
+        review: { select: { id: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      brokerId: row.brokerId,
+      propertyId: row.propertyId,
+      channel: row.channel,
+      outcome: row.outcome,
+      hasReview: row.review !== null,
+      createdAt: row.createdAt,
+    }));
   }
 
   async all(clientId: string): Promise<ContactLogDto[]> {

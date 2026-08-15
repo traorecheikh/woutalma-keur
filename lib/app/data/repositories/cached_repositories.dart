@@ -132,6 +132,13 @@ class CachedBrokerRepository implements BrokerRepository {
     await _remote.saveAll(brokers);
     await _cache.saveAll(brokers);
   }
+
+  @override
+  Future<Broker> requestVerification(String brokerId) async {
+    final Broker updated = await _remote.requestVerification(brokerId);
+    await _cache.save(updated);
+    return updated;
+  }
 }
 
 class CachedPropertyRepository implements PropertyRepository {
@@ -201,10 +208,18 @@ class CachedPropertyRepository implements PropertyRepository {
     now: _now,
   );
 
+  /// Recopie **ce que le serveur a rendu**, pas ce qu'on lui a proposé.
+  ///
+  /// À la publication, l'éditeur fabrique un identifiant local que le serveur
+  /// ignore. Écrire le bien sous cet identifiant laissait une ligne fantôme
+  /// dans la copie hors ligne : la vraie ligne arrivait plus tard sous
+  /// l'identifiant du serveur et « Mes biens » montrait deux fois la même
+  /// annonce.
   @override
-  Future<void> save(Property property) async {
-    await _remote.save(property);
-    await _cache.save(property);
+  Future<Property> save(Property property) async {
+    final Property saved = await _remote.save(property);
+    await _cache.save(saved);
+    return saved;
   }
 
   @override
@@ -239,7 +254,7 @@ class CachedReviewRepository implements ReviewRepository {
   Future<void> _writeAll(List<Review> reviews) => _cache.saveAll(reviews);
 
   @override
-  Future<List<Review>> byBroker(String brokerId, {bool onlyPublic = false}) =>
+  Future<List<Review>> byBroker(String brokerId, {bool onlyPublic = true}) =>
       _readThrough<List<Review>>(
         remote: () => _remote.byBroker(brokerId, onlyPublic: onlyPublic),
         writeThrough: _writeAll,
@@ -273,6 +288,20 @@ class CachedReviewRepository implements ReviewRepository {
   Future<void> saveAll(List<Review> reviews) async {
     await _remote.saveAll(reviews);
     await _cache.saveAll(reviews);
+  }
+
+  @override
+  Future<Review> reply(String reviewId, String reply) async {
+    final Review replied = await _remote.reply(reviewId, reply);
+    await _cache.save(replied);
+    return replied;
+  }
+
+  @override
+  Future<Review> report(String reviewId, {String? reason}) async {
+    final Review reported = await _remote.report(reviewId, reason: reason);
+    await _cache.save(reported);
+    return reported;
   }
 }
 
@@ -345,6 +374,17 @@ class CachedContactRepository implements ContactRepository {
     await _remote.updateAll(contacts);
     await _cache.updateAll(contacts);
   }
+
+  @override
+  Future<List<ContactLog>> receivedBy(String brokerId) =>
+      _readThrough<List<ContactLog>>(
+        remote: () => _remote.receivedBy(brokerId),
+        writeThrough: _cache.updateAll,
+        cached: () => _cache.receivedBy(brokerId),
+        isEmpty: (List<ContactLog> c) => c.isEmpty,
+        status: _status,
+        now: _now,
+      );
 }
 
 /// En mode distant, « purger » veut dire vider la copie hors ligne, pas

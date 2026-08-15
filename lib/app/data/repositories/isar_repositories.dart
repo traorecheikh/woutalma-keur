@@ -36,6 +36,19 @@ class IsarBrokerRepository implements BrokerRepository {
   }
 
   @override
+  Future<Broker> requestVerification(String brokerId) async {
+    final Broker? broker = await byId(brokerId);
+    if (broker == null) {
+      throw StateError('Courtier $brokerId inconnu');
+    }
+    final Broker queued = broker.verification == VerificationStatus.verified
+        ? broker
+        : broker.copyWith(verification: VerificationStatus.pending);
+    await save(queued);
+    return queued;
+  }
+
+  @override
   Future<void> saveAll(List<Broker> brokers) async {
     if (brokers.isEmpty) {
       return;
@@ -94,10 +107,12 @@ class IsarPropertyRepository implements PropertyRepository {
   }
 
   @override
-  Future<void> save(Property property) async {
+  Future<Property> save(Property property) async {
     await _isar.writeTxn(
       () => _isar.propertyRows.put(PropertyRow.fromDomain(property)),
     );
+    // La base locale n'attribue rien : ce qui entre ressort identique.
+    return property;
   }
 
   @override
@@ -154,6 +169,35 @@ class IsarReviewRepository implements ReviewRepository {
     );
     // La base locale n'attribue rien : ce qui entre ressort identique.
     return review;
+  }
+
+  @override
+  Future<Review> reply(String reviewId, String reply) async {
+    final Review replied = (await _requireReview(
+      reviewId,
+    )).copyWith(brokerReply: reply);
+    await save(replied);
+    return replied;
+  }
+
+  @override
+  Future<Review> report(String reviewId, {String? reason}) async {
+    final Review reported = (await _requireReview(
+      reviewId,
+    )).copyWith(moderation: ModerationStatus.pending);
+    await save(reported);
+    return reported;
+  }
+
+  Future<Review> _requireReview(String id) async {
+    final ReviewRow? row = await _isar.reviewRows
+        .filter()
+        .uidEqualTo(id)
+        .findFirst();
+    if (row == null) {
+      throw StateError('Avis $id inconnu');
+    }
+    return row.toDomain();
   }
 
   @override
@@ -219,6 +263,16 @@ class IsarContactRepository implements ContactRepository {
     await _isar.writeTxn(
       () => _isar.contactRows.put(ContactRow.fromDomain(contact)),
     );
+  }
+
+  @override
+  Future<List<ContactLog>> receivedBy(String brokerId) async {
+    final List<ContactRow> rows = await _isar.contactRows
+        .filter()
+        .brokerUidEqualTo(brokerId)
+        .sortByCreatedAtDesc()
+        .findAll();
+    return rows.map((ContactRow r) => r.toDomain()).toList();
   }
 
   @override

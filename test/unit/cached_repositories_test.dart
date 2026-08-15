@@ -37,6 +37,11 @@ class _ScriptedBrokers implements BrokerRepository {
 
   @override
   Future<void> saveAll(List<Broker> brokers) async {}
+
+  @override
+  Future<Broker> requestVerification(String brokerId) async {
+    throw UnimplementedError('non utilisé par ce test');
+  }
 }
 
 Broker _broker(String id) => Broker(

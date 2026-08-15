@@ -4,6 +4,7 @@ README.md
 analysis_options.yaml
 doc/AuthApi.md
 doc/AuthSessionDto.md
+doc/BrokerContactLogDto.md
 doc/BrokerDto.md
 doc/BrokerListingDto.md
 doc/BrokerSearchResultsDto.md
@@ -27,6 +28,8 @@ doc/PropertyDto.md
 doc/PropertySearchResultsDto.md
 doc/ReadinessDto.md
 doc/RefreshSessionDto.md
+doc/ReplyReviewDto.md
+doc/ReportReviewDto.md
 doc/ReviewDto.md
 doc/ReviewsApi.md
 doc/SearchApi.md
@@ -51,6 +54,7 @@ lib/src/auth/bearer_auth.dart
 lib/src/auth/oauth.dart
 lib/src/date_serializer.dart
 lib/src/model/auth_session_dto.dart
+lib/src/model/broker_contact_log_dto.dart
 lib/src/model/broker_dto.dart
 lib/src/model/broker_listing_dto.dart
 lib/src/model/broker_search_results_dto.dart
@@ -71,6 +75,8 @@ lib/src/model/property_dto.dart
 lib/src/model/property_search_results_dto.dart
 lib/src/model/readiness_dto.dart
 lib/src/model/refresh_session_dto.dart
+lib/src/model/reply_review_dto.dart
+lib/src/model/report_review_dto.dart
 lib/src/model/review_dto.dart
 lib/src/model/search_suggestions_dto.dart
 lib/src/model/update_broker_dto.dart

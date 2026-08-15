@@ -15,6 +15,7 @@ import 'package:woutalma_api_client/src/date_serializer.dart';
 import 'package:woutalma_api_client/src/model/date.dart';
 
 import 'package:woutalma_api_client/src/model/auth_session_dto.dart';
+import 'package:woutalma_api_client/src/model/broker_contact_log_dto.dart';
 import 'package:woutalma_api_client/src/model/broker_dto.dart';
 import 'package:woutalma_api_client/src/model/broker_listing_dto.dart';
 import 'package:woutalma_api_client/src/model/broker_search_results_dto.dart';
@@ -34,6 +35,8 @@ import 'package:woutalma_api_client/src/model/property_dto.dart';
 import 'package:woutalma_api_client/src/model/property_search_results_dto.dart';
 import 'package:woutalma_api_client/src/model/readiness_dto.dart';
 import 'package:woutalma_api_client/src/model/refresh_session_dto.dart';
+import 'package:woutalma_api_client/src/model/reply_review_dto.dart';
+import 'package:woutalma_api_client/src/model/report_review_dto.dart';
 import 'package:woutalma_api_client/src/model/review_dto.dart';
 import 'package:woutalma_api_client/src/model/search_suggestions_dto.dart';
 import 'package:woutalma_api_client/src/model/update_broker_dto.dart';
@@ -45,6 +48,7 @@ part 'serializers.g.dart';
 
 @SerializersFor([
   AuthSessionDto,
+  BrokerContactLogDto,
   BrokerDto,
   BrokerListingDto,
   BrokerSearchResultsDto,
@@ -64,6 +68,8 @@ part 'serializers.g.dart';
   PropertySearchResultsDto,
   ReadinessDto,
   RefreshSessionDto,
+  ReplyReviewDto,
+  ReportReviewDto,
   ReviewDto,
   SearchSuggestionsDto,
   UpdateBrokerDto,
@@ -87,6 +93,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(UploadPhotoDto)]),
         () => ListBuilder<UploadPhotoDto>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BrokerContactLogDto)]),
+        () => ListBuilder<BrokerContactLogDto>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ContactLogDto)]),

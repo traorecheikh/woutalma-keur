@@ -248,6 +248,7 @@ void main() {
         });
         final RemoteContactRepository repo = RemoteContactRepository(
           api.ContactsApi(dio, api.standardSerializers),
+          api.BrokersApi(dio, api.standardSerializers),
         );
 
         final ContactLog log = await repo.log(

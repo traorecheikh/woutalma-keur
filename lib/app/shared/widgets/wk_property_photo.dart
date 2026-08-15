@@ -2,16 +2,21 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:woutalma_keur/app/core/app_config.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 
 /// Photo de bien.
 ///
-/// Trois provenances, une seule API :
+/// Quatre provenances, une seule API :
 /// - `demo:type:quartier:vue` — seed de démonstration, résolu vers un asset
 ///   embarqué (`assets/seed/photos/`). Aucun réseau au premier lancement.
 /// - `assets/...` — asset déclaré par l'application.
-/// - tout le reste — photo prise ou choisie par un courtier, donc un chemin de
-///   fichier local (un blob sur le web).
+/// - `api:<id>` — octets stockés par le serveur, servis par
+///   `GET {apiBaseUrl}/properties/photos/<id>`. C'est ce que rend toute photo
+///   téléversée par un courtier : sans cette branche, elle ne s'affichait que
+///   sur le téléphone qui l'avait publiée.
+/// - tout le reste — photo prise ou choisie par un courtier et pas encore
+///   envoyée, donc un chemin de fichier local (un blob sur le web).
 ///
 /// Une photo qui ne charge pas ne laisse jamais un trou : le repli est un aplat
 /// de marque avec le pictogramme du type de bien.
@@ -33,12 +38,21 @@ class WkPropertyPhoto extends StatelessWidget {
   final int? cacheWidth;
 
   static const String _demoPrefix = 'demo:';
+  static const String _apiPrefix = 'api:';
   static const String _seedDirectory = 'assets/seed/photos';
 
-  /// `demo:house:medina:front` → `assets/seed/photos/house-medina-front.webp`.
-  static String resolve(String path) => path.startsWith(_demoPrefix)
-      ? '$_seedDirectory/${path.substring(_demoPrefix.length).replaceAll(':', '-')}.webp'
-      : path;
+  /// `demo:house:medina:front` → `assets/seed/photos/house-medina-front.webp`,
+  /// `api:abc` → `{apiBaseUrl}/properties/photos/abc`.
+  static String resolve(String path) {
+    if (path.startsWith(_demoPrefix)) {
+      return '$_seedDirectory/${path.substring(_demoPrefix.length).replaceAll(':', '-')}.webp';
+    }
+    if (path.startsWith(_apiPrefix)) {
+      return '${AppConfig.apiBaseUrl}/properties/photos/'
+          '${path.substring(_apiPrefix.length)}';
+    }
+    return path;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +68,8 @@ class WkPropertyPhoto extends StatelessWidget {
       );
     }
 
-    if (kIsWeb) {
-      // `image_picker` rend un blob: sur le web ; il n'y a pas de fichier.
+    // `image_picker` rend un blob: sur le web ; il n'y a pas de fichier.
+    if (kIsWeb || path.startsWith(_apiPrefix)) {
       return Image.network(
         resolved,
         fit: fit,

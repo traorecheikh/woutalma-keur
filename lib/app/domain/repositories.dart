@@ -16,6 +16,15 @@ abstract class BrokerRepository {
   /// enregistrement, et sur un téléphone d'entrée de gamme — la cible
   /// d'acceptation — cela se voit à l'écran.
   Future<void> saveAll(List<Broker> brokers);
+
+  /// B09 — se mettre dans la file de vérification.
+  ///
+  /// Une demande, jamais une décision : le badge est ce qu'un opérateur dit
+  /// d'un courtier, donc [save] ne porte pas `verification` et cette méthode
+  /// existe pour que le bouton ait un endroit légitime où aller. Rend le
+  /// profil relu, pour que l'écran constate l'état réel au lieu de le
+  /// supposer — c'est ce qui empêche un « demande envoyée » mensonger.
+  Future<Broker> requestVerification(String brokerId);
 }
 
 abstract class PropertyRepository {
@@ -24,9 +33,21 @@ abstract class PropertyRepository {
   /// Ce que la découverte a le droit de montrer : un bien clos en sort.
   Future<List<Property>> discoverable();
 
-  Future<List<Property>> byBroker(String brokerId, {bool onlyDiscoverable});
+  Future<List<Property>> byBroker(
+    String brokerId, {
+    bool onlyDiscoverable = false,
+  });
   Future<Property?> byId(String id);
-  Future<void> save(Property property);
+
+  /// Rend le bien **tel qu'enregistré**, pas celui qu'on a proposé.
+  ///
+  /// Même raison que [ReviewRepository.save] : à la publication, l'éditeur
+  /// fabrique un identifiant local (`prp-<micros>`) que le serveur ignore — il
+  /// frappe le sien — et il transforme les photos locales en clés `api:<id>`.
+  /// Sans ce retour, la copie hors ligne s'écrivait sous l'identifiant
+  /// fantôme et « Mes biens » montrait deux fois la même annonce.
+  Future<Property> save(Property property);
+
   Future<void> delete(String id);
 
   /// Voir [BrokerRepository.saveAll].
@@ -34,7 +55,13 @@ abstract class PropertyRepository {
 }
 
 abstract class ReviewRepository {
-  Future<List<Review>> byBroker(String brokerId, {bool onlyPublic});
+  /// Par défaut, **seulement les avis publiés**.
+  ///
+  /// La valeur par défaut est fournie par l'implémentation appelée, pas par
+  /// l'interface : quand chaque classe choisissait la sienne, `byBroker(id)`
+  /// rendait les avis publics sur Isar et les avis en modération sur le
+  /// serveur. Le côté sûr est écrit ici et repris à l'identique partout.
+  Future<List<Review>> byBroker(String brokerId, {bool onlyPublic = true});
   Future<List<Review>> all();
 
   /// Rend l'avis **tel qu'enregistré**, pas celui qu'on a proposé.
@@ -47,6 +74,19 @@ abstract class ReviewRepository {
 
   /// Voir [BrokerRepository.saveAll].
   Future<void> saveAll(List<Review> reviews);
+
+  /// B06 — réponse publique du courtier à un avis le concernant.
+  ///
+  /// Distinct de [save] : répondre n'est pas déposer un avis. Passer par
+  /// `save()` envoyait un nouvel avis signé du courtier contre le contact du
+  /// client, que le serveur refusait — à juste titre — en 403.
+  Future<Review> reply(String reviewId, String reply);
+
+  /// B06 — signaler un avis pour re-modération.
+  ///
+  /// Remet l'avis en attente ; seul un opérateur peut le rejeter. Un courtier
+  /// qui pourrait rejeter lui-même supprimerait la critique.
+  Future<Review> report(String reviewId, {String? reason});
 }
 
 abstract class ContactRepository {
@@ -65,6 +105,15 @@ abstract class ContactRepository {
 
   /// Voir [BrokerRepository.saveAll].
   Future<void> updateAll(List<ContactLog> contacts);
+
+  /// B05 — les mises en relation **reçues** par un courtier.
+  ///
+  /// [all] rend ce que l'utilisateur a envoyé en tant que client ; ce n'est
+  /// pas la même liste, et filtrer l'une pour obtenir l'autre donnait toujours
+  /// zéro. Les entrées rendues ne portent aucune identité de client :
+  /// rapprocher un avis d'un appel précis désignerait son auteur
+  /// (docs/PRODUCT.md §4 règle 7).
+  Future<List<ContactLog>> receivedBy(String brokerId);
 }
 
 /// Ce que le mode démo peut purger et resemer.

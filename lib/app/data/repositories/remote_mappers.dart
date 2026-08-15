@@ -203,6 +203,23 @@ ContactLog mapContactLog(api.ContactLogDto dto) {
   );
 }
 
+/// Contact **reçu** par un courtier.
+///
+/// `reviewId` reste nul même quand un avis existe : le serveur ne l'envoie
+/// pas, et c'est délibéré — rattacher un avis à un appel précis reviendrait à
+/// en désigner l'auteur. Le courtier voit `hasReview` dans son écran, pas
+/// l'identifiant.
+ContactLog mapReceivedContactLog(api.BrokerContactLogDto dto) {
+  return ContactLog(
+    id: dto.id,
+    brokerId: dto.brokerId,
+    propertyId: dto.propertyId,
+    channel: _contactChannel(dto.channel.name),
+    outcome: _contactOutcome(dto.outcome.name),
+    createdAt: dto.createdAt,
+  );
+}
+
 BrokerListing mapBrokerListing(api.BrokerListingDto dto) {
   return BrokerListing(
     broker: mapBroker(dto.broker),

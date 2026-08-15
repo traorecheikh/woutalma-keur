@@ -92,6 +92,44 @@ class Broker {
   final bool pinned;
 
   bool get isVerified => verification == VerificationStatus.verified;
+
+  /// Copie modifiée.
+  ///
+  /// Les appelants recomposaient les onze champs à la main : un oubli effaçait
+  /// silencieusement une donnée — la couverture, ou le WhatsApp — au moment
+  /// même où le courtier croyait n'avoir changé que son nom.
+  ///
+  /// `whatsapp` et `logoAsset` sont nullables et se vident volontairement, d'où
+  /// les drapeaux explicites : `whatsapp: null` ne peut pas dire à la fois
+  /// « inchangé » et « retiré ».
+  Broker copyWith({
+    BrokerKind? kind,
+    String? name,
+    String? phone,
+    String? whatsapp,
+    GeoPoint? position,
+    List<String>? coverage,
+    String? logoAsset,
+    VerificationStatus? verification,
+    double? responseRate,
+    bool? pinned,
+    bool clearWhatsapp = false,
+    bool clearLogoAsset = false,
+  }) {
+    return Broker(
+      id: id,
+      kind: kind ?? this.kind,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      whatsapp: clearWhatsapp ? null : whatsapp ?? this.whatsapp,
+      position: position ?? this.position,
+      coverage: coverage ?? this.coverage,
+      logoAsset: clearLogoAsset ? null : logoAsset ?? this.logoAsset,
+      verification: verification ?? this.verification,
+      responseRate: responseRate ?? this.responseRate,
+      pinned: pinned ?? this.pinned,
+    );
+  }
 }
 
 @immutable
@@ -171,6 +209,29 @@ class Review {
   final DateTime createdAt;
 
   bool get isPublic => moderation == ModerationStatus.published;
+
+  /// Copie modifiée. Même raison que [Broker.copyWith] : la réponse du
+  /// courtier et la modération se posent sur un avis existant, sans en
+  /// réécrire les notes.
+  Review copyWith({
+    ModerationStatus? moderation,
+    String? brokerReply,
+    bool clearBrokerReply = false,
+  }) {
+    return Review(
+      id: id,
+      brokerId: brokerId,
+      contactId: contactId,
+      rating: rating,
+      createdAt: createdAt,
+      responsiveness: responsiveness,
+      accuracy: accuracy,
+      courtesy: courtesy,
+      comment: comment,
+      moderation: moderation ?? this.moderation,
+      brokerReply: clearBrokerReply ? null : brokerReply ?? this.brokerReply,
+    );
+  }
 }
 
 @immutable

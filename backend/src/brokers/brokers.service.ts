@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma, Role, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { geographyPoint, selectLatLng } from '../common/postgis';
 import { mapBrokerRow, BrokerRow } from './broker-row.mapper';
@@ -68,13 +68,7 @@ export class BrokersService {
   /// (verification, responseRate, pinned) are not in UpdateBrokerDto and so
   /// cannot be reached from here.
   async updateOwned(id: string, ownerId: string, dto: UpdateBrokerDto): Promise<BrokerDto> {
-    const broker = await this.prisma.broker.findUnique({ where: { id }, select: { ownerId: true } });
-    if (!broker) {
-      throw new NotFoundException(`Broker ${id} not found`);
-    }
-    if (broker.ownerId !== ownerId) {
-      throw new ForbiddenException('This profile belongs to another account');
-    }
+    await this.requireOwned(id, ownerId);
 
     const assignments: Prisma.Sql[] = [];
     if (dto.kind !== undefined) assignments.push(Prisma.sql`"kind" = ${dto.kind}::"BrokerKind"`);
@@ -97,6 +91,61 @@ export class BrokersService {
     }
 
     return this.findById(id);
+  }
+
+  /// B02 — "Demander la vérification".
+  ///
+  /// A request, not a grant. PENDING is the only value this may ever write:
+  /// the badge is an operator's statement about a broker, so the broker can
+  /// only ever put themselves in the queue. UpdateBrokerDto refuses
+  /// `verification` outright for the same reason; this endpoint exists so the
+  /// button has somewhere legitimate to go instead of PATCHing nothing and
+  /// still showing a success toast.
+  ///
+  /// Idempotent by state, not by count: a broker already PENDING (or already
+  /// VERIFIED) gets their current state back with no write and no error, so a
+  /// double tap, a retry on a flaky network or a re-installed app cannot
+  /// disturb a decision already taken.
+  async requestVerification(id: string, ownerId: string): Promise<BrokerDto> {
+    const current = await this.requireOwned(id, ownerId);
+
+    if (
+      current.verification === VerificationStatus.PENDING ||
+      current.verification === VerificationStatus.VERIFIED
+    ) {
+      return this.findById(id);
+    }
+
+    // NONE or REJECTED. The previous rejection reason goes with the previous
+    // decision: leaving it would make the app show "refusé parce que …" next
+    // to a request that is once again waiting.
+    await this.prisma.$executeRaw(Prisma.sql`
+      UPDATE "brokers"
+      SET "verification" = 'PENDING'::"VerificationStatus", "rejectionReason" = NULL, "updatedAt" = now()
+      WHERE "id" = ${id}
+    `);
+    return this.findById(id);
+  }
+
+  /// Shared 404-then-403 ownership gate for the write paths above, and for
+  /// the owner-only reads BrokersController serves (received contacts).
+  ///
+  /// Distinct from requireBrokerIdForOwner() in common/broker-owner.ts: that
+  /// one asks "which profile does this user own", this one asks "does this
+  /// user own *that* profile" — the difference matters for a route whose id
+  /// comes from the URL.
+  async requireOwned(id: string, ownerId: string): Promise<{ verification: VerificationStatus }> {
+    const broker = await this.prisma.broker.findUnique({
+      where: { id },
+      select: { ownerId: true, verification: true },
+    });
+    if (!broker) {
+      throw new NotFoundException(`Broker ${id} not found`);
+    }
+    if (broker.ownerId !== ownerId) {
+      throw new ForbiddenException('This profile belongs to another account');
+    }
+    return { verification: broker.verification };
   }
 }
 

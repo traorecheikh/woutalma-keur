@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
@@ -79,32 +80,45 @@ class BrokerHomeViewModel extends ChangeNotifier {
     _state = const ScreenState<BrokerActivity>.loading();
     notifyListeners();
 
-    final List<Property> owned = await _properties.byBroker(_brokerId);
-    final List<Review> all = await _reviews.byBroker(
-      _brokerId,
-      onlyPublic: false,
-    );
-    final List<Review> published = all.where((Review r) => r.isPublic).toList();
-    final List<ContactLog> contacts = await _contacts.all();
+    // Quatre lectures réseau : la première qui casse laissait l'écran sur son
+    // indicateur pour toujours, et la branche d'erreur ci-dessous ne pouvait
+    // jamais s'afficher.
+    try {
+      final List<Property> owned = await _properties.byBroker(_brokerId);
+      final List<Review> all = await _reviews.byBroker(
+        _brokerId,
+        onlyPublic: false,
+      );
+      final List<Review> published = all
+          .where((Review r) => r.isPublic)
+          .toList();
+      final List<ContactLog> contacts = await _contacts.all();
 
-    _state = ScreenState<BrokerActivity>.data(
-      BrokerActivity(
-        broker: await _brokers.byId(_brokerId),
-        visibleProperties: owned.where((Property p) => p.isDiscoverable).length,
-        closedProperties: owned.where((Property p) => !p.isDiscoverable).length,
-        contactsReceived: contacts
-            .where((ContactLog c) => c.brokerId == _brokerId)
-            .length,
-        publishedReviews: published.length,
-        pendingReviews: all.length - published.length,
-        averageRating: published.isEmpty
-            ? 0
-            : published
-                      .map((Review r) => r.rating)
-                      .reduce((int a, int b) => a + b) /
-                  published.length,
-      ),
-    );
+      _state = ScreenState<BrokerActivity>.data(
+        BrokerActivity(
+          broker: await _brokers.byId(_brokerId),
+          visibleProperties: owned
+              .where((Property p) => p.isDiscoverable)
+              .length,
+          closedProperties: owned
+              .where((Property p) => !p.isDiscoverable)
+              .length,
+          contactsReceived: contacts
+              .where((ContactLog c) => c.brokerId == _brokerId)
+              .length,
+          publishedReviews: published.length,
+          pendingReviews: all.length - published.length,
+          averageRating: published.isEmpty
+              ? 0
+              : published
+                        .map((Review r) => r.rating)
+                        .reduce((int a, int b) => a + b) /
+                    published.length,
+        ),
+      );
+    } on Object catch (error) {
+      _state = ScreenState<BrokerActivity>.error(brokerFailure(error));
+    }
     notifyListeners();
   }
 }

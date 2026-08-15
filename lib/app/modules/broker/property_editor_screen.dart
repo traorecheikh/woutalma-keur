@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_view_model.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
@@ -12,9 +13,38 @@ import 'package:woutalma_keur/app/domain/photo_service.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_option_sheet.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_photo_picker.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_text_field.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_toast.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
+
+/// Ce que le serveur accepte réellement par bien.
+///
+/// L'API refuse la quatrième photo avec un 400. Offrir plus, c'est faire
+/// choisir des photos pour rien puis échouer à la publication : l'éditeur
+/// s'aligne donc toujours sur la valeur la plus stricte, quelle que soit la
+/// limite annoncée par le service de photos qu'on lui injecte.
+const int kServerPhotoLimit = 3;
+
+/// Ramène n'importe quel [PhotoService] à la limite du serveur.
+///
+/// Décore plutôt que de modifier le service : la sélection et la compression
+/// restent celles de la plateforme, seule la limite annoncée change — et
+/// `WkPhotoPicker` la lit pour son compteur, son bouton et son motif de
+/// désactivation.
+class _ServerCappedPhotoService implements PhotoService {
+  const _ServerCappedPhotoService(this._inner);
+
+  final PhotoService _inner;
+
+  @override
+  int get maxPerProperty => _inner.maxPerProperty < kServerPhotoLimit
+      ? _inner.maxPerProperty
+      : kServerPhotoLimit;
+
+  @override
+  Future<String?> pick(PhotoSource source) => _inner.pick(source);
+}
 
 /// B03 — Ajouter ou modifier un bien.
 class PropertyEditorScreen extends StatefulWidget {
@@ -235,8 +265,16 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
   ) => <Widget>[
     WkPhotoPicker(
       paths: model.photos,
-      service: widget.photos,
+      service: _ServerCappedPhotoService(widget.photos),
       onChanged: model.setPhotos,
+    ),
+    const SizedBox(height: WkSpacing.xs),
+    // Dit avant de choisir, pas après un refus du serveur.
+    Text(
+      context.l10n.photosServerLimit(kServerPhotoLimit),
+      style: context.text.bodySmall?.copyWith(
+        color: context.colors.onSurfaceVariant,
+      ),
     ),
     const SizedBox(height: WkSpacing.md),
     WkSelectField<PropertyStatus>(
@@ -308,11 +346,25 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     }
 
     if (id == null) {
+      final InteractionFeedbackService? feedback = context
+          .read<InteractionFeedbackService?>();
+      final MutationState submission = model.submission;
+
+      if (submission is MutationFailure) {
+        // Le formulaire est bon : c'est l'enregistrement qui a échoué. Le
+        // renvoyer à l'étape 2 en annonçant « corrigez d'abord » lui faisait
+        // relire un formulaire sans faute pendant que la vraie cause — le
+        // réseau — restait tue.
+        feedback?.emit(FeedbackIntent.error);
+        final String message = failureMessage(context.l10n, submission.failure);
+        feedback?.announce(message);
+        WkToast.show(context, message: message);
+        return;
+      }
+
       setState(() {
         _step = _detailsInvalid() ? 1 : 2;
       });
-      final InteractionFeedbackService? feedback = context
-          .read<InteractionFeedbackService?>();
       // Une erreur pour la soumission entière, pas une par champ vide.
       feedback?.emit(FeedbackIntent.error);
       feedback?.announce(context.l10n.validationFixFirst);

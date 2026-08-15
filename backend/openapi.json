@@ -377,6 +377,81 @@
         ]
       }
     },
+    "/brokers/{id}/verification-request": {
+      "post": {
+        "operationId": "BrokersController_requestVerification",
+        "summary": "B02 — puts the caller’s own profile in the verification queue (NONE/REJECTED → PENDING). A request, never a grant: PENDING is the only status it can write, and calling it again while PENDING or VERIFIED just returns the current state.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokerDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/brokers/{id}/contacts": {
+      "get": {
+        "operationId": "BrokersController_findContacts",
+        "summary": "Contacts this broker RECEIVED — the broker-side counterpart of GET /contacts, which only ever lists what the caller sent as a client. Owner-only, and without any client-identifying field (PRODUCT.md §4 rule 7).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrokerContactLogDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "brokers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/brokers/{id}/properties": {
       "get": {
         "operationId": "BrokersController_findProperties",
@@ -613,6 +688,151 @@
         },
         "tags": [
           "properties"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/contacts": {
+      "post": {
+        "operationId": "ContactsController_log",
+        "summary": "Logs a contact BEFORE the client opens the external channel (tel:/sms:/wa.me) — PRODUCT.md §3: \"Journal local avant l'ouverture du canal externe.\"",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactLogDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "ContactsController_all",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactLogDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/contacts/{id}": {
+      "get": {
+        "operationId": "ContactsController_byId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactLogDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/contacts/{id}/outcome": {
+      "patch": {
+        "operationId": "ContactsController_updateOutcome",
+        "summary": "Records the exchange result — 'reached' is the only outcome that opens a review.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContactOutcomeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactLogDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "contacts"
         ],
         "security": [
           {
@@ -969,16 +1189,8 @@
     "/reviews": {
       "get": {
         "operationId": "ReviewsController_all",
-        "parameters": [
-          {
-            "name": "onlyPublic",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "summary": "Published reviews only, every broker together — feeds the client-side averages.",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "",
@@ -1042,6 +1254,7 @@
     "/reviews/broker/{brokerId}": {
       "get": {
         "operationId": "ReviewsController_byBroker",
+        "summary": "Published reviews of one broker. `onlyPublic=false` additionally returns the pending/rejected ones, and only to the broker who owns the profile — for anyone else it is ignored.",
         "parameters": [
           {
             "name": "brokerId",
@@ -1053,10 +1266,10 @@
           },
           {
             "name": "onlyPublic",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "boolean"
             }
           }
         ],
@@ -1085,109 +1298,10 @@
         ]
       }
     },
-    "/contacts": {
-      "post": {
-        "operationId": "ContactsController_log",
-        "summary": "Logs a contact BEFORE the client opens the external channel (tel:/sms:/wa.me) — PRODUCT.md §3: \"Journal local avant l'ouverture du canal externe.\"",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateContactDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ContactLogDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "contacts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "ContactsController_all",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ContactLogDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "contacts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/contacts/{id}": {
-      "get": {
-        "operationId": "ContactsController_byId",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ContactLogDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "contacts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/contacts/{id}/outcome": {
+    "/reviews/{id}/reply": {
       "patch": {
-        "operationId": "ContactsController_updateOutcome",
-        "summary": "Records the exchange result — 'reached' is the only outcome that opens a review.",
+        "operationId": "ReviewsController_reply",
+        "summary": "B05 — the broker answers a review about them. 403 for a review about someone else.",
         "parameters": [
           {
             "name": "id",
@@ -1203,7 +1317,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateContactOutcomeDto"
+                "$ref": "#/components/schemas/ReplyReviewDto"
               }
             }
           }
@@ -1214,14 +1328,60 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContactLogDto"
+                  "$ref": "#/components/schemas/ReviewDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "contacts"
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/reviews/{id}/report": {
+      "post": {
+        "operationId": "ReviewsController_report",
+        "summary": "B05 — the broker asks for a review to be re-moderated. Sets PENDING and nothing else: a broker cannot reject a review about them.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "reviews"
         ],
         "security": [
           {
@@ -1591,6 +1751,53 @@
           }
         }
       },
+      "BrokerContactLogDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brokerId": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "CALL",
+              "SMS",
+              "WHATSAPP",
+              "VOICE_MESSAGE"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ATTEMPTED",
+              "REACHED",
+              "NO_ANSWER"
+            ]
+          },
+          "hasReview": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "brokerId",
+          "channel",
+          "outcome",
+          "hasReview",
+          "createdAt"
+        ]
+      },
       "PropertyDto": {
         "type": "object",
         "properties": {
@@ -1847,6 +2054,101 @@
           }
         }
       },
+      "CreateContactDto": {
+        "type": "object",
+        "properties": {
+          "brokerId": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "CALL",
+              "SMS",
+              "WHATSAPP",
+              "VOICE_MESSAGE"
+            ]
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Stable client-generated key for retry-safe contact logging."
+          }
+        },
+        "required": [
+          "brokerId",
+          "channel"
+        ]
+      },
+      "ContactLogDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brokerId": {
+            "type": "string"
+          },
+          "propertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "CALL",
+              "SMS",
+              "WHATSAPP",
+              "VOICE_MESSAGE"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ATTEMPTED",
+              "REACHED",
+              "NO_ANSWER"
+            ]
+          },
+          "reviewId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "allowsReview": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "brokerId",
+          "channel",
+          "outcome",
+          "createdAt",
+          "allowsReview"
+        ]
+      },
+      "UpdateContactOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ATTEMPTED",
+              "REACHED",
+              "NO_ANSWER"
+            ]
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
       "BrokerListingDto": {
         "type": "object",
         "properties": {
@@ -2040,100 +2342,26 @@
           "rating"
         ]
       },
-      "CreateContactDto": {
+      "ReplyReviewDto": {
         "type": "object",
         "properties": {
-          "brokerId": {
-            "type": "string"
-          },
-          "propertyId": {
-            "type": "string"
-          },
-          "channel": {
+          "reply": {
             "type": "string",
-            "enum": [
-              "CALL",
-              "SMS",
-              "WHATSAPP",
-              "VOICE_MESSAGE"
-            ]
-          },
-          "clientRequestId": {
-            "type": "string",
-            "description": "Stable client-generated key for retry-safe contact logging."
+            "maxLength": 2000
           }
         },
         "required": [
-          "brokerId",
-          "channel"
+          "reply"
         ]
       },
-      "ContactLogDto": {
+      "ReportReviewDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "brokerId": {
-            "type": "string"
-          },
-          "propertyId": {
+          "reason": {
             "type": "string",
-            "nullable": true
-          },
-          "channel": {
-            "type": "string",
-            "enum": [
-              "CALL",
-              "SMS",
-              "WHATSAPP",
-              "VOICE_MESSAGE"
-            ]
-          },
-          "outcome": {
-            "type": "string",
-            "enum": [
-              "ATTEMPTED",
-              "REACHED",
-              "NO_ANSWER"
-            ]
-          },
-          "reviewId": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "allowsReview": {
-            "type": "boolean"
+            "maxLength": 500
           }
-        },
-        "required": [
-          "id",
-          "brokerId",
-          "channel",
-          "outcome",
-          "createdAt",
-          "allowsReview"
-        ]
-      },
-      "UpdateContactOutcomeDto": {
-        "type": "object",
-        "properties": {
-          "outcome": {
-            "type": "string",
-            "enum": [
-              "ATTEMPTED",
-              "REACHED",
-              "NO_ANSWER"
-            ]
-          }
-        },
-        "required": [
-          "outcome"
-        ]
+        }
       }
     }
   }

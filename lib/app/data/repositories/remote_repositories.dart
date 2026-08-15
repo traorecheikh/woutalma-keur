@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/data/repositories/remote_mappers.dart';
+import 'package:woutalma_keur/app/data/services/property_photo_uploader.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/domain/review_eligibility.dart';
@@ -84,6 +85,14 @@ class RemoteBrokerRepository implements BrokerRepository {
     );
   }
 
+  @override
+  Future<Broker> requestVerification(String brokerId) async {
+    final response = await _api.brokersControllerRequestVerification(
+      id: brokerId,
+    );
+    return mapBroker(response.data!);
+  }
+
   /// Pas d'écriture en lot côté serveur : chaque profil est une requête.
   @override
   Future<void> saveAll(List<Broker> brokers) async {
@@ -94,13 +103,20 @@ class RemoteBrokerRepository implements BrokerRepository {
 }
 
 class RemotePropertyRepository implements PropertyRepository {
-  RemotePropertyRepository(this._propertiesApi, this._brokersApi);
+  RemotePropertyRepository(
+    this._propertiesApi,
+    this._brokersApi, {
+    PropertyPhotoUploader photos = const PropertyPhotoUploader(),
+  }) : _photos = photos;
 
   final api.PropertiesApi _propertiesApi;
 
   // brokers/:id/properties lives on BrokersApi, not PropertiesApi — kept
   // private so callers of this repository never need to know that.
   final api.BrokersApi _brokersApi;
+
+  /// Sépare les clés déjà connues du serveur des fichiers locaux à téléverser.
+  final PropertyPhotoUploader _photos;
 
   @override
   Future<List<Property>> all() async {
@@ -152,17 +168,27 @@ class RemotePropertyRepository implements PropertyRepository {
     }
   }
 
-  /// Publie ou met à jour un bien.
+  /// Publie ou met à jour un bien, et rend **ce que le serveur a enregistré**.
+  ///
+  /// Deux choses ne survivent pas au voyage et doivent revenir de là-bas :
+  /// l'identifiant, frappé à l'insertion — celui que l'éditeur avait fabriqué
+  /// est ignoré — et les photos, dont les chemins locaux deviennent des clés
+  /// `api:<id>`.
   ///
   /// Les photos déjà connues du serveur (`demo:…`, `api:…`) repartent telles
   /// quelles dans `photoAssets` ; celles qui viennent d'être prises sur le
-  /// téléphone sont des chemins de fichier locaux et doivent être téléversées
-  /// séparément — voir `PropertyPhotoUploader`.
+  /// téléphone sont des chemins de fichier locaux, lus et encodés dans
+  /// `newPhotos` par [PropertyPhotoUploader]. Envoyer le chemin dans
+  /// `photoAssets`, comme avant, faisait accepter au serveur une chaîne
+  /// opaque : la photo ne s'affichait que sur le téléphone qui l'avait
+  /// publiée.
   @override
-  Future<void> save(Property property) async {
+  Future<Property> save(Property property) async {
     final Property? existing = await byId(property.id);
+    final PreparedPhotos photos = await _photos.prepare(property.photoAssets);
+
     if (existing == null) {
-      await _propertiesApi.propertiesControllerCreate(
+      final response = await _propertiesApi.propertiesControllerCreate(
         createPropertyDto: api.CreatePropertyDto(
           (b) => b
             ..kind = api.CreatePropertyDtoKindEnum.valueOf(
@@ -182,12 +208,13 @@ class RemotePropertyRepository implements PropertyRepository {
             ..status = api.CreatePropertyDtoStatusEnum.valueOf(
               propertyStatusWireName(property.status),
             )
-            ..photoAssets.addAll(property.photoAssets),
+            ..photoAssets.addAll(photos.retained)
+            ..newPhotos.addAll(photos.uploads.map(_uploadDto)),
         ),
       );
-      return;
+      return mapProperty(response.data!);
     }
-    await _propertiesApi.propertiesControllerUpdate(
+    final response = await _propertiesApi.propertiesControllerUpdate(
       id: property.id,
       updatePropertyDto: api.UpdatePropertyDto(
         (b) => b
@@ -208,10 +235,29 @@ class RemotePropertyRepository implements PropertyRepository {
           ..status = api.UpdatePropertyDtoStatusEnum.valueOf(
             propertyStatusWireName(property.status),
           )
-          ..photoAssets.addAll(property.photoAssets),
+          ..photoAssets.addAll(photos.retained)
+          ..newPhotos.addAll(photos.uploads.map(_uploadDto)),
       ),
     );
+    return mapProperty(response.data!);
   }
+
+  static api.UploadPhotoDto _uploadDto(PreparedPhoto photo) {
+    return api.UploadPhotoDto(
+      (b) => b
+        ..mimeType = _mimeEnum(photo.mimeType)
+        ..dataBase64 = photo.dataBase64,
+    );
+  }
+
+  /// Le générateur renomme `image/jpeg` en `imageSlashJpeg` ; la valeur
+  /// filaire reste `image/jpeg`.
+  static api.UploadPhotoDtoMimeTypeEnum _mimeEnum(String mimeType) =>
+      switch (mimeType) {
+        'image/png' => api.UploadPhotoDtoMimeTypeEnum.imageSlashPng,
+        'image/webp' => api.UploadPhotoDtoMimeTypeEnum.imageSlashWebp,
+        _ => api.UploadPhotoDtoMimeTypeEnum.imageSlashJpeg,
+      };
 
   /// Retrait doux : le serveur passe le bien en `CLOSED` au lieu de le
   /// supprimer, sinon l'historique de contact d'un client cesserait de
@@ -235,21 +281,29 @@ class RemoteReviewRepository implements ReviewRepository {
 
   final api.ReviewsApi _api;
 
+  /// Public par défaut, comme le contrat. Le serveur, lui, rend aussi les
+  /// avis `PENDING`/`REJECTED` quand on lui demande `onlyPublic=false` : la
+  /// fiche publique d'un courtier les affichait et les faisait entrer dans la
+  /// moyenne.
   @override
   Future<List<Review>> byBroker(
     String brokerId, {
-    bool onlyPublic = false,
+    bool onlyPublic = true,
   }) async {
     final response = await _api.reviewsControllerByBroker(
       brokerId: brokerId,
-      onlyPublic: onlyPublic.toString(),
+      onlyPublic: onlyPublic,
     );
     return (response.data ?? const <api.ReviewDto>[]).map(mapReview).toList();
   }
 
+  /// Le serveur ne rend plus que les avis publiés sur cette route, sans
+  /// paramètre : elle traverse tous les courtiers, donc il n'existe personne à
+  /// qui accorder une vue plus large, et `onlyPublic=false` revenait à ouvrir
+  /// la file de modération entière à un appelant anonyme.
   @override
   Future<List<Review>> all() async {
-    final response = await _api.reviewsControllerAll(onlyPublic: 'false');
+    final response = await _api.reviewsControllerAll();
     return (response.data ?? const <api.ReviewDto>[]).map(mapReview).toList();
   }
 
@@ -297,6 +351,24 @@ class RemoteReviewRepository implements ReviewRepository {
     };
   }
 
+  @override
+  Future<Review> reply(String reviewId, String reply) async {
+    final response = await _api.reviewsControllerReply(
+      id: reviewId,
+      replyReviewDto: api.ReplyReviewDto((b) => b.reply = reply),
+    );
+    return mapReview(response.data!);
+  }
+
+  @override
+  Future<Review> report(String reviewId, {String? reason}) async {
+    final response = await _api.reviewsControllerReport(
+      id: reviewId,
+      reportReviewDto: api.ReportReviewDto((b) => b.reason = reason),
+    );
+    return mapReview(response.data!);
+  }
+
   /// Pas d'écriture en lot côté serveur : chaque avis passe par sa propre
   /// vérification d'éligibilité.
   @override
@@ -308,9 +380,23 @@ class RemoteReviewRepository implements ReviewRepository {
 }
 
 class RemoteContactRepository implements ContactRepository {
-  RemoteContactRepository(this._api);
+  RemoteContactRepository(this._api, this._brokersApi);
 
   final api.ContactsApi _api;
+
+  /// Les contacts reçus vivent sur BrokersApi : c'est une lecture du profil
+  /// courtier, pas de l'historique personnel de l'appelant.
+  final api.BrokersApi _brokersApi;
+
+  @override
+  Future<List<ContactLog>> receivedBy(String brokerId) async {
+    final response = await _brokersApi.brokersControllerFindContacts(
+      id: brokerId,
+    );
+    return (response.data ?? const <api.BrokerContactLogDto>[])
+        .map(mapReceivedContactLog)
+        .toList();
+  }
 
   @override
   Future<List<ContactLog>> all() async {

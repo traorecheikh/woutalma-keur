@@ -276,7 +276,7 @@ class AppDependencies {
       status: cacheStatus,
     );
     final ContactRepository contacts = CachedContactRepository(
-      remote: RemoteContactRepository(contactsApi),
+      remote: RemoteContactRepository(contactsApi, brokersApi),
       cache: cache.contacts,
       status: cacheStatus,
     );

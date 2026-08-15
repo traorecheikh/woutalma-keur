@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
@@ -42,26 +43,32 @@ class BrokerActivityViewModel extends ChangeNotifier {
     _state = const ScreenState<List<ReceivedContact>>.loading();
     notifyListeners();
 
-    final List<ContactLog> all = await _contacts.all();
-    final List<ReceivedContact> mine = <ReceivedContact>[];
+    // Une lecture de contacts, puis une par bien concerné : sans garde, un
+    // réseau coupé au milieu figeait l'écran sur son indicateur.
+    try {
+      // `all()` rend ce que l'utilisateur a envoyé **en tant que client** :
+      // filtrer cette liste par brokerId donnait toujours zéro, sauf à s'être
+      // contacté soi-même. Les contacts reçus ont leur propre lecture.
+      final List<ContactLog> received = await _contacts.receivedBy(_brokerId);
+      final List<ReceivedContact> mine = <ReceivedContact>[];
 
-    for (final ContactLog contact in all) {
-      if (contact.brokerId != _brokerId) {
-        continue;
+      for (final ContactLog contact in received) {
+        mine.add(
+          ReceivedContact(
+            contact: contact,
+            property: contact.propertyId == null
+                ? null
+                : await _properties.byId(contact.propertyId!),
+          ),
+        );
       }
-      mine.add(
-        ReceivedContact(
-          contact: contact,
-          property: contact.propertyId == null
-              ? null
-              : await _properties.byId(contact.propertyId!),
-        ),
-      );
-    }
 
-    _state = mine.isEmpty
-        ? const ScreenState<List<ReceivedContact>>.empty()
-        : ScreenState<List<ReceivedContact>>.data(mine);
+      _state = mine.isEmpty
+          ? const ScreenState<List<ReceivedContact>>.empty()
+          : ScreenState<List<ReceivedContact>>.data(mine);
+    } on Object catch (error) {
+      _state = ScreenState<List<ReceivedContact>>.error(brokerFailure(error));
+    }
     notifyListeners();
   }
 }

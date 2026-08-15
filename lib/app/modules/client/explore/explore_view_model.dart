@@ -134,18 +134,21 @@ class ExploreViewModel extends ChangeNotifier {
   ///
   /// Sert l'aperçu en direct de M01 : on apprend qu'un filtre vide la liste
   /// **avant** de le poser, pas après.
+  /// Un seul appel, celui du segment affiché : compter les deux revenait à
+  /// payer deux allers-retours pour un chiffre dont un seul s'affiche.
   Future<int> previewCount(DiscoveryFilters candidate) async {
-    final List<BrokerListing> brokers = await _discovery.findBrokers(
-      from: _positions.position,
-      filters: candidate,
-    );
+    if (_segment == ExploreSegment.brokers) {
+      final List<BrokerListing> brokers = await _discovery.findBrokers(
+        from: _positions.position,
+        filters: candidate,
+      );
+      return brokers.length;
+    }
     final List<Property> properties = await _discovery.findProperties(
       from: _positions.position,
       filters: candidate,
     );
-    return _segment == ExploreSegment.brokers
-        ? brokers.length
-        : properties.length;
+    return properties.length;
   }
 
   Future<void> applyFilters(DiscoveryFilters value) async {

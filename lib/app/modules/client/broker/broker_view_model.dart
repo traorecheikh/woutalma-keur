@@ -80,7 +80,14 @@ class BrokerViewModel extends ChangeNotifier {
       _brokerId,
       onlyDiscoverable: true,
     );
-    final List<Review> published = await _reviews.byBroker(_brokerId);
+    // `onlyPublic` explicite : C02 est la fiche publique. Un avis en
+    // modération — ou refusé — ne s'y affiche pas et ne pèse pas dans la
+    // moyenne, sans quoi une note publique se fabriquerait avec des avis que
+    // personne n'a validés.
+    final List<Review> published = await _reviews.byBroker(
+      _brokerId,
+      onlyPublic: true,
+    );
     final double average = published.isEmpty
         ? 0
         : published

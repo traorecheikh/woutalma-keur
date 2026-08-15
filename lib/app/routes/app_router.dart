@@ -10,6 +10,7 @@ import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
 import 'package:woutalma_keur/app/modules/auth/auth_screens.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_activity_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_home_screen.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_profile_editor_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_profile_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_trust_screens.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_shell.dart';
@@ -412,6 +413,9 @@ GoRouter buildRouter(AppDependencies deps) {
                               from: deps.clientPosition.position,
                             )..load(),
                             child: BrokerProfileScreen(
+                              onEditProfile: () => context.push<void>(
+                                AppRoutes.brokerProfileEdit,
+                              ),
                               onOpenSettings: () =>
                                   context.push(AppRoutes.settings),
                               onOpenVerification: () =>
@@ -456,6 +460,26 @@ GoRouter buildRouter(AppDependencies deps) {
             ),
           );
         },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootKey,
+        path: AppRoutes.brokerProfileEdit,
+        builder: (BuildContext context, GoRouterState state) => requireBroker(
+          context,
+          (String brokerId) =>
+              ChangeNotifierProvider<BrokerProfileEditorViewModel>(
+                create: (_) => BrokerProfileEditorViewModel(
+                  brokers: deps.brokers,
+                  brokerId: brokerId,
+                )..load(),
+                child: BrokerProfileEditorScreen(
+                  onBack: () => context.pop(),
+                  // Retour à B07, qui se relit : le nouveau numéro doit se
+                  // voir tout de suite, sinon on doute d'avoir enregistré.
+                  onSaved: () => context.pop(),
+                ),
+              ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootKey,

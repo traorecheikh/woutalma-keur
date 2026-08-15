@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
@@ -31,20 +33,32 @@ class BrokerReviewsViewModel extends ChangeNotifier {
 
   ScreenState<List<Review>> get state => _state;
 
+  MutationState _mutation = const MutationState.idle();
+
+  /// État de la dernière réponse ou du dernier signalement.
+  ///
+  /// L'écran le lit après coup : sans lui, un envoi refusé par le serveur
+  /// affichait quand même « Réponse publiée ».
+  MutationState get mutation => _mutation;
+
   Future<void> load() async {
     _state = const ScreenState<List<Review>>.loading();
     notifyListeners();
 
-    // Le courtier voit aussi ce qui est en modération : c'est son profil, et
-    // il doit pouvoir signaler un abus avant publication.
-    final List<Review> all = await _reviews.byBroker(
-      _brokerId,
-      onlyPublic: false,
-    );
+    try {
+      // Le courtier voit aussi ce qui est en modération : c'est son profil, et
+      // il doit pouvoir signaler un abus avant publication.
+      final List<Review> all = await _reviews.byBroker(
+        _brokerId,
+        onlyPublic: false,
+      );
 
-    _state = all.isEmpty
-        ? const ScreenState<List<Review>>.empty()
-        : ScreenState<List<Review>>.data(all);
+      _state = all.isEmpty
+          ? const ScreenState<List<Review>>.empty()
+          : ScreenState<List<Review>>.data(all);
+    } on Object catch (error) {
+      _state = ScreenState<List<Review>>.error(brokerFailure(error));
+    }
     notifyListeners();
   }
 
@@ -53,45 +67,35 @@ class BrokerReviewsViewModel extends ChangeNotifier {
   /// réputation ne vaut plus rien.
   Future<void> reply(Review review, String text) async {
     if (text.trim().isEmpty) {
+      _mutation = const MutationState.idle();
+      notifyListeners();
       return;
     }
-    await _reviews.save(
-      Review(
-        id: review.id,
-        brokerId: review.brokerId,
-        contactId: review.contactId,
-        rating: review.rating,
-        responsiveness: review.responsiveness,
-        accuracy: review.accuracy,
-        courtesy: review.courtesy,
-        comment: review.comment,
-        moderation: review.moderation,
-        brokerReply: text.trim(),
-        createdAt: review.createdAt,
-      ),
-    );
-    await load();
+    // Route dédiée : répondre n'est pas déposer un avis. Renvoyer l'avis
+    // entier par `save()` postait un nouvel avis signé du courtier contre le
+    // contact du client, que le serveur refusait en 403 — et le refus, non
+    // rattrapé, ne laissait rien à l'écran.
+    await _write(() => _reviews.reply(review.id, text.trim()));
   }
 
   /// Signale un abus. L'avis **reste visible** : le masquer sur simple
   /// signalement offrirait à chaque courtier un bouton pour effacer ses
   /// mauvaises notes.
   Future<void> report(Review review) async {
-    await _reviews.save(
-      Review(
-        id: review.id,
-        brokerId: review.brokerId,
-        contactId: review.contactId,
-        rating: review.rating,
-        responsiveness: review.responsiveness,
-        accuracy: review.accuracy,
-        courtesy: review.courtesy,
-        comment: review.comment,
-        moderation: ModerationStatus.pending,
-        brokerReply: review.brokerReply,
-        createdAt: review.createdAt,
-      ),
-    );
+    await _write(() => _reviews.report(review.id));
+  }
+
+  Future<void> _write(Future<Review> Function() action) async {
+    _mutation = const MutationState.submitting();
+    notifyListeners();
+    try {
+      await action();
+      _mutation = const MutationState.success();
+    } on Object catch (error) {
+      _mutation = MutationState.failure(brokerFailure(error));
+      notifyListeners();
+      return;
+    }
     await load();
   }
 }
@@ -253,12 +257,31 @@ class _ReceivedReviewState extends State<_ReceivedReview> {
     if (!context.mounted) {
       return;
     }
+    if (_announceFailure(context)) {
+      // La réponse reste à l'écran : la retaper après un réseau coupé serait
+      // la punition de trop.
+      return;
+    }
     setState(() => _replying = false);
     context.read<InteractionFeedbackService?>()?.emit(
       FeedbackIntent.success,
       eventId: 'B06:success:reply-${widget.review.id}',
     );
     WkToast.show(context, message: context.l10n.reviewReplySent);
+  }
+
+  /// Dit l'échec s'il y en a un. Renvoie vrai quand rien n'a été écrit.
+  bool _announceFailure(BuildContext context) {
+    final MutationState mutation = widget.model.mutation;
+    if (mutation is! MutationFailure) {
+      return false;
+    }
+    context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+    WkToast.show(
+      context,
+      message: failureMessage(context.l10n, mutation.failure),
+    );
+    return true;
   }
 
   Future<void> _report(BuildContext context) async {
@@ -275,6 +298,9 @@ class _ReceivedReviewState extends State<_ReceivedReview> {
 
     await widget.model.report(widget.review);
     if (!context.mounted) {
+      return;
+    }
+    if (_announceFailure(context)) {
       return;
     }
     WkToast.show(context, message: context.l10n.reviewReported);

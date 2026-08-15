@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
@@ -41,23 +43,46 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
     return all.first;
   }
 
+  MutationState _mutation = const MutationState.idle();
+
+  /// État de la dernière suppression ou du dernier changement de statut.
+  ///
+  /// L'écran le lit après coup : une suppression refusée par le serveur
+  /// affichait « Bien supprimé » et laissait le bien dans la liste.
+  MutationState get mutation => _mutation;
+
   Future<void> load() async {
     _state = const ScreenState<List<Property>>.loading();
     notifyListeners();
 
-    // Tous les biens, y compris les clos : la gestion voit ce que la
-    // découverte cache.
-    final List<Property> owned = await _properties.byBroker(_brokerId);
-    owned.sort((Property a, Property b) => b.createdAt.compareTo(a.createdAt));
+    try {
+      // Tous les biens, y compris les clos : la gestion voit ce que la
+      // découverte cache.
+      final List<Property> owned = await _properties.byBroker(_brokerId);
+      owned.sort(
+        (Property a, Property b) => b.createdAt.compareTo(a.createdAt),
+      );
 
-    _state = owned.isEmpty
-        ? const ScreenState<List<Property>>.empty()
-        : ScreenState<List<Property>>.data(owned);
+      _state = owned.isEmpty
+          ? const ScreenState<List<Property>>.empty()
+          : ScreenState<List<Property>>.data(owned);
+    } on Object catch (error) {
+      _state = ScreenState<List<Property>>.error(brokerFailure(error));
+    }
     notifyListeners();
   }
 
   Future<void> delete(String id) async {
-    await _properties.delete(id);
+    _mutation = const MutationState.submitting();
+    notifyListeners();
+    try {
+      await _properties.delete(id);
+      _mutation = const MutationState.success();
+    } on Object catch (error) {
+      _mutation = MutationState.failure(brokerFailure(error));
+      notifyListeners();
+      return;
+    }
     await load();
   }
 
@@ -68,26 +93,38 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
   /// l'annonce avant de valider.
   Future<void> changeStatus(Property property, PropertyStatus status) async {
     if (property.status == status) {
+      // Rien n'a changé : ne pas prétendre le contraire.
+      _mutation = const MutationState.idle();
+      notifyListeners();
       return;
     }
-    await _properties.save(
-      Property(
-        id: property.id,
-        brokerId: property.brokerId,
-        kind: property.kind,
-        transaction: property.transaction,
-        title: property.title,
-        description: property.description,
-        price: property.price,
-        surface: property.surface,
-        rooms: property.rooms,
-        position: property.position,
-        neighbourhood: property.neighbourhood,
-        photoAssets: property.photoAssets,
-        status: status,
-        createdAt: property.createdAt,
-      ),
-    );
+    _mutation = const MutationState.submitting();
+    notifyListeners();
+    try {
+      await _properties.save(
+        Property(
+          id: property.id,
+          brokerId: property.brokerId,
+          kind: property.kind,
+          transaction: property.transaction,
+          title: property.title,
+          description: property.description,
+          price: property.price,
+          surface: property.surface,
+          rooms: property.rooms,
+          position: property.position,
+          neighbourhood: property.neighbourhood,
+          photoAssets: property.photoAssets,
+          status: status,
+          createdAt: property.createdAt,
+        ),
+      );
+      _mutation = const MutationState.success();
+    } on Object catch (error) {
+      _mutation = MutationState.failure(brokerFailure(error));
+      notifyListeners();
+      return;
+    }
     await load();
   }
 }
@@ -130,19 +167,31 @@ class BrokerPropertiesScreen extends StatelessWidget {
         ),
         error: (WkFailure failure) =>
             WkErrorState(failure: failure, onRetry: model.load),
-        data: (List<Property> owned) => ListView.separated(
-          padding: EdgeInsets.only(
-            bottom: WkScaffold.bottomInset(context) + WkSpacing.md,
-          ),
-          itemCount: owned.length,
-          separatorBuilder: (_, _) => const SizedBox(height: WkSpacing.sm),
-          itemBuilder: (BuildContext context, int index) => _OwnedTile(
-            property: owned[index],
-            onEdit: () => onEdit(owned[index]),
-            onPreview: () => onPreview(owned[index]),
-            onStatus: () => _changeStatus(context, model, owned[index]),
-            onDelete: () => _confirmDelete(context, model, owned[index]),
-          ),
+        data: (List<Property> owned) => Column(
+          children: <Widget>[
+            // L'échec d'une écriture reste affiché tant qu'il n'est pas
+            // corrigé : un message transitoire ne peut pas être la seule
+            // explication d'une suppression qui n'a pas eu lieu.
+            if (model.mutation case final MutationFailure failed)
+              _MutationBanner(failure: failed.failure),
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.only(
+                  bottom: WkScaffold.bottomInset(context) + WkSpacing.md,
+                ),
+                itemCount: owned.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: WkSpacing.sm),
+                itemBuilder: (BuildContext context, int index) => _OwnedTile(
+                  property: owned[index],
+                  onEdit: () => onEdit(owned[index]),
+                  onPreview: () => onPreview(owned[index]),
+                  onStatus: () => _changeStatus(context, model, owned[index]),
+                  onDelete: () => _confirmDelete(context, model, owned[index]),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -195,11 +244,29 @@ class BrokerPropertiesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
+    if (_announceFailure(context, model)) {
+      return;
+    }
     context.read<InteractionFeedbackService?>()?.emit(
       FeedbackIntent.success,
       eventId: 'B02:success:status-${property.id}-${target.name}',
     );
     WkToast.show(context, message: context.l10n.propertyStatusChanged);
+  }
+
+  /// Dit l'échec s'il y en a un. Renvoie vrai quand rien n'a été écrit :
+  /// l'appelant n'a alors rien à célébrer.
+  bool _announceFailure(BuildContext context, BrokerPropertiesViewModel model) {
+    final MutationState mutation = model.mutation;
+    if (mutation is! MutationFailure) {
+      return false;
+    }
+    context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+    WkToast.show(
+      context,
+      message: failureMessage(context.l10n, mutation.failure),
+    );
+    return true;
   }
 
   Future<void> _confirmDelete(
@@ -224,11 +291,55 @@ class BrokerPropertiesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
+    if (_announceFailure(context, model)) {
+      return;
+    }
     context.read<InteractionFeedbackService?>()?.emit(
       FeedbackIntent.success,
       eventId: 'B02:success:delete-${property.id}',
     );
     WkToast.show(context, message: context.l10n.propertyDeleted);
+  }
+}
+
+/// Bandeau d'échec d'écriture.
+///
+/// Ne remplace pas la liste : le bien est toujours là, c'est justement ce
+/// qu'il faut montrer après une suppression refusée.
+class _MutationBanner extends StatelessWidget {
+  const _MutationBanner({required this.failure});
+
+  final WkFailure failure;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: WkSpacing.sm),
+        padding: const EdgeInsets.all(WkSpacing.md),
+        decoration: BoxDecoration(
+          color: context.colors.errorContainer,
+          borderRadius: BorderRadius.circular(WkRadius.lg),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.error_outline, color: context.colors.onErrorContainer),
+            const SizedBox(width: WkSpacing.md),
+            Expanded(
+              child: Text(
+                failureMessage(context.l10n, failure),
+                style: context.text.bodyMedium?.copyWith(
+                  color: context.colors.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

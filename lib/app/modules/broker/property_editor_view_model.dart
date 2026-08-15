@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
-import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 
 /// Coordonne B03, l'éditeur de bien.
 ///
@@ -82,7 +82,13 @@ class PropertyEditorViewModel extends ChangeNotifier {
   }
 
   /// Enregistre. Renvoie l'identifiant du bien, ou `null` si la saisie n'est
-  /// pas exploitable.
+  /// pas exploitable **ou** si l'enregistrement a échoué.
+  ///
+  /// Les deux cas se distinguent par [submission] : une saisie refusée laisse
+  /// la soumission à `idle`, un échec d'écriture porte une
+  /// [MutationFailure]. Sans cette distinction, l'écran renvoyait à une étape
+  /// du formulaire en annonçant « corrigez d'abord » alors que rien n'était à
+  /// corriger.
   Future<String?> save({
     required String title,
     required String priceText,
@@ -96,6 +102,10 @@ class PropertyEditorViewModel extends ChangeNotifier {
         neighbourhood.trim().isEmpty ||
         price == null ||
         price <= 0) {
+      // Rien n'est parti sur le réseau : la soumission repart de zéro, sinon
+      // un échec précédent resterait affiché comme s'il venait d'arriver.
+      _submission = const MutationState.idle();
+      notifyListeners();
       return null;
     }
 
@@ -123,15 +133,21 @@ class PropertyEditorViewModel extends ChangeNotifier {
       createdAt: _existing?.createdAt ?? _now(),
     );
 
+    final String savedId;
     try {
-      await _properties.save(property);
+      // L'identifiant qui compte est celui rendu par le dépôt : en distant, le
+      // serveur frappe le sien et `prp-<micros>` n'a jamais existé.
+      savedId = (await _properties.save(property)).id;
       _submission = const MutationState.success();
-    } on Object {
-      _submission = const MutationState.failure(WkFailure.localStorage);
+    } on Object catch (error) {
+      // Le dépôt est distant : annoncer « base locale indisponible » à
+      // quelqu'un qui a perdu le réseau envoie chercher la panne au mauvais
+      // endroit.
+      _submission = MutationState.failure(brokerFailure(error));
       notifyListeners();
       return null;
     }
     notifyListeners();
-    return id;
+    return savedId;
   }
 }

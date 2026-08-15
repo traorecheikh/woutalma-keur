@@ -146,6 +146,9 @@ void main() {
     // de la data pour des pixels que personne ne regarde.
     expect(constraints.maxWidth, lessThanOrEqualTo(1600));
     expect(constraints.quality, inInclusiveRange(60, 85));
-    expect(constraints.maxPerProperty, inInclusiveRange(4, 8));
+    // Le serveur en refuse une quatrième (`MAX_PHOTOS_PER_PROPERTY = 3`) :
+    // le sélecteur doit compter comme lui, sinon on fait prendre des photos
+    // qui seront refusées à la publication.
+    expect(constraints.maxPerProperty, 3);
   });
 }

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
@@ -8,6 +6,7 @@ import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_option_sheet.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_property_photo.dart';
 
 /// Photos d'un bien.
 ///
@@ -197,21 +196,16 @@ class _Thumbnail extends StatelessWidget {
       children: <Widget>[
         ClipRRect(
           borderRadius: BorderRadius.circular(WkRadius.sm),
-          child: Image.file(
-            File(path),
+          // Passe par `WkPropertyPhoto` : à la modification d'un bien déjà
+          // publié, les vignettes sont des clés `api:<id>` et non des chemins
+          // locaux. `Image.file` en faisait des images cassées.
+          child: SizedBox(
             width: 96,
             height: 96,
-            fit: BoxFit.cover,
-            // Un fichier disparu ne fait pas planter l'écran : il montre un
-            // trou, ce qui se corrige.
-            errorBuilder: (_, _, _) => Container(
-              width: 96,
-              height: 96,
-              color: context.colors.surfaceVariant,
-              child: Icon(
-                Icons.broken_image_outlined,
-                color: context.colors.onSurfaceVariant,
-              ),
+            child: WkPropertyPhoto(
+              path: path,
+              fallbackIcon: Icons.broken_image_outlined,
+              cacheWidth: 192,
             ),
           ),
         ),

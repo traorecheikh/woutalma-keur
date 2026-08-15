@@ -47,6 +47,20 @@ class InMemoryBrokerRepository implements BrokerRepository {
   Future<void> save(Broker broker) async => _store.brokers[broker.id] = broker;
 
   @override
+  Future<Broker> requestVerification(String brokerId) async {
+    final Broker? broker = _store.brokers[brokerId];
+    if (broker == null) {
+      throw StateError('Courtier $brokerId inconnu');
+    }
+    // Local : on met en file, on n'accorde rien. Même règle que le serveur.
+    final Broker queued = broker.verification == VerificationStatus.verified
+        ? broker
+        : broker.copyWith(verification: VerificationStatus.pending);
+    _store.brokers[brokerId] = queued;
+    return queued;
+  }
+
+  @override
   Future<void> saveAll(List<Broker> brokers) async {
     for (final Broker broker in brokers) {
       _store.brokers[broker.id] = broker;
@@ -83,8 +97,11 @@ class InMemoryPropertyRepository implements PropertyRepository {
   Future<Property?> byId(String id) async => _store.properties[id];
 
   @override
-  Future<void> save(Property property) async =>
-      _store.properties[property.id] = property;
+  Future<Property> save(Property property) async {
+    _store.properties[property.id] = property;
+    // Le magasin mémoire n'attribue rien : ce qui entre ressort identique.
+    return property;
+  }
 
   @override
   Future<void> saveAll(List<Property> properties) async {
@@ -124,6 +141,32 @@ class InMemoryReviewRepository implements ReviewRepository {
   @override
   Future<Review> save(Review review) async {
     _store.reviews[review.id] = review;
+    return review;
+  }
+
+  @override
+  Future<Review> reply(String reviewId, String reply) async {
+    final Review review = _requireReview(reviewId);
+    final Review replied = review.copyWith(brokerReply: reply);
+    _store.reviews[reviewId] = replied;
+    return replied;
+  }
+
+  @override
+  Future<Review> report(String reviewId, {String? reason}) async {
+    final Review review = _requireReview(reviewId);
+    final Review reported = review.copyWith(
+      moderation: ModerationStatus.pending,
+    );
+    _store.reviews[reviewId] = reported;
+    return reported;
+  }
+
+  Review _requireReview(String id) {
+    final Review? review = _store.reviews[id];
+    if (review == null) {
+      throw StateError('Avis $id inconnu');
+    }
     return review;
   }
 
@@ -176,6 +219,18 @@ class InMemoryContactRepository implements ContactRepository {
   @override
   Future<void> update(ContactLog contact) async =>
       _store.contacts[contact.id] = contact;
+
+  @override
+  Future<List<ContactLog>> receivedBy(String brokerId) async {
+    final List<ContactLog> found =
+        _store.contacts.values
+            .where((ContactLog c) => c.brokerId == brokerId)
+            .toList()
+          ..sort(
+            (ContactLog a, ContactLog b) => b.createdAt.compareTo(a.createdAt),
+          );
+    return found;
+  }
 
   @override
   Future<void> updateAll(List<ContactLog> contacts) async {
