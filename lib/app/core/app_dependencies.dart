@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/core/app_config.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_map/flutter_map.dart' show TileProvider;
 import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
 import 'package:woutalma_keur/app/data/services/cached_tile_provider.dart';
 import 'package:woutalma_keur/app/data/services/dio_auth_interceptor.dart';
+import 'package:woutalma_keur/app/data/services/dio_log_interceptor.dart';
 import 'package:woutalma_keur/app/data/services/geolocator_location_service.dart';
 import 'package:woutalma_keur/app/data/services/google_backend_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/image_picker_photo_service.dart';
@@ -244,14 +246,29 @@ class AppDependencies {
       basePathOverride: baseUrl,
       dio: Dio(options..baseUrl = baseUrl),
     );
-    client.dio.interceptors.add(
+    client.dio.interceptors.addAll(<Interceptor>[
       DioAuthInterceptor(
         tokens: tokens,
         baseUrl: baseUrl,
         options: options,
         onSessionExpired: sessionExpiry.expire,
       ),
-    );
+      // Après l'authentification, pour que la trace montre la requête telle
+      // qu'elle part réellement. Silencieux en release.
+      const DioLogInterceptor(),
+    ]);
+
+    if (kDebugMode) {
+      // La panne la plus coûteuse à diagnostiquer est un build lancé sans ses
+      // `--dart-define` : l'application retombe alors sur Google, qui n'a pas
+      // de client OAuth ici, et l'écran dit seulement « Connexion
+      // impossible ». Autant l'écrire au démarrage.
+      debugPrint(
+        '[wk] API $baseUrl · identification '
+        '${AppConfig.devAuth ? "recette (téléphone sans SMS)" : "Google"}'
+        '${AppConfig.devAuth && AppConfig.devAuthSecret.isEmpty ? " · WK_DEV_AUTH_SECRET MANQUANT" : ""}',
+      );
+    }
 
     final api.BrokersApi brokersApi = client.getBrokersApi();
     final api.PropertiesApi propertiesApi = client.getPropertiesApi();

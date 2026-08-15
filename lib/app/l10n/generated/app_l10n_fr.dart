@@ -103,6 +103,18 @@ class AppL10nFr extends AppL10n {
       'Connexion impossible. Vérifiez le réseau et réessayez.';
 
   @override
+  String get authSmsUnavailable =>
+      'Le code par SMS n\'est pas disponible dans cette version.';
+
+  @override
+  String get authGoogleUnavailable =>
+      'La connexion Google n\'est pas configurée sur ce serveur.';
+
+  @override
+  String get authStagingClosed =>
+      'Ce serveur n\'accepte pas la connexion de recette.';
+
+  @override
   String get authStagingAsBroker => 'Ouvrir un espace courtier';
 
   @override

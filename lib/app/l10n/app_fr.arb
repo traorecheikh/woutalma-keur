@@ -137,6 +137,18 @@
   "@authFailed": {
     "description": "Échec d'une tentative de connexion, quel que soit le moyen."
   },
+  "authSmsUnavailable": "Le code par SMS n'est pas disponible dans cette version.",
+  "@authSmsUnavailable": {
+    "description": "Échec d'identification : le fournisseur OTP n'est pas branché dans ce build."
+  },
+  "authGoogleUnavailable": "La connexion Google n'est pas configurée sur ce serveur.",
+  "@authGoogleUnavailable": {
+    "description": "Échec d'identification : le serveur répond 503 faute de client OAuth."
+  },
+  "authStagingClosed": "Ce serveur n'accepte pas la connexion de recette.",
+  "@authStagingClosed": {
+    "description": "Échec d'identification : secret de recette absent ou refusé (401/404)."
+  },
   "authStagingAsBroker": "Ouvrir un espace courtier",
   "@authStagingAsBroker": {
     "description": "Recette : crée un profil courtier à la connexion."

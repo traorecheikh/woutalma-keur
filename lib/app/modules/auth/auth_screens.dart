@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -55,8 +56,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
   bool get _isValid => _localDigits.length == 9;
 
-  /// Vrai quand la dernière tentative a échoué. Un échec doit se voir.
-  bool _failed = false;
+  /// Message de la dernière tentative échouée. Nul tant que rien n'a raté.
+  ///
+  /// Un texte et non un booléen : « Connexion impossible, vérifiez le réseau »
+  /// était faux dans le cas le plus fréquent — un build lancé sans ses
+  /// `--dart-define`, où le réseau va très bien et c'est la connexion Google
+  /// qui n'existe pas sur ce serveur.
+  String? _failure;
 
   /// Recette : ouvrir la session avec un profil courtier. Sans cela le
   /// parcours courtier reste inatteignable, faute d'écran de création de
@@ -115,12 +121,12 @@ class _PhoneScreenState extends State<PhoneScreen> {
               ),
             ),
           ],
-          if (_failed) ...<Widget>[
+          if (_failure != null) ...<Widget>[
             const SizedBox(height: WkSpacing.md),
             Semantics(
               liveRegion: true,
               child: Text(
-                context.l10n.authFailed,
+                _failure!,
                 style: context.text.bodyMedium?.copyWith(
                   color: context.colors.error,
                 ),
@@ -162,7 +168,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
     setState(() {
       _sending = true;
-      _failed = false;
+      _failure = null;
     });
     final AuthService auth = context.read<AuthService>();
     final String phone = '+221$_localDigits';
@@ -175,13 +181,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
         auth.signUpAsBroker = _asBroker;
       }
       code = await auth.requestCode(phone);
-    } on Object {
+    } on Object catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
         _sending = false;
-        _failed = true;
+        _failure = _messageFor(context, error);
       });
       context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
       return;
@@ -194,21 +200,43 @@ class _PhoneScreenState extends State<PhoneScreen> {
     widget.onCodeSent(phone, auth.isSimulated ? code : null);
   }
 
+  /// Traduit un échec d'identification en une phrase vraie.
+  ///
+  /// Les trois causes réelles sur ce déploiement ne se ressemblent pas, et les
+  /// confondre sous « vérifiez le réseau » a déjà coûté du temps : le SMS
+  /// n'existe pas dans ce build, la connexion Google n'est pas configurée
+  /// côté serveur, ou le réseau est vraiment coupé.
+  static String _messageFor(BuildContext context, Object error) {
+    if (error is UnimplementedError) {
+      return context.l10n.authSmsUnavailable;
+    }
+    if (error is DioException) {
+      final int? status = error.response?.statusCode;
+      if (status == 503) {
+        return context.l10n.authGoogleUnavailable;
+      }
+      if (status == 401 || status == 404) {
+        return context.l10n.authStagingClosed;
+      }
+    }
+    return context.l10n.authFailed;
+  }
+
   Future<void> _signInWithGoogle() async {
     setState(() {
       _sending = true;
-      _failed = false;
+      _failure = null;
     });
     AuthResult result;
     try {
       result = await context.read<AuthService>().signInWithGoogle();
-    } on Object {
+    } on Object catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
         _sending = false;
-        _failed = true;
+        _failure = _messageFor(context, error);
       });
       context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
       return;

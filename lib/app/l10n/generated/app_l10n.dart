@@ -255,6 +255,24 @@ abstract class AppL10n {
   /// **'Connexion impossible. Vérifiez le réseau et réessayez.'**
   String get authFailed;
 
+  /// Échec d'identification : le fournisseur OTP n'est pas branché dans ce build.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le code par SMS n\'est pas disponible dans cette version.'**
+  String get authSmsUnavailable;
+
+  /// Échec d'identification : le serveur répond 503 faute de client OAuth.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Google n\'est pas configurée sur ce serveur.'**
+  String get authGoogleUnavailable;
+
+  /// Échec d'identification : secret de recette absent ou refusé (401/404).
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce serveur n\'accepte pas la connexion de recette.'**
+  String get authStagingClosed;
+
   /// Recette : crée un profil courtier à la connexion.
   ///
   /// In fr, this message translates to:
