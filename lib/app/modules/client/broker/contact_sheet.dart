@@ -2,149 +2,108 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_avatar.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
+import 'package:woutalma_keur/app/ui/ui.dart';
 
-/// M04 — feuille de mise en relation. Un canal par ligne ; un canal absent
-/// chez le courtier n'apparaît pas.
-class ContactSheet extends StatelessWidget {
-  const ContactSheet({required this.broker, super.key});
-
-  final Broker broker;
-
+abstract final class ContactSheet {
   static Future<ContactChannel?> show(
     BuildContext context, {
     required Broker broker,
-  }) {
-    return showModalBottomSheet<ContactChannel>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(WkRadius.xxl)),
-      ),
-      builder: (_) => ContactSheet(broker: broker),
-    );
-  }
+  }) => showAppSheet<ContactChannel>(
+    context,
+    title: context.l10n.contactSheetTitle,
+    scrollable: true,
+    child: _Channels(broker: broker),
+  );
+}
+
+class _Channels extends StatelessWidget {
+  const _Channels({required this.broker});
+  final Broker broker;
 
   @override
   Widget build(BuildContext context) {
-    final Color dim = context.colors.onSurfaceVariant;
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            WkSpacing.page,
-            WkSpacing.lg,
-            WkSpacing.page,
-            WkSpacing.md,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
+    final l = context.l10n;
+    final t = context.tones;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            AppAvatar(name: broker.name, size: 56, imagePath: broker.logoAsset),
+            const SizedBox(width: Insets.md),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  WkAvatar(
-                    name: broker.name,
-                    kind: broker.kind,
-                    imagePath: broker.logoAsset,
-                    size: 56,
+                children: [
+                  Text(
+                    broker.name,
+                    style: context.text.titleMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: WkSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Semantics(
-                          header: true,
-                          child: Text(
-                            context.l10n.contactSheetTitle,
-                            style: context.text.labelMedium?.copyWith(
-                              color: dim,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          broker.name,
-                          style: context.text.headlineMedium,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: WkSpacing.xs),
-                        Text(
-                          context.l10n.brokerResponseRate(
-                            (broker.responseRate * 100).round(),
-                          ),
-                          style: context.text.bodySmall?.copyWith(color: dim),
-                        ),
-                        const SizedBox(height: WkSpacing.sm),
-                        Wrap(
-                          spacing: WkSpacing.xs,
-                          runSpacing: WkSpacing.xs,
-                          children: <Widget>[
-                            if (broker.isVerified)
-                              WkBadge(
-                                label: context.l10n.badgeVerified,
-                                icon: Icons.verified_user,
-                                tone: WkBadgeTone.positive,
-                              ),
-                            if (broker.coverage.isNotEmpty)
-                              WkBadge(
-                                label: broker.coverage.first,
-                                icon: Icons.place_outlined,
-                              ),
-                          ],
-                        ),
-                      ],
+                  const SizedBox(height: 2),
+                  Text(
+                    l.brokerResponseRate((broker.responseRate * 100).round()),
+                    style: context.text.bodySmall!.copyWith(
+                      color: t.inkSecondary,
                     ),
                   ),
+                  if (broker.isVerified || broker.coverage.isNotEmpty) ...[
+                    const SizedBox(height: Insets.sm),
+                    Wrap(
+                      spacing: Insets.xs,
+                      runSpacing: Insets.xs,
+                      children: [
+                        if (broker.isVerified)
+                          AppTag(
+                            l.badgeVerified,
+                            tone: AppTone.success,
+                            icon: FIcons.badgeCheck,
+                          ),
+                        if (broker.coverage.isNotEmpty)
+                          AppTag(broker.coverage.first, icon: FIcons.mapPin),
+                      ],
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: WkSpacing.lg),
-              _Channel(
-                label: context.l10n.contactCall,
-                hint: context.l10n.contactCallHint,
-                icon: Icons.call,
-                color: context.colors.call,
-                onColor: context.colors.onCall,
-                channel: ContactChannel.call,
-              ),
-              if (broker.whatsapp != null) ...<Widget>[
-                const SizedBox(height: WkSpacing.betweenTargets),
-                _Channel(
-                  label: context.l10n.contactWhatsapp,
-                  hint: context.l10n.contactWhatsappHint,
-                  icon: Icons.chat,
-                  color: context.colors.whatsapp,
-                  onColor: context.colors.onWhatsapp,
-                  channel: ContactChannel.whatsapp,
-                ),
-              ],
-              const SizedBox(height: WkSpacing.betweenTargets),
-              _Channel(
-                label: context.l10n.contactSms,
-                hint: context.l10n.contactSmsHint,
-                icon: Icons.sms_outlined,
-                color: context.colors.primaryContainer,
-                onColor: context.colors.onPrimaryContainer,
-                channel: ContactChannel.sms,
-              ),
-              const SizedBox(height: WkSpacing.md),
-              Text(
-                context.l10n.contactSheetHint,
-                style: context.text.bodySmall?.copyWith(color: dim),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: Insets.xl),
+        _Channel(
+          label: l.contactCall,
+          hint: l.contactCallHint,
+          icon: FIcons.phone,
+          color: t.success,
+          channel: ContactChannel.call,
+        ),
+        if (broker.whatsapp != null) ...[
+          const SizedBox(height: Insets.md),
+          _Channel(
+            label: l.contactWhatsapp,
+            hint: l.contactWhatsappHint,
+            icon: FIcons.messageCircle,
+            color: t.whatsapp,
+            channel: ContactChannel.whatsapp,
+          ),
+        ],
+        const SizedBox(height: Insets.md),
+        _Channel(
+          label: l.contactSms,
+          hint: l.contactSmsHint,
+          icon: FIcons.messageSquare,
+          color: t.sunken,
+          onColor: context.colors.onSurface,
+          channel: ContactChannel.sms,
+        ),
+        const SizedBox(height: Insets.lg),
+        Text(
+          l.contactSheetHint,
+          style: context.text.bodySmall!.copyWith(color: t.inkSecondary),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
@@ -155,136 +114,97 @@ class _Channel extends StatelessWidget {
     required this.hint,
     required this.icon,
     required this.color,
-    required this.onColor,
     required this.channel,
+    this.onColor,
   });
-
-  final String label;
-  final String hint;
+  final String label, hint;
   final IconData icon;
   final Color color;
-  final Color onColor;
+  final Color? onColor;
   final ContactChannel channel;
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      hint: hint,
-      child: Material(
+  Widget build(BuildContext context) => FTappable(
+    semanticsLabel: '$label, $hint',
+    excludeSemantics: true,
+    behavior: HitTestBehavior.opaque,
+    onPress: () {
+      context.read<InteractionFeedbackService?>()?.emit(
+        FeedbackIntent.selection,
+      );
+      popSheet(context, channel);
+    },
+    child: DecoratedBox(
+      decoration: BoxDecoration(
         color: context.colors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WkRadius.lg),
-          side: BorderSide(color: context.colors.outlineVariant, width: 1.5),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(WkRadius.lg),
-          onTap: () {
-            context.read<InteractionFeedbackService?>()?.emit(
-              FeedbackIntent.selection,
-            );
-            Navigator.of(context).pop(channel);
-          },
-          child: Container(
-            constraints: const BoxConstraints(minHeight: WkTouch.comfy),
-            padding: const EdgeInsets.symmetric(
-              horizontal: WkSpacing.md,
-              vertical: WkSpacing.sm,
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: onColor, size: 24),
-                ),
-                const SizedBox(width: WkSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(label, style: context.text.titleMedium),
-                      Text(
-                        hint,
-                        style: context.text.bodySmall?.copyWith(
-                          color: context.colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: context.colors.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
+        borderRadius: Radii.container,
+        border: Border.all(color: context.tones.hairline),
       ),
-    );
-  }
-}
-
-/// M05 — résultat du contact, posé au retour de l'application externe.
-class ContactOutcomeSheet extends StatelessWidget {
-  const ContactOutcomeSheet({super.key});
-
-  static Future<ContactOutcome?> show(BuildContext context) {
-    return showModalBottomSheet<ContactOutcome>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(WkRadius.xxl)),
-      ),
-      builder: (_) => const ContactOutcomeSheet(),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(WkSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(
-                context.l10n.outcomeTitle,
-                style: context.text.headlineMedium,
+        padding: const EdgeInsets.all(Insets.md),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: Icon(
+                icon,
+                size: 24,
+                color: onColor ?? context.colors.onPrimary,
               ),
             ),
-            const SizedBox(height: WkSpacing.lg),
-            WkButton(
-              label: context.l10n.outcomeReached,
-              icon: Icons.check_circle_outline,
-              onPressed: () =>
-                  Navigator.of(context).pop(ContactOutcome.reached),
+            const SizedBox(width: Insets.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: context.text.titleMedium),
+                  Text(
+                    hint,
+                    style: context.text.bodySmall!.copyWith(
+                      color: context.tones.inkSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: WkSpacing.betweenTargets),
-            WkButton(
-              label: context.l10n.outcomeNoAnswer,
-              variant: WkButtonVariant.secondary,
-              onPressed: () =>
-                  Navigator.of(context).pop(ContactOutcome.noAnswer),
-            ),
-            const SizedBox(height: WkSpacing.betweenTargets),
-            WkButton(
-              label: context.l10n.outcomeLater,
-              variant: WkButtonVariant.ghost,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            Icon(FIcons.chevronRight, color: context.tones.inkSecondary),
           ],
         ),
+      ),
+    ),
+  );
+}
+
+abstract final class ContactOutcomeSheet {
+  static Future<ContactOutcome?> show(BuildContext context) {
+    final l = context.l10n;
+    return showAppSheet<ContactOutcome>(
+      context,
+      title: l.outcomeTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppButton(
+            l.outcomeReached,
+            icon: FIcons.circleCheck,
+            onPressed: () => popSheet(context, ContactOutcome.reached),
+          ),
+          const SizedBox(height: Insets.sm),
+          AppButton(
+            l.outcomeNoAnswer,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => popSheet(context, ContactOutcome.noAnswer),
+          ),
+          const SizedBox(height: Insets.sm),
+          AppButton(
+            l.outcomeLater,
+            variant: AppButtonVariant.ghost,
+            onPressed: () => popSheet<ContactOutcome>(context),
+          ),
+        ],
       ),
     );
   }

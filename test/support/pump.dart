@@ -1,46 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:forui/forui.dart' show FTheme, FToaster;
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
 import 'package:woutalma_keur/app/data/local/cache_status.dart';
 import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
 import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
+import 'package:woutalma_keur/app/ui/theme.dart';
 import 'package:woutalma_keur/main.dart';
 
 import 'fake_location.dart';
+import 'fonts.dart';
 import 'recording_feedback_service.dart';
 
-/// Monte un widget dans le même environnement que l'application : thème,
-/// localisation et service de feedback enregistreur.
-///
-/// Chaque test peut ainsi vérifier le rendu **et** ce que l'app a répondu.
 Future<RecordingFeedbackService> pumpWk(
   WidgetTester tester,
   Widget child, {
   RecordingFeedbackService? feedback,
-  ThemeData? theme,
   double textScale = 1,
   Size surfaceSize = const Size(360, 800),
   CacheStatus? cacheStatus,
   ClientPositionController? positions,
   BackendWarmup? warmup,
 }) async {
-  final RecordingFeedbackService service =
-      feedback ?? RecordingFeedbackService();
-
+  final service = feedback ?? RecordingFeedbackService();
+  if (!_fontsLoaded) {
+    await tester.runAsync(loadAppFonts);
+    _fontsLoaded = true;
+  }
   await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
-
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         Provider<InteractionFeedbackService>.value(value: service),
-        // Fournis systématiquement : ce sont des services d'application, et un
-        // écran monté sans eux planterait au premier `watch`, ce qui ferait
-        // échouer des tests pour une raison qui n'a rien à voir avec eux.
         ChangeNotifierProvider<CacheStatus>.value(
           value: cacheStatus ?? CacheStatus(),
         ),
@@ -52,17 +46,15 @@ Future<RecordingFeedbackService> pumpWk(
         ),
       ],
       child: MaterialApp(
-        theme: theme ?? WkTheme.light(),
-        // La même liste que l'application : un harnais qui localise
-        // différemment ne peut pas voir un paquet resté en anglais.
+        theme: buildTheme(Brightness.light),
         localizationsDelegates: wkLocalizationsDelegates,
         supportedLocales: AppL10n.supportedLocales,
-        // `copyWith` et non un MediaQueryData neuf : construire le nôtre
-        // remettait `size`, `padding` et `viewInsets` à zéro, si bien que tout
-        // ce qui dimensionne d'après MediaQuery — une feuille modale, par
-        // exemple — se croyait dans un écran de taille nulle.
+        builder: (context, app) => FTheme(
+          data: buildForuiTheme(Brightness.light),
+          child: FToaster(child: app!),
+        ),
         home: Builder(
-          builder: (BuildContext context) => MediaQuery(
+          builder: (context) => MediaQuery(
             data: MediaQuery.of(
               context,
             ).copyWith(textScaler: TextScaler.linear(textScale)),
@@ -72,48 +64,7 @@ Future<RecordingFeedbackService> pumpWk(
       ),
     ),
   );
-
   return service;
 }
 
-/// Échoue si un texte rendu est coupé par un « … ».
-///
-/// Un libellé tronqué — « Modifie… », « Change… » — ne veut plus rien dire,
-/// et encore moins pour quelqu'un qui déchiffre déjà difficilement. Le test
-/// lit l'état réel de la mise en page, pas la chaîne source : `find.text`
-/// trouve le libellé entier même quand l'écran n'en montre que la moitié.
-/// [userContent] énumère les textes écrits par un utilisateur — titre de bien,
-/// commentaire d'avis — dont la troncature est un choix de densité assumé, le
-/// texte entier restant à un geste. Tout le reste est de la copie d'interface :
-/// elle ne se coupe jamais.
-void expectNoClippedText(
-  WidgetTester tester, {
-  Set<String> userContent = const <String>{},
-}) {
-  for (final Element element in find.byType(Text).evaluate()) {
-    final RenderObject? object = element.renderObject;
-    if (object is! RenderParagraph || !object.didExceedMaxLines) {
-      continue;
-    }
-    final String text = (element.widget as Text).data ?? '';
-    if (userContent.contains(text)) {
-      continue;
-    }
-    fail('Texte coupé à l\'écran : « $text »');
-  }
-}
-
-/// Échoue si une cible tactile rendue descend sous le plancher.
-///
-/// `docs/WOUTALMA-UI.md` §1 : 56 dp est un plancher absolu, y compris pour une
-/// icône seule.
-void expectTouchTargets(WidgetTester tester, {double minimum = 56}) {
-  for (final Element element in find.byType(InkWell).evaluate()) {
-    final Size size = element.size ?? Size.zero;
-    expect(
-      size.height,
-      greaterThanOrEqualTo(minimum),
-      reason: 'Cible tactile de ${size.height}dp, plancher $minimum dp.',
-    );
-  }
-}
+bool _fontsLoaded = false;

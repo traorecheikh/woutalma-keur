@@ -5,35 +5,30 @@ import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_confirm_sheet.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_option_sheet.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_text_field.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_toast.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
+import 'package:woutalma_keur/app/ui/ui.dart';
 
-/// Indicatif du pays servi. Les numéros sont stockés au format international
-/// comme partout ailleurs dans l'application ; la saisie, elle, reste locale.
 const String _dialCode = '+221';
 const int _localDigits = 9;
 
-/// Ramène un numéro saisi ou stocké à ses neuf chiffres locaux.
 String localPhoneDigits(String value) {
   final String digits = value.replaceAll(RegExp(r'\D'), '');
   return digits.startsWith('221') ? digits.substring(3) : digits;
 }
 
-/// Coordonne B08, la modification du profil courtier.
-///
-/// C'est le seul chemin vers `BrokerRepository.save` pour le profil : sans
-/// lui, un courtier qui change de numéro n'a aucun moyen de le dire, et ses
-/// clients appellent dans le vide.
+List<String> parseCoverage(String value) {
+  final List<String> zones = <String>[];
+  for (final String part in value.split(RegExp(r'[,\n]'))) {
+    final String zone = part.trim();
+    if (zone.isNotEmpty && !zones.contains(zone)) {
+      zones.add(zone);
+    }
+  }
+  return zones;
+}
+
 class BrokerProfileEditorViewModel extends ChangeNotifier {
   BrokerProfileEditorViewModel({
     required BrokerRepository brokers,
@@ -52,8 +47,6 @@ class BrokerProfileEditorViewModel extends ChangeNotifier {
 
   Broker? get broker => _state.valueOrNull;
 
-  /// Individuel ou agence. Vit dans le modèle parce que c'est un choix, pas
-  /// un champ de texte.
   BrokerKind kind = BrokerKind.individual;
 
   Future<void> load() async {
@@ -74,17 +67,9 @@ class BrokerProfileEditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Vrai quand la saisie est publiable.
-  ///
-  /// La zone couverte peut être vide : mieux vaut un profil sans quartier
-  /// qu'un courtier bloqué parce qu'il ne sait pas quoi écrire là.
   bool isValid({required String name, required String phone}) =>
       name.trim().isNotEmpty && localPhoneDigits(phone).length == _localDigits;
 
-  /// Enregistre le profil. Renvoie vrai si l'écriture a réussi.
-  ///
-  /// Une saisie refusée laisse [submission] à `idle` ; un échec d'écriture
-  /// porte la cause, que l'écran affiche telle quelle.
   Future<bool> save({
     required String name,
     required String phone,
@@ -110,17 +95,13 @@ class BrokerProfileEditorViewModel extends ChangeNotifier {
           kind: kind,
           name: name.trim(),
           phone: '$_dialCode${localPhoneDigits(phone)}',
-          // Vide veut dire « pas de WhatsApp » : le bouton disparaît alors
-          // côté client au lieu de composer un numéro qui n'existe pas.
           whatsapp: whatsappDigits.length == _localDigits
               ? '$_dialCode$whatsappDigits'
               : null,
           position: current.position,
           coverage: parseCoverage(coverage),
           logoAsset: current.logoAsset,
-          // Ni le statut de vérification ni la mise en avant ne se modifient
-          // ici : ils appartiennent à la modération, pas à celui qu'ils
-          // qualifient.
+          // Vérification et mise en avant appartiennent à la modération.
           verification: current.verification,
           responseRate: current.responseRate,
           pinned: current.pinned,
@@ -144,23 +125,6 @@ class BrokerProfileEditorViewModel extends ChangeNotifier {
   }
 }
 
-/// Découpe la zone couverte saisie en une liste de quartiers.
-///
-/// Une virgule ou un retour à la ligne sépare ; les doublons et les blancs
-/// disparaissent. Un composant à jetons viendra plus tard : d'ici là, écrire
-/// « Yoff, Ngor » reste plus rapide que ne rien pouvoir écrire.
-List<String> parseCoverage(String value) {
-  final List<String> zones = <String>[];
-  for (final String part in value.split(RegExp(r'[,\n]'))) {
-    final String zone = part.trim();
-    if (zone.isNotEmpty && !zones.contains(zone)) {
-      zones.add(zone);
-    }
-  }
-  return zones;
-}
-
-/// B08 — Modifier le profil.
 class BrokerProfileEditorScreen extends StatefulWidget {
   const BrokerProfileEditorScreen({
     required this.onBack,
@@ -177,16 +141,11 @@ class BrokerProfileEditorScreen extends StatefulWidget {
 }
 
 class _BrokerProfileEditorScreenState extends State<BrokerProfileEditorScreen> {
-  final TextEditingController _name = TextEditingController();
-  final TextEditingController _phone = TextEditingController();
-  final TextEditingController _whatsapp = TextEditingController();
-  final TextEditingController _coverage = TextEditingController();
-
-  /// Vrai dès la première tentative : rien n'est déclaré faux avant.
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  final _whatsapp = TextEditingController();
+  List<String> _coverage = <String>[];
   bool _submitted = false;
-  int _revalidateTick = 0;
-
-  /// Ce qui a été chargé, pour savoir si quelque chose a changé.
   Broker? _loaded;
 
   @override
@@ -194,247 +153,217 @@ class _BrokerProfileEditorScreenState extends State<BrokerProfileEditorScreen> {
     _name.dispose();
     _phone.dispose();
     _whatsapp.dispose();
-    _coverage.dispose();
     super.dispose();
   }
 
-  /// Recopie le profil dans les champs, une seule fois par chargement.
   void _syncFrom(Broker broker) {
-    if (identical(_loaded, broker)) {
-      return;
-    }
+    if (identical(_loaded, broker)) return;
     _loaded = broker;
     _name.text = broker.name;
     _phone.text = localPhoneDigits(broker.phone);
     _whatsapp.text = localPhoneDigits(broker.whatsapp ?? '');
-    _coverage.text = broker.coverage.join(', ');
+    _coverage = List<String>.of(broker.coverage);
   }
 
   bool get _dirty {
-    final Broker? loaded = _loaded;
-    if (loaded == null) {
-      return false;
-    }
-    final BrokerProfileEditorViewModel model = context
-        .read<BrokerProfileEditorViewModel>();
+    final loaded = _loaded;
+    if (loaded == null) return false;
+    final model = context.read<BrokerProfileEditorViewModel>();
     return _name.text != loaded.name ||
         _phone.text != localPhoneDigits(loaded.phone) ||
         _whatsapp.text != localPhoneDigits(loaded.whatsapp ?? '') ||
-        _coverage.text != loaded.coverage.join(', ') ||
+        _coverage.join(', ') != loaded.coverage.join(', ') ||
         model.kind != loaded.kind;
+  }
+
+  List<String> get _zones {
+    final known = dakarNeighbourhoods.map((n) => n.name).toList();
+    return [...known, ..._coverage.where((z) => !known.contains(z))];
   }
 
   @override
   Widget build(BuildContext context) {
-    final BrokerProfileEditorViewModel model = context
-        .watch<BrokerProfileEditorViewModel>();
-    final Broker? broker = model.broker;
-    if (broker != null) {
-      _syncFrom(broker);
-    }
+    final model = context.watch<BrokerProfileEditorViewModel>();
+    final l = context.l10n;
+    final broker = model.broker;
+    if (broker != null) _syncFrom(broker);
 
-    return WkScaffold(
-      topBar: WkTopBar(
-        title: context.l10n.brokerProfileEditorTitle,
-        onBack: () => _leave(context),
-      ),
-      bottomAction: broker == null
+    return AppScaffold(
+      headerTitle: l.brokerProfileEditorTitle,
+      onBack: () => _leave(context),
+      bottom: broker == null
           ? null
-          : WkButton(
-              label: context.l10n.brokerProfileEditorSave,
-              icon: Icons.check,
+          : AppButton(
+              l.brokerProfileEditorSave,
+              icon: FIcons.check,
               loading: model.submission.isSubmitting,
               onPressed: () => _save(context, model),
             ),
       body: model.state.map(
-        initial: () => const SizedBox.shrink(),
-        loading: () => const WkLoadingState(),
-        empty: () => const WkEmptyState(),
-        error: (WkFailure failure) =>
-            WkErrorState(failure: failure, onRetry: model.load),
-        data: (Broker _) => _Form(
-          model: model,
-          name: _name,
-          phone: _phone,
-          whatsapp: _whatsapp,
-          coverage: _coverage,
-          submitted: _submitted,
-          revalidateTick: _revalidateTick,
-        ),
+        initial: () => const AppSkeleton(),
+        loading: () => const AppSkeleton(),
+        empty: () =>
+            AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
+        error: (failure) => failureState(context, failure, onRetry: model.load),
+        data: (_) => _form(context, model),
       ),
     );
   }
 
-  /// Retour : M09 si quelque chose a changé, sinon on sort.
+  Widget _form(BuildContext context, BrokerProfileEditorViewModel model) {
+    final l = context.l10n;
+    final phoneDigits = localPhoneDigits(_phone.text);
+    final whatsappDigits = localPhoneDigits(_whatsapp.text);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        Insets.page,
+        Insets.sm,
+        Insets.page,
+        Insets.xxl,
+      ),
+      children: [
+        _Label(l.fieldBrokerKind),
+        AppChoice<BrokerKind>(
+          options: BrokerKind.values,
+          selected: model.kind,
+          onChanged: model.setKind,
+          label: (value) => value == BrokerKind.individual
+              ? l.brokerKindIndividual
+              : l.brokerKindAgency,
+          icon: (value) =>
+              value == BrokerKind.individual ? FIcons.user : FIcons.store,
+        ),
+        const SizedBox(height: Insets.xl),
+        AppField(
+          label: l.fieldBrokerName,
+          hint: l.fieldBrokerNameHint,
+          controller: _name,
+          onChanged: (_) => setState(() {}),
+          error: _submitted && _name.text.trim().isEmpty
+              ? l.validationRequired
+              : null,
+        ),
+        const SizedBox(height: Insets.lg),
+        AppField(
+          label: l.fieldBrokerPhone,
+          hint: l.authPhoneCountrySenegal,
+          controller: _phone,
+          keyboardType: TextInputType.phone,
+          maxLength: 12,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (_) => setState(() {}),
+          error: _submitted && phoneDigits.length != _localDigits
+              ? l.authPhoneInvalid
+              : null,
+        ),
+        const SizedBox(height: Insets.lg),
+        AppField(
+          label: l.fieldBrokerWhatsapp,
+          hint: l.fieldBrokerWhatsappHelper,
+          controller: _whatsapp,
+          keyboardType: TextInputType.phone,
+          maxLength: 12,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (_) => setState(() {}),
+          error:
+              _submitted &&
+                  whatsappDigits.isNotEmpty &&
+                  whatsappDigits.length != _localDigits
+              ? l.authPhoneInvalid
+              : null,
+        ),
+        const SizedBox(height: Insets.xl),
+        _Label(l.fieldBrokerCoverage),
+        Wrap(
+          spacing: Insets.sm,
+          runSpacing: Insets.sm,
+          children: [
+            for (final zone in _zones)
+              AppPill(
+                zone,
+                selected: _coverage.contains(zone),
+                icon: FIcons.mapPin,
+                onTap: () => setState(
+                  () => _coverage.contains(zone)
+                      ? _coverage.remove(zone)
+                      : _coverage.add(zone),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: Insets.lg),
+        Text(
+          l.brokerProfileEditorNotEditable,
+          style: context.text.bodySmall!.copyWith(
+            color: context.tones.inkSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _leave(BuildContext context) async {
     if (!_dirty) {
       widget.onBack();
       return;
     }
-    final bool? confirmed = await WkConfirmSheet.show(
+    final l = context.l10n;
+    final confirmed = await confirm(
       context,
-      title: context.l10n.brokerProfileEditorLeaveTitle,
-      body: context.l10n.brokerProfileEditorLeaveBody,
-      confirmLabel: context.l10n.brokerProfileEditorLeaveConfirm,
-      cancelLabel: context.l10n.commonCancel,
-      destructive: true,
+      title: l.brokerProfileEditorLeaveTitle,
+      message: l.brokerProfileEditorLeaveBody,
+      action: l.brokerProfileEditorLeaveConfirm,
+      danger: true,
     );
-    if (confirmed == true) {
-      widget.onBack();
-    }
+    if (confirmed) widget.onBack();
   }
 
   Future<void> _save(
     BuildContext context,
     BrokerProfileEditorViewModel model,
   ) async {
-    // Le bouton n'est jamais grisé : c'est en appuyant qu'on apprend ce qui
-    // manque, comme dans l'éditeur de bien.
-    setState(() {
-      _submitted = true;
-      _revalidateTick++;
-    });
+    setState(() => _submitted = true);
 
-    final bool saved = await model.save(
+    final saved = await model.save(
       name: _name.text,
       phone: _phone.text,
       whatsapp: _whatsapp.text,
-      coverage: _coverage.text,
+      coverage: _coverage.join(', '),
     );
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
 
+    final feedback = context.read<InteractionFeedbackService?>();
     if (!saved) {
-      final InteractionFeedbackService? feedback = context
-          .read<InteractionFeedbackService?>();
-      feedback?.emit(FeedbackIntent.error);
-      final MutationState submission = model.submission;
-      final String message = submission is MutationFailure
-          ? failureMessage(context.l10n, submission.failure)
+      final submission = model.submission;
+      final message = submission is MutationFailure
+          ? failureText(context.l10n, submission.failure)
           : context.l10n.validationFixFirst;
+      feedback?.emit(FeedbackIntent.error);
       feedback?.announce(message);
-      if (submission is MutationFailure) {
-        WkToast.show(context, message: message);
-      }
+      if (submission is MutationFailure) toast(context, message);
       return;
     }
 
-    context.read<InteractionFeedbackService?>()?.emit(
+    feedback?.emit(
       FeedbackIntent.success,
       eventId: 'B08:success:${model.broker?.id}',
     );
-    WkToast.show(context, message: context.l10n.brokerProfileEditorSaved);
+    toast(context, context.l10n.brokerProfileEditorSaved);
     widget.onSaved();
   }
 }
 
-class _Form extends StatelessWidget {
-  const _Form({
-    required this.model,
-    required this.name,
-    required this.phone,
-    required this.whatsapp,
-    required this.coverage,
-    required this.submitted,
-    required this.revalidateTick,
-  });
-
-  final BrokerProfileEditorViewModel model;
-  final TextEditingController name;
-  final TextEditingController phone;
-  final TextEditingController whatsapp;
-  final TextEditingController coverage;
-  final bool submitted;
-  final int revalidateTick;
-
+class _Label extends StatelessWidget {
+  const _Label(this.text);
+  final String text;
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.only(
-        bottom: WkScaffold.bottomInset(context) + WkSpacing.md,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: Insets.sm),
+    child: Text(
+      text,
+      style: context.text.labelLarge!.copyWith(
+        color: context.tones.inkSecondary,
       ),
-      children: <Widget>[
-        WkSelectField<BrokerKind>(
-          label: context.l10n.fieldBrokerKind,
-          value: model.kind,
-          onChanged: model.setKind,
-          options: <WkOption<BrokerKind>>[
-            WkOption<BrokerKind>(
-              value: BrokerKind.individual,
-              label: context.l10n.brokerKindIndividual,
-              icon: Icons.person_outline,
-            ),
-            WkOption<BrokerKind>(
-              value: BrokerKind.agency,
-              label: context.l10n.brokerKindAgency,
-              icon: Icons.storefront_outlined,
-            ),
-          ],
-        ),
-        const SizedBox(height: WkSpacing.md),
-        WkTextField(
-          label: context.l10n.fieldBrokerName,
-          hint: context.l10n.fieldBrokerNameHint,
-          controller: name,
-          revalidateTick: revalidateTick,
-          validator: (String value) => !submitted || value.trim().isNotEmpty
-              ? null
-              : context.l10n.validationRequired,
-        ),
-        WkTextField(
-          label: context.l10n.fieldBrokerPhone,
-          helper: context.l10n.authPhoneCountrySenegal,
-          controller: phone,
-          keyboardType: TextInputType.phone,
-          maxLength: 12,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(12),
-          ],
-          revalidateTick: revalidateTick,
-          readyToEvaluate: (String value) =>
-              localPhoneDigits(value).length >= _localDigits,
-          validator: (String value) =>
-              localPhoneDigits(value).length == _localDigits
-              ? null
-              : context.l10n.authPhoneInvalid,
-        ),
-        WkTextField(
-          label: context.l10n.fieldBrokerWhatsapp,
-          helper: context.l10n.fieldBrokerWhatsappHelper,
-          controller: whatsapp,
-          keyboardType: TextInputType.phone,
-          maxLength: 12,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(12),
-          ],
-          revalidateTick: revalidateTick,
-          readyToEvaluate: (String value) =>
-              localPhoneDigits(value).length >= _localDigits,
-          // Vide est une réponse valable : tout le monde n'a pas WhatsApp.
-          validator: (String value) {
-            final String digits = localPhoneDigits(value);
-            return digits.isEmpty || digits.length == _localDigits
-                ? null
-                : context.l10n.authPhoneInvalid;
-          },
-        ),
-        WkTextField(
-          label: context.l10n.fieldBrokerCoverage,
-          hint: context.l10n.fieldBrokerCoverageHint,
-          helper: context.l10n.fieldBrokerCoverageHelper,
-          controller: coverage,
-        ),
-        const SizedBox(height: WkSpacing.sm),
-        Text(
-          context.l10n.brokerProfileEditorNotEditable,
-          style: context.text.bodySmall?.copyWith(
-            color: context.colors.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
+    ),
+  );
 }

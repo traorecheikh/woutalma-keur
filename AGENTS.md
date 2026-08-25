@@ -54,10 +54,12 @@ or add one there and to this tree in the same change.
 - Flutter cross-platform; entry-level Android is the first acceptance target.
 - `provider` for dependency injection and observable view state. No Riverpod, GetX, service locator
   or global mutable singleton.
-- `go_router` for routes and deep links; use Navigator only for project-owned sheets/overlays.
-- Isar Community for app data, settings, deterministic demo seed and migrations. No second database.
+- `go_router` for routes and deep links; sheets go through `showAppSheet`.
+- Isar Community as the offline copy of the API. No second database. No user-facing demo mode.
 - Generated ARB localization for every visible string.
-- System typography only; no downloaded or bundled font.
+- UI kit: `forui` widgets wrapped once in `lib/app/ui/ui.dart` (`App*` primitives, Lucide `FIcons`),
+  bundled Plus Jakarta Sans, tokens in `lib/app/ui/theme.dart`. No Material widgets in screens
+  (`Scaffold`, `AppBar`, `Card`, `ListTile`, `SnackBar`, `AlertDialog`, `Icons.*`, `Colors.*`).
 - Repository contracts separate Isar from product logic so a remote implementation can replace it.
 
 Do not replace a locked choice without a recorded decision approved by the user.
@@ -83,9 +85,12 @@ visual test is available, report that visual verification was not performed.
 - View models coordinate one screen/flow and expose immutable view state. Repositories own data;
   services own ranking, validation, seeding, permissions, media, voice and contact behavior.
 - Add a shared abstraction only when two features reuse it or it is a design-system primitive.
-- Search for an existing `Wk*` component first. Feature screens contain no arbitrary colors, text
-  styles, spacing, radii, shadows or durations.
-- Visible UI goes through `Wk*` components; follow the Material restrictions in `docs/WOUTALMA-UI.md`.
+- Screens compose `App*` primitives from `lib/app/ui/ui.dart`; a private widget in the screen file is
+  fine, a new shared widget goes in `ui.dart` only when two screens need it. No arbitrary colors,
+  text styles, spacing, radii or durations outside `theme.dart`.
+- Lean code: no comments unless the code cannot carry the information, prefer packages over
+  hand-written mechanics (`flutter_slidable`, `smooth_page_indicator`, `skeletonizer`, `record`,
+  `audioplayers`).
 - Preserve SafeArea, keyboard insets, platform back, text scaling and one-handed reach at 320–390 dp.
 - One dominant action per screen. No nested cards, decorative gradients, dense dashboards or hidden
   essential gestures.
@@ -101,8 +106,7 @@ primary/secondary actions, overlays, exits/back behavior, loading/empty/error/of
 states, demo/real behavior, feedback events and acceptance criteria. Add or correct the contract
 first if missing.
 
-The three reference screens require approved screenshots/goldens before their components are copied
-widely: client discovery, broker detail and broker property creation.
+The three reference screens are client discovery (home), broker detail and broker property creation.
 
 ## Packages and tests
 

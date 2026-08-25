@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
@@ -9,18 +8,8 @@ import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_confirm_sheet.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_option_sheet.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_toast.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
+import 'package:woutalma_keur/app/ui/ui.dart';
 
-/// Coordonne B02.
 class BrokerPropertiesViewModel extends ChangeNotifier {
   BrokerPropertiesViewModel({
     required PropertyRepository properties,
@@ -36,7 +25,6 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
 
   ScreenState<List<Property>> get state => _state;
 
-  /// Le dernier bien publié, pour pré-remplir le suivant.
   Property? get mostRecent {
     final List<Property>? all = _state.valueOrNull;
     if (all == null || all.isEmpty) {
@@ -47,18 +35,8 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
 
   MutationState _mutation = const MutationState.idle();
 
-  /// État de la dernière suppression ou du dernier changement de statut.
-  ///
-  /// L'écran le lit après coup : une suppression refusée par le serveur
-  /// affichait « Bien supprimé » et laissait le bien dans la liste.
   MutationState get mutation => _mutation;
 
-  /// Lecture déjà en cours, s'il y en a une.
-  ///
-  /// L'écran se recharge au retour, et la route peut demander la même chose
-  /// au même moment : sans ce verrou, revenir de l'éditeur déclencherait deux
-  /// requêtes identiques sur un réseau qu'on sait faible. La seconde rejoint
-  /// la première au lieu de la doubler.
   Future<void>? _loading;
 
   Future<void> load() {
@@ -70,8 +48,6 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Tous les biens, y compris les clos : la gestion voit ce que la
-      // découverte cache.
       final List<Property> owned = await _properties.byBroker(_brokerId);
       owned.sort(
         (Property a, Property b) => b.createdAt.compareTo(a.createdAt),
@@ -100,14 +76,8 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
     await load();
   }
 
-  /// Change la disponibilité d'un bien.
-  ///
-  /// C'est le geste le plus lourd de conséquence côté client : passer en
-  /// vendu ou loué retire immédiatement le bien des recherches. L'écran
-  /// l'annonce avant de valider.
   Future<void> changeStatus(Property property, PropertyStatus status) async {
     if (property.status == status) {
-      // Rien n'a changé : ne pas prétendre le contraire.
       _mutation = const MutationState.idle();
       notifyListeners();
       return;
@@ -143,22 +113,7 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
   }
 }
 
-/// B02 — Mes biens.
-///
-/// L'écran se recharge quand on **revient** dessus. B02 vit dans une branche
-/// de `StatefulShellRoute` : son `ChangeNotifierProvider.create` n'a lieu
-/// qu'une fois, donc le `load()` initial aussi. Publier un bien depuis B03 —
-/// une route posée sur le navigateur racine — puis revenir laissait la liste
-/// telle qu'elle était à l'ouverture de l'onglet : le bien existait bel et
-/// bien côté serveur, et l'écran affichait « Aucun bien publié ».
-///
-/// Le rechargement lui-même n'est pas ici : la route enveloppe cet écran dans
-/// `ReloadOnReturn<BrokerPropertiesViewModel>`
-/// (`lib/app/routes/reload_on_return.dart`), qui porte la même règle pour B01,
-/// B05, B07 et C04. L'écran a d'abord eu sa propre copie du mécanisme ; deux
-/// implémentations d'une seule règle, c'est une de trop, et seule celle du
-/// routeur couvre les autres branches.
-class BrokerPropertiesScreen extends StatelessWidget {
+class BrokerPropertiesScreen extends StatefulWidget {
   const BrokerPropertiesScreen({
     required this.onAdd,
     required this.onEdit,
@@ -171,302 +126,362 @@ class BrokerPropertiesScreen extends StatelessWidget {
   final void Function(Property property) onPreview;
 
   @override
-  Widget build(BuildContext context) {
-    final BrokerPropertiesViewModel model = context
-        .watch<BrokerPropertiesViewModel>();
+  State<BrokerPropertiesScreen> createState() => _BrokerPropertiesScreenState();
+}
 
-    return WkScaffold(
-      extendBody: true,
-      topBar: WkTopBar(title: context.l10n.brokerPropertiesTitle),
-      bottomAction: WkButton(
-        label: context.l10n.propertyAdd,
-        icon: Icons.add,
-        onPressed: onAdd,
-      ),
+class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
+  PropertyStatus? _filter;
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<BrokerPropertiesViewModel>();
+    final l = context.l10n;
+    return AppScaffold(
+      title: l.brokerPropertiesTitle,
+      showBack: false,
+      onRefresh: model.load,
+      actions: [
+        AppIconButton(
+          icon: FIcons.plus,
+          label: l.propertyAdd,
+          onTap: widget.onAdd,
+        ),
+      ],
       body: model.state.map(
-        initial: () => const SizedBox.shrink(),
-        loading: () => const WkLoadingState(),
-        empty: () => WkEmptyState(
-          icon: Icons.home_work_outlined,
-          title: context.l10n.brokerPropertiesEmptyTitle,
-          body: context.l10n.brokerPropertiesEmptyBody,
-          actionLabel: context.l10n.propertyAdd,
-          onAction: onAdd,
+        initial: () => const AppSkeleton(height: 200),
+        loading: () => const AppSkeleton(height: 200),
+        empty: () => AppState(
+          kind: AppStateKind.empty,
+          icon: FIcons.house,
+          title: l.brokerPropertiesEmptyTitle,
+          message: l.brokerPropertiesEmptyBody,
+          actionLabel: l.propertyAdd,
+          onAction: widget.onAdd,
         ),
-        error: (WkFailure failure) =>
-            WkErrorState(failure: failure, onRetry: model.load),
-        data: (List<Property> owned) => Column(
-          children: <Widget>[
-            // L'échec d'une écriture reste affiché tant qu'il n'est pas
-            // corrigé : un message transitoire ne peut pas être la seule
-            // explication d'une suppression qui n'a pas eu lieu.
-            if (model.mutation case final MutationFailure failed)
-              _MutationBanner(failure: failed.failure),
-            Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.only(
-                  bottom: WkScaffold.bottomInset(context) + WkSpacing.md,
-                ),
-                itemCount: owned.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: WkSpacing.sm),
-                itemBuilder: (BuildContext context, int index) => _OwnedTile(
-                  property: owned[index],
-                  onEdit: () => onEdit(owned[index]),
-                  onPreview: () => onPreview(owned[index]),
-                  onStatus: () => _changeStatus(context, model, owned[index]),
-                  onDelete: () => _confirmDelete(context, model, owned[index]),
-                ),
-              ),
-            ),
-          ],
-        ),
+        error: (failure) => failureState(context, failure, onRetry: model.load),
+        data: (owned) => _list(context, model, owned),
       ),
     );
   }
 
-  Future<void> _changeStatus(
+  Widget _list(
+    BuildContext context,
+    BrokerPropertiesViewModel model,
+    List<Property> owned,
+  ) {
+    final l = context.l10n;
+    final shown = _filter == null
+        ? owned
+        : owned.where((p) => p.status == _filter).toList();
+    return Column(
+      children: [
+        AppChoice<PropertyStatus?>(
+          scroll: true,
+          options: const [null, ...PropertyStatus.values],
+          selected: _filter,
+          onChanged: (value) => setState(() => _filter = value),
+          label: (value) => value == null
+              ? l.exploreCategoryAll
+              : WkFormat.propertyStatus(l, value),
+          icon: (value) => value == null ? null : statusIcon(value),
+        ),
+        if (model.mutation case final MutationFailure failed)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Insets.page,
+              Insets.sm,
+              Insets.page,
+              0,
+            ),
+            child: Semantics(
+              liveRegion: true,
+              child: FAlert(
+                variant: .destructive,
+                title: Text(failureText(l, failed.failure)),
+              ),
+            ),
+          ),
+        Expanded(
+          child: shown.isEmpty
+              ? AppState(
+                  kind: AppStateKind.empty,
+                  title: l.stateEmptyTitle,
+                  message: l.stateEmptyBody,
+                  actionLabel: l.exploreClearFilters,
+                  onAction: () => setState(() => _filter = null),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.page,
+                    Insets.sm,
+                    Insets.page,
+                    Insets.xxl,
+                  ),
+                  itemCount: shown.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: Insets.lg),
+                  itemBuilder: (_, i) => _Listing(
+                    property: shown[i],
+                    onPreview: () => widget.onPreview(shown[i]),
+                    onEdit: () => widget.onEdit(shown[i]),
+                    onStatus: () => _status(context, model, shown[i]),
+                    onDelete: () => _delete(context, model, shown[i]),
+                    onMore: () => _more(context, model, shown[i]),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _more(
     BuildContext context,
     BrokerPropertiesViewModel model,
     Property property,
   ) async {
-    final List<PropertyStatus>? picked =
-        await WkOptionSheet.show<PropertyStatus>(
-          context,
-          title: context.l10n.propertyStatusTitle,
-          selected: property.status,
-          options: <WkOption<PropertyStatus>>[
-            for (final PropertyStatus status in PropertyStatus.values)
-              WkOption<PropertyStatus>(
-                value: status,
-                label: WkFormat.propertyStatus(context.l10n, status),
-                icon: switch (status) {
-                  PropertyStatus.available => Icons.check_circle_outline,
-                  PropertyStatus.reserved => Icons.schedule,
-                  PropertyStatus.closed => Icons.do_not_disturb_on_outlined,
-                },
-              ),
-          ],
-        );
-    if (picked == null || !context.mounted) {
-      return;
-    }
+    final l = context.l10n;
+    await showAppSheet<void>(
+      context,
+      title: property.title,
+      child: AppCard.rows([
+        AppRow(
+          title: l.propertyPreviewTitle,
+          leading: const Icon(FIcons.eye),
+          onTap: () {
+            popSheet(context);
+            widget.onPreview(property);
+          },
+        ),
+        AppRow(
+          title: l.propertyEditorEdit,
+          leading: const Icon(FIcons.pencil),
+          onTap: () {
+            popSheet(context);
+            widget.onEdit(property);
+          },
+        ),
+        AppRow(
+          title: l.propertyStatusChange,
+          leading: const Icon(FIcons.refreshCw),
+          onTap: () {
+            popSheet(context);
+            _status(context, model, property);
+          },
+        ),
+        AppRow(
+          title: l.commonDelete,
+          leading: const Icon(FIcons.trash2),
+          danger: true,
+          onTap: () {
+            popSheet(context);
+            _delete(context, model, property);
+          },
+        ),
+      ]),
+    );
+  }
 
-    final PropertyStatus target = picked.first;
+  Future<void> _status(
+    BuildContext context,
+    BrokerPropertiesViewModel model,
+    Property property,
+  ) async {
+    final l = context.l10n;
+    final target = await pick<PropertyStatus>(
+      context,
+      title: l.propertyStatusTitle,
+      options: PropertyStatus.values,
+      selected: property.status,
+      label: (value) => WkFormat.propertyStatus(l, value),
+      icon: statusIcon,
+    );
+    if (target == null || !context.mounted) return;
+
     if (target == PropertyStatus.closed) {
-      // La conséquence publique est dite **avant** de valider : le bien
-      // disparaît des recherches, ce n'est pas un détail de gestion.
-      final bool? confirmed = await WkConfirmSheet.show(
+      final confirmed = await confirm(
         context,
-        title: WkFormat.propertyStatus(context.l10n, target),
-        body: context.l10n.propertyStatusImpactClosed,
-        confirmLabel: context.l10n.propertyStatusChange,
-        cancelLabel: context.l10n.commonCancel,
+        title: WkFormat.propertyStatus(l, target),
+        message: l.propertyStatusImpactClosed,
+        action: l.propertyStatusChange,
       );
-      if (confirmed != true || !context.mounted) {
-        return;
-      }
+      if (!confirmed || !context.mounted) return;
     }
 
     await model.changeStatus(property, target);
-    if (!context.mounted) {
-      return;
-    }
-    if (_announceFailure(context, model)) {
-      return;
-    }
+    if (!context.mounted || _announceFailure(context, model)) return;
     context.read<InteractionFeedbackService?>()?.emit(
       FeedbackIntent.success,
       eventId: 'B02:success:status-${property.id}-${target.name}',
     );
-    WkToast.show(context, message: context.l10n.propertyStatusChanged);
+    toast(context, l.propertyStatusChanged);
   }
 
-  /// Dit l'échec s'il y en a un. Renvoie vrai quand rien n'a été écrit :
-  /// l'appelant n'a alors rien à célébrer.
-  bool _announceFailure(BuildContext context, BrokerPropertiesViewModel model) {
-    final MutationState mutation = model.mutation;
-    if (mutation is! MutationFailure) {
-      return false;
-    }
-    context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
-    WkToast.show(
-      context,
-      message: failureMessage(context.l10n, mutation.failure),
-    );
-    return true;
-  }
-
-  Future<void> _confirmDelete(
+  Future<void> _delete(
     BuildContext context,
     BrokerPropertiesViewModel model,
     Property property,
   ) async {
-    final bool? confirmed = await WkConfirmSheet.show(
+    final l = context.l10n;
+    final confirmed = await confirm(
       context,
-      // Le bien est nommé : « Êtes-vous sûr ? » n'informe personne.
-      title: context.l10n.propertyDeleteTitle(property.title),
-      body: context.l10n.propertyDeleteBody,
-      confirmLabel: context.l10n.propertyDelete,
-      cancelLabel: context.l10n.commonCancel,
-      destructive: true,
+      title: l.propertyDeleteTitle(property.title),
+      message: l.propertyDeleteBody,
+      action: l.propertyDelete,
+      danger: true,
     );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
+    if (!confirmed || !context.mounted) return;
 
     await model.delete(property.id);
-    if (!context.mounted) {
-      return;
-    }
-    if (_announceFailure(context, model)) {
-      return;
-    }
+    if (!context.mounted || _announceFailure(context, model)) return;
     context.read<InteractionFeedbackService?>()?.emit(
       FeedbackIntent.success,
       eventId: 'B02:success:delete-${property.id}',
     );
-    WkToast.show(context, message: context.l10n.propertyDeleted);
+    toast(context, l.propertyDeleted);
+  }
+
+  bool _announceFailure(BuildContext context, BrokerPropertiesViewModel model) {
+    final mutation = model.mutation;
+    if (mutation is! MutationFailure) return false;
+    context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+    toast(context, failureText(context.l10n, mutation.failure));
+    return true;
   }
 }
 
-/// Bandeau d'échec d'écriture.
-///
-/// Ne remplace pas la liste : le bien est toujours là, c'est justement ce
-/// qu'il faut montrer après une suppression refusée.
-class _MutationBanner extends StatelessWidget {
-  const _MutationBanner({required this.failure});
+IconData statusIcon(PropertyStatus status) => switch (status) {
+  PropertyStatus.available => FIcons.circleCheck,
+  PropertyStatus.reserved => FIcons.clock,
+  PropertyStatus.closed => FIcons.ban,
+};
 
-  final WkFailure failure;
+AppTag statusTag(BuildContext context, PropertyStatus status) => AppTag(
+  WkFormat.propertyStatus(context.l10n, status),
+  icon: statusIcon(status),
+  tone: switch (status) {
+    PropertyStatus.available => AppTone.success,
+    PropertyStatus.reserved => AppTone.warning,
+    PropertyStatus.closed => AppTone.neutral,
+  },
+);
+
+class _Listing extends StatelessWidget {
+  const _Listing({
+    required this.property,
+    required this.onPreview,
+    required this.onEdit,
+    required this.onStatus,
+    required this.onDelete,
+    required this.onMore,
+  });
+
+  final Property property;
+  final VoidCallback onPreview, onEdit, onStatus, onDelete, onMore;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: WkSpacing.sm),
-        padding: const EdgeInsets.all(WkSpacing.md),
-        decoration: BoxDecoration(
-          color: context.colors.errorContainer,
-          borderRadius: BorderRadius.circular(WkRadius.lg),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(Icons.error_outline, color: context.colors.onErrorContainer),
-            const SizedBox(width: WkSpacing.md),
-            Expanded(
-              child: Text(
-                failureMessage(context.l10n, failure),
-                style: context.text.bodyMedium?.copyWith(
-                  color: context.colors.onErrorContainer,
+    final l = context.l10n;
+    return Slidable(
+      key: ValueKey(property.id),
+      groupTag: 'broker-properties',
+      startActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: .5,
+        children: [
+          SlidableAction(
+            onPressed: (_) => onEdit(),
+            icon: FIcons.pencil,
+            label: l.commonEdit,
+            backgroundColor: context.tones.sunken,
+            foregroundColor: context.colors.onSurface,
+            borderRadius: Radii.card,
+          ),
+          SlidableAction(
+            onPressed: (_) => onStatus(),
+            icon: FIcons.refreshCw,
+            label: l.fieldStatus,
+            backgroundColor: context.tones.sunken,
+            foregroundColor: context.colors.onSurface,
+            borderRadius: Radii.card,
+          ),
+        ],
+      ),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: .3,
+        children: [
+          SlidableAction(
+            onPressed: (_) => onDelete(),
+            icon: FIcons.trash2,
+            label: l.commonDelete,
+            backgroundColor: context.tones.danger,
+            foregroundColor: context.colors.onPrimary,
+            borderRadius: Radii.card,
+          ),
+        ],
+      ),
+      child: AppCard(
+        onTap: onPreview,
+        onLongPress: onMore,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Stack(
+              children: [
+                AppPhoto(
+                  property.photoAssets.firstOrNull,
+                  aspectRatio: 16 / 10,
+                  radius: BorderRadius.zero,
                 ),
+                if (property.hasVoiceNote)
+                  Positioned(
+                    top: Insets.md,
+                    left: Insets.md,
+                    child: AppOverlayChip(
+                      context.l10n.voiceNoteBadge,
+                      icon: FIcons.mic,
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(Insets.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          WkFormat.price(
+                            l,
+                            property.price,
+                            property.transaction,
+                          ),
+                          style: AppText.moneyLg,
+                        ),
+                      ),
+                      statusTag(context, property.status),
+                    ],
+                  ),
+                  const SizedBox(height: Insets.xs),
+                  Text(
+                    property.title,
+                    style: context.text.bodyLarge,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: Insets.xs),
+                  Text(
+                    '${WkFormat.propertyKind(l, property.kind)} · ${property.neighbourhood}',
+                    style: context.text.bodySmall!.copyWith(
+                      color: context.tones.inkSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _OwnedTile extends StatelessWidget {
-  const _OwnedTile({
-    required this.property,
-    required this.onEdit,
-    required this.onPreview,
-    required this.onStatus,
-    required this.onDelete,
-  });
-
-  final Property property;
-  final VoidCallback onEdit;
-  final VoidCallback onPreview;
-  final VoidCallback onStatus;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(WkSpacing.md),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(WkRadius.lg),
-        border: Border.all(color: context.colors.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  WkFormat.price(
-                    context.l10n,
-                    property.price,
-                    property.transaction,
-                  ),
-                  style: context.text.headlineMedium,
-                ),
-              ),
-              WkBadge(
-                label: WkFormat.propertyStatus(context.l10n, property.status),
-                icon: switch (property.status) {
-                  PropertyStatus.available => Icons.check_circle_outline,
-                  PropertyStatus.reserved => Icons.schedule,
-                  PropertyStatus.closed => Icons.do_not_disturb_on_outlined,
-                },
-                tone: switch (property.status) {
-                  PropertyStatus.available => WkBadgeTone.positive,
-                  PropertyStatus.reserved => WkBadgeTone.brand,
-                  PropertyStatus.closed => WkBadgeTone.neutral,
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: WkSpacing.xs),
-          Text(
-            property.title,
-            style: context.text.bodyLarge,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
-          ),
-          const SizedBox(height: WkSpacing.md),
-          // Une action par ligne. En deux colonnes, « Changer le statut »,
-          // « Aperçu client » et « Modifier le bien » s'affichaient
-          // « Change… », « Aperçu … », « Modifie… » : trois libellés coupés
-          // sur quatre, illisibles pour qui déchiffre déjà difficilement.
-          WkButton(
-            label: context.l10n.propertyStatusChange,
-            icon: Icons.swap_horiz,
-            variant: WkButtonVariant.secondary,
-            onPressed: onStatus,
-          ),
-          const SizedBox(height: WkSpacing.sm),
-          WkButton(
-            label: context.l10n.propertyPreviewTitle,
-            icon: Icons.visibility_outlined,
-            variant: WkButtonVariant.secondary,
-            onPressed: onPreview,
-          ),
-          const SizedBox(height: WkSpacing.sm),
-          WkButton(
-            label: context.l10n.propertyEditorEdit,
-            icon: Icons.edit_outlined,
-            variant: WkButtonVariant.secondary,
-            onPressed: onEdit,
-          ),
-          // Éloignée de Modifier : deux actions dont une destructive ne sont
-          // jamais collées.
-          const SizedBox(height: WkSpacing.betweenTargets),
-          WkButton(
-            label: context.l10n.commonDelete,
-            icon: Icons.delete_outline,
-            variant: WkButtonVariant.dangerGhost,
-            onPressed: onDelete,
-          ),
-        ],
       ),
     );
   }

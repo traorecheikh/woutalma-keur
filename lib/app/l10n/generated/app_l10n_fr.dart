@@ -39,6 +39,9 @@ class AppL10nFr extends AppL10n {
   String get commonDelete => 'Supprimer';
 
   @override
+  String get commonEdit => 'Modifier';
+
+  @override
   String get commonListen => 'Écouter';
 
   @override
@@ -824,6 +827,9 @@ class AppL10nFr extends AppL10n {
   String get brokerHomeNothing => 'Rien à traiter pour le moment.';
 
   @override
+  String get brokerHomeContactsLabel => 'Contacts reçus';
+
+  @override
   String get brokerHomeOverview => 'Résumé';
 
   @override
@@ -1098,6 +1104,9 @@ class AppL10nFr extends AppL10n {
   @override
   String get brokerVerificationRejected =>
       'Demande refusée. Vous pouvez recommencer.';
+
+  @override
+  String get brokerVerificationTagRejected => 'Demande refusée';
 
   @override
   String get brokerRankingTitle => 'Mon classement';
@@ -1423,4 +1432,7 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get contactSmsHint => 'Sans internet';
+
+  @override
+  String get exploreBrowseAreas => 'Parcourir par quartier';
 }

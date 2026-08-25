@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart' show FIcons;
 import 'package:intl/intl.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
@@ -53,11 +54,11 @@ abstract final class WkFormat {
   /// hasard. Le picto n'est jamais seul : il accompagne le mot.
   static IconData propertyKindIcon(PropertyKind value) {
     return switch (value) {
-      PropertyKind.apartment => Icons.apartment,
-      PropertyKind.house => Icons.house_outlined,
-      PropertyKind.land => Icons.landscape_outlined,
-      PropertyKind.studio => Icons.single_bed_outlined,
-      PropertyKind.room => Icons.bedroom_parent_outlined,
+      PropertyKind.apartment => FIcons.building2,
+      PropertyKind.house => FIcons.house,
+      PropertyKind.land => FIcons.landPlot,
+      PropertyKind.studio => FIcons.bedSingle,
+      PropertyKind.room => FIcons.bedDouble,
     };
   }
 

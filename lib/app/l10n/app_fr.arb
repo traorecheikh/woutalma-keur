@@ -42,6 +42,10 @@
   "@commonDelete": {
     "description": "Action destructive courte, dans une ligne de liste."
   },
+  "commonEdit": "Modifier",
+  "@commonEdit": {
+    "description": "Action de modification courte, sur un geste de balayage."
+  },
   "commonListen": "Écouter",
   "@commonListen": {
     "description": "Action de faire lire l'écran à voix haute."
@@ -880,6 +884,10 @@
   "@brokerHomeNothing": {
     "description": "Aucune action en attente côté courtier."
   },
+  "brokerHomeContactsLabel": "Contacts reçus",
+  "@brokerHomeContactsLabel": {
+    "description": "Libellé du chiffre mis en avant en tête de B01."
+  },
   "brokerHomeOverview": "Résumé",
   "@brokerHomeOverview": {
     "description": "Section de B01 résumant les chiffres utiles."
@@ -1143,6 +1151,10 @@
   "brokerVerificationRejected": "Demande refusée. Vous pouvez recommencer.",
   "@brokerVerificationRejected": {
     "description": "État refusé, avec la sortie possible."
+  },
+  "brokerVerificationTagRejected": "Demande refusée",
+  "@brokerVerificationTagRejected": {
+    "description": "Même état, en pastille : la phrase complète n'y tient pas."
   },
 
   "brokerRankingTitle": "Mon classement",
@@ -1450,5 +1462,8 @@
   "contactWhatsappHint": "Message ou vocal",
   "@contactWhatsappHint": { "description": "Sous-titre du canal WhatsApp." },
   "contactSmsHint": "Sans internet",
-  "@contactSmsHint": { "description": "Sous-titre du canal SMS." }
+  "@contactSmsHint": { "description": "Sous-titre du canal SMS." },
+
+  "exploreBrowseAreas": "Parcourir par quartier",
+  "@exploreBrowseAreas": { "description": "Titre de l'état vide de la recherche." }
 }

@@ -156,14 +156,7 @@ class AppDependencies {
     syncRoleWithSession();
   }
 
-  /// Courtier connecté, déduit de l'identification.
-  ///
-  /// En mode distant il n'y a pas de repli possible : un identifiant de
-  /// démonstration renverrait 404 sur chaque écran courtier. En mode local on
-  /// retombe sur le profil du seed pour que la gestion reste explorable sans
-  /// compte.
-  String? get currentBrokerId =>
-      auth.current?.brokerId ?? (AppConfig.isRemote ? null : 'brk-moussa');
+  String? get currentBrokerId => auth.current?.brokerId;
 
   /// Le rôle courtier n'est atteignable que si un profil existe vraiment.
   bool get canActAsBroker => currentBrokerId != null;

@@ -81,144 +81,37 @@ trouver un courtier et l'appeler doit être possible **sans lire un seul mot**.
 
 | Interdit | À la place |
 |:--|:--|
-| `DropdownButton`, `DropdownMenu`, `PopupMenuButton` | `WkSelectField` + `WkOptionSheet` |
-| `AlertDialog`, `showDialog` | `WkConfirmSheet` |
-| `SnackBar`, `ScaffoldMessenger` | `WkToast` |
-| `AppBar` | `WkTopBar` |
-| `Scaffold` nu dans un écran | `WkScaffold` |
-| `ListTile` | `WkListAction` ou `WkInfoRow` |
-| `Card` | `WkCard` et ses variantes |
-| `ElevatedButton`, `TextButton`, `OutlinedButton`, `IconButton` | `WkButton`, `WkIconButton` |
-| `Colors.*`, `Color(0x…)` dans un écran | `context.colors.*` |
-| `TextStyle(...)` en ligne | `Theme.of(context).textTheme.*` |
-| Nombre magique de padding ou de rayon | `AppSpacing.*`, `AppRadius.*` |
+| `DropdownButton`, `DropdownMenu`, `PopupMenuButton`, `showDialog`, `AlertDialog`, `showModalBottomSheet` | `pick()`, `confirm()`, `showAppSheet()` |
+| `SnackBar`, `ScaffoldMessenger` | `toast()` |
+| `AppBar`, `Scaffold` nu, `Card`, `ListTile`, `ElevatedButton`, `TextButton`, `IconButton`, `TextField` | `AppScaffold`, `AppCard`, `AppRow`, `AppButton`, `AppIconButton`, `AppField` |
+| `Icons.*` | `FIcons.*` (Lucide) |
+| `Colors.*`, `Color(0x…)`, `TextStyle(...)`, nombre magique de padding ou de rayon dans un écran | `context.colors`, `context.tones`, `context.text`, `Insets.*`, `Radii.*` |
 | Chaîne visible en dur | `context.l10n.*` |
-| `Container` à `height:` fixe autour de texte | contrainte souple — sinon ×1.3 casse |
-| `google_fonts` ou police embarquée | police système via `ThemeData` |
+| Commentaire qui redit le code | un meilleur nom |
 
 ## 5. Obligations
 
-- Tout widget partagé est préfixé **`Wk`**, vit dans `lib/app/shared/widgets/`, et possède un test
-  widget avant d'être utilisé. Les goldens sont réservés aux composants structurants et aux
-  écrans de référence : ils ne doivent pas ralentir chaque petit composant.
-- Tout écran est un `StatelessWidget` ou `StatefulWidget`, ne contient **aucune logique métier**,
-  et observe des modèles exposés par le package `provider`.
-- Toute règle métier — distance, score de classement, éligibilité à noter — vit dans un service
-  **Dart pur**, testé unitairement, sans dépendance à Flutter.
-- Tout écran couvre explicitement **vide / chargement / peuplé / erreur**. Un écran sans état
-  vide n'est pas terminé.
-- Toute image passe par le mode léger : compression obligatoire, et substitution par un
-  placeholder quand `modeLeger` est actif.
-- `analysis_options.yaml` durci : `prefer_single_quotes`, `always_use_package_imports`,
-  `require_trailing_commas`, `avoid_print`.
+- Tout widget partagé vit dans `lib/app/ui/ui.dart` (préfixe `App`), et n'y entre que si deux
+  écrans s'en servent. Un widget propre à un écran reste privé dans le fichier de l'écran.
+- Tout écran observe des modèles exposés par `provider` et ne contient aucune logique métier.
+- Toute règle métier vit dans un service Dart pur, testé unitairement.
+- Tout écran couvre vide / chargement (`AppSkeleton`) / peuplé / erreur (`failureState`).
+- Paquets avant code maison : `forui`, `flutter_slidable`, `smooth_page_indicator`, `skeletonizer`,
+  `record`, `audioplayers`, `phone_form_field`, `pinput`, `flutter_map`.
 
-## 6. Catalogue des widgets
+## 6. Catalogue des primitives (`lib/app/ui/ui.dart`)
 
-Chaque entrée existe **une seule fois**. Un écran ne compose jamais un bouton, une carte ou un
-champ à la main. Un écran **Catalogue**, accessible depuis les Réglages, affiche tous les
-composants dans tous leurs états — c'est là qu'on valide avant d'écrire le moindre écran métier.
+**Structure** — `AppScaffold` (en-tête forui avec retour et actions, bandeau hors ligne, action
+fixe en bas, `onRefresh`), `AppTitle`, `AppSection`, `AppNavBar`, `AppStrip`.
 
-**Structure** — `WkScaffold`, `WkTopBar`, `WkSectionHeader`, `WkBottomNav`, `WkBottomActionBar`.
+**Actions** — `AppButton` (primary / secondary / ghost / danger / call / whatsapp, `loading`),
+`AppIconButton`, `AppPill`, `AppSegmented`, `AppChoice`.
 
-**Actions** — `WkButton` (primary / secondary / ghost / danger / call / whatsapp, tailles lg et
-md, état de chargement, pictogramme), `WkIconButton`, `WkListAction`.
+**Saisie** — `AppField`, `AppSearchPill`, `pick()`, `AppPhotoPicker`, `AppVoiceNoteRecorder`.
 
-**Saisie** — `WkTextField`, `WkPhoneField`, `WkOtpField`, `WkSelectField` + `WkOptionSheet<T>`,
-`WkChipGroup` (rangée de pastilles à défilement horizontal), `WkSearchBar`, `WkPhotoPicker`,
-`WkVoiceNoteRecorder` (repos / enregistrement / vocal prêt, sur le paquet `record`).
+**Contenu** — `AppCard` / `AppCard.rows` + `AppRow`, `AppAvatar`, `AppPhoto`, `AppStars`,
+`AppTag`, `AppOverlayChip`, `AppMoney`, `AppKeyTile`, `AppStatCard`, `AppVoiceNotePlayer`,
+`PhotoCarousel` / `PropertyCard` / `BrokerCard` (`modules/client/explore/cards.dart`).
 
-**Contenu** — `WkBrokerCard`, `WkPropertyCard` (photos feuilletables via `WkPhotoCarousel` et
-`smooth_page_indicator`), `WkPropertyTile` et `WkBrokerTile` (vignettes des rangées de l'accueil),
-`WkSectionHeader`, `WkVoiceNotePlayer` (sur `audioplayers`), `WkRating` (étoiles + valeur
-chiffrée), `WkBadge`, `WkAvatar`, `WkInfoRow`, `WkPriceTag`. Les états de chargement des rangées
-passent par `skeletonizer`.
-
-**Vocal** — `WkVoiceButton`, `WkVoiceOverlay`, `WkSpeakButton`, `WkAudioRecorderTile`,
-`WkAudioPlayerTile`.
-
-**États** — `WkEmptyState`, `WkErrorState`, `WkSkeleton`.
-
-**Retours** — `WkFieldStatus`, `WkLiveStatus`, `WkConfirmSheet`, `WkToast`.
-
-## 7. Localisation
-
-- Deux langues dès le départ : `app_fr.arb` et `app_wo.arb`, dans `lib/app/l10n/`.
-- Aucune chaîne visible n'est écrite dans un widget.
-- Chaque clé doit être **énonçable** : les libellés sont ce que la synthèse vocale lira.
-- Le français livré n'est pas la chaîne la plus longue de demain : aucune mise en page ne fige une hauteur autour d'un texte.
-
-## 8. Mode démo
-
-Un `AppMode` (`demo` ou `reel`) est persisté dans la même base Isar que les autres réglages et
-exposé par un `ChangeNotifierProvider`. Une seule technologie de persistance locale suffit.
-
-- Passage en **démo** : purge d'Isar, chargement de `assets/seed/*.json`, écriture de toutes les
-  collections, invalidation des providers de liste. Confirmation obligatoire avant la purge.
-- Passage en **réel** : purge d'Isar, base vide, l'onboarding et le parcours normal reprennent.
-- En test, le dépôt Isar est remplacé par un dépôt mémoire injecté dans `MultiProvider` ; le
-  chargeur de seed reste le même chemin de code qu'en production.
-
-## 9. Dépendances autorisées
-
-On ajoute un package seulement au moment où un écran en a besoin. Le socle retenu est :
-
-| Besoin | Package | Pourquoi |
-|:--|:--|:--|
-| Navigation | `go_router` | routes déclaratives, redirections et deep links |
-| État | `provider` | choix du projet, API Flutter simple et testable |
-| Données locales | `isar_community`, `isar_community_flutter_libs`, générateur associé | une base unique pour données, réglages et seed |
-| Téléphone + pays | `phone_form_field` | validation, indicatif, drapeaux et sélecteur accessibles ; noms de pays fournis par notre l10n |
-| OTP | `pinput` | collage SMS, focus et accessibilité déjà traités |
-| Position | `geolocator` | permission et coordonnées |
-| Carte | `flutter_map` + `latlong2` | carte indépendante d'un SDK propriétaire, tuiles asset/cache possibles ; vue liste toujours disponible |
-| Liens externes | `url_launcher` | appel, SMS et WhatsApp |
-| Photos | `image_picker` + `flutter_image_compress` | sélection native et mode léger |
-| Vocal simulé/réel | `flutter_tts`, `record`, `just_audio` | lecture, enregistrement et écoute sans lecteur maison |
-| Icônes | `lucide_icons_flutter` | vocabulaire cohérent ; aucune icône SVG dessinée à la main |
-
-`speech_to_text` n'entre que lorsqu'un prototype démontre une qualité suffisante sur des voix africaines francophones. En phase
-UX, `VoiceService` retourne des commandes déterministes ; l'interface reste identique.
-
-## 10. Tests
-
-- **Unitaires** — Haversine ; score de classement, dont le cas « un seul avis à 5 étoiles » ;
-  impossibilité de noter sans `ContactLog` correspondant ; disparition des biens vendus ou loués
-  de la recherche ; chargeur de seed ; bascule de mode ; transitions de validation, politique de
-  feedback et déduplication des retours sensoriels.
-- **Widget** — chaque widget du catalogue dans chacun de ses états ; chaque écran en vide,
-  chargement, peuplé et erreur.
-- **Golden** — les huit composants structurants, en clair et en sombre.
-- **Garde-fou** — `test/widget/accessibility_guard_test.dart` parcourt les écrans et **échoue**
-  si : une cible tactile descend sous 56 dp ; un contraste texte/fond passe sous 4.5:1 ; un
-  widget interactif n'a pas de `Semantics` ; un texte visible ne provient pas de `l10n`.
-
-## 11. Boucle de validation visuelle
-
-Le code source ne prouve pas qu'un écran mobile fonctionne visuellement. Pour toute modification UI :
-
-1. lancer l'écran avec l'état ciblé et les données déterministes du mode démo ;
-2. capturer au minimum un petit Android (360×800) et un iPhone standard (390×844) ;
-3. vérifier débordement, clavier, safe areas, action basse, contraste, ordre de lecture et retour ;
-4. répéter l'état pertinent à ×1.3 de taille de texte ;
-5. comparer aux tokens et au contrat d'écran, puis corriger avant de déclarer terminé.
-
-Les trois premières références à faire approuver sont C01 Explorer, C02 Fiche courtier et B03
-Éditeur de bien. Leurs contrats vivent dans `screen-contracts/`. Les goldens approuvés deviennent
-la preuve de régression ; ils ne remplacent pas l'inspection sur simulateur lorsque l'interaction,
-le clavier, le scroll ou une permission change.
-
-## 12. Feedback interactif
-
-`INTERACTION-FEEDBACK.md` est obligatoire pour chaque écran et overlay.
-
-- Un `InteractionFeedbackService` injecté par Provider traduit les intentions `selection`,
-  `stepValid`, `warning`, `error`, `success`, `recordingStarted`, `recordingStopped` et
-  `announceStatus` vers `HapticFeedback`, audio et sémantique.
-- Le service applique préférences, accessibilité, disponibilité plateforme et déduplication. Les
-  widgets ne choisissent jamais une durée de vibration ou un fichier sonore.
-- `WkFieldStatus` réserve l'espace de checking/valid/error pour éviter les sauts de layout.
-- `WkLiveStatus` annonce résultat, progression et récupération sans toast répété.
-- Les retours sont déclenchés par une transition d'état visible, jamais par `build()`.
-- Avec TalkBack/VoiceOver, les live regions remplacent le TTS applicatif pour ne pas parler en même
-  temps. Avec animations réduites, le nouvel état apparaît immédiatement.
-- Sons, vibrations et guidage vocal sont trois préférences indépendantes avec aperçu dans S01.
+**États et retours** — `AppState`, `AppSkeleton`, `failureState`, `toast()`, `confirm()`,
+`showAppSheet()`.

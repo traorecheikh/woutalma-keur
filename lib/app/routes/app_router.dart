@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/app_dependencies.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
-import 'package:woutalma_keur/app/modules/catalog/catalog_screen.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_screen.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
 import 'package:woutalma_keur/app/modules/auth/auth_screens.dart';
@@ -13,7 +12,6 @@ import 'package:woutalma_keur/app/modules/broker/broker_home_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_profile_editor_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_profile_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_trust_screens.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_shell.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_screen.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
 import 'package:woutalma_keur/app/modules/client/history/history_screen.dart';
@@ -30,9 +28,7 @@ import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/routes/app_routes.dart';
 import 'package:woutalma_keur/app/routes/reload_on_return.dart';
 import 'package:woutalma_keur/app/routes/session_landing.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
+import 'package:woutalma_keur/app/ui/ui.dart';
 
 /// Routeur de l'application.
 ///
@@ -97,33 +93,20 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
         context.go(AppRoutes.explore);
       }
 
-      return Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: <Widget>[
-              WkTopBar(
-                title: context.l10n.brokerSignInRequiredTitle,
-                onBack: leave,
-              ),
-              Expanded(
-                child: WkEmptyState(
-                  icon: Icons.storefront_outlined,
-                  title: context.l10n.brokerSignInRequiredHeading,
-                  body: context.l10n.brokerSignInRequiredBody,
-                  actionLabel: context.l10n.brokerSignInRequiredAction,
-                  // Avec le motif client, on rouvrait une session cliente et
-                  // cette même porte se refermait derrière : la boucle
-                  // signalée.
-                  onAction: () => context.push(
-                    AppRoutes.authPhone,
-                    extra: AuthRequest(
-                      reason: context.l10n.authPhoneReasonBroker,
-                      asBroker: true,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      return AppScaffold(
+        onBack: leave,
+        body: AppState(
+          kind: AppStateKind.permission,
+          icon: FIcons.store,
+          title: context.l10n.brokerSignInRequiredHeading,
+          message: context.l10n.brokerSignInRequiredBody,
+          actionLabel: context.l10n.brokerSignInRequiredAction,
+          onAction: () => context.push(
+            AppRoutes.authPhone,
+            extra: AuthRequest(
+              reason: context.l10n.authPhoneReasonBroker,
+              asBroker: true,
+            ),
           ),
         ),
       );
@@ -165,16 +148,11 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
               BuildContext context,
               GoRouterState _,
               StatefulNavigationShell shell,
-            ) => WkShell(
-              navigationShell: shell,
-              destinations: <(IconData, String)>[
-                // Libellés d'onglet de `docs/UX-FLOWS.md` §4, pas les titres
-                // d'écran : un onglet partage la largeur avec ses voisins.
-                (Icons.travel_explore, context.l10n.tabExplore),
-                (Icons.history, context.l10n.tabContacts),
-                (Icons.person_outline, context.l10n.tabProfile),
-              ],
-            ),
+            ) => _Shell(shell, <AppNavItem>[
+              AppNavItem(context.l10n.tabExplore, FIcons.compass),
+              AppNavItem(context.l10n.tabContacts, FIcons.history),
+              AppNavItem(context.l10n.tabProfile, FIcons.userRound),
+            ]),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[
@@ -242,7 +220,6 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
                     ChangeNotifierProvider<SettingsViewModel>.value(
                       value: deps.settings,
                       child: SettingsScreen(
-                        onOpenCatalog: () => context.push(AppRoutes.catalog),
                         onSignIn: () => context.push(
                           AppRoutes.authPhone,
                           extra: _authRequest(context, deps),
@@ -287,7 +264,7 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
           if (entry == null) {
             // Lien profond sans contexte : on le dit, on ne fabrique pas un
             // avis sur un contact inconnu.
-            return const WkErrorState(failure: WkFailure.notFound);
+            return AppScaffold(body: failureState(context, WkFailure.notFound));
           }
           return ChangeNotifierProvider<ReviewViewModel>(
             create: (_) => ReviewViewModel(
@@ -361,7 +338,7 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
               (state.extra as Map<String, Object?>?) ?? <String, Object?>{};
           final String? phone = args['phone'] as String?;
           if (phone == null) {
-            return const WkErrorState(failure: WkFailure.notFound);
+            return AppScaffold(body: failureState(context, WkFailure.notFound));
           }
           return OtpScreen(
             phone: phone,
@@ -380,7 +357,6 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
               value: deps.settings,
               child: SettingsScreen(
                 onBack: () => context.pop(),
-                onOpenCatalog: () => context.push(AppRoutes.catalog),
                 onSignIn: () => context.push(
                   AppRoutes.authPhone,
                   extra: _authRequest(context, deps),
@@ -400,15 +376,12 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
               BuildContext context,
               GoRouterState _,
               StatefulNavigationShell shell,
-            ) => WkShell(
-              navigationShell: shell,
-              destinations: <(IconData, String)>[
-                (Icons.insights_outlined, context.l10n.brokerHomeTab),
-                (Icons.home_work_outlined, context.l10n.tabBrokerProperties),
-                (Icons.phone_in_talk_outlined, context.l10n.brokerActivityTab),
-                (Icons.storefront_outlined, context.l10n.tabProfile),
-              ],
-            ),
+            ) => _Shell(shell, <AppNavItem>[
+              AppNavItem(context.l10n.brokerHomeTab, FIcons.layoutGrid),
+              AppNavItem(context.l10n.tabBrokerProperties, FIcons.house),
+              AppNavItem(context.l10n.brokerActivityTab, FIcons.phone),
+              AppNavItem(context.l10n.tabProfile, FIcons.store),
+            ]),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[
@@ -568,7 +541,7 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
         builder: (BuildContext context, GoRouterState state) {
           final Property? property = state.extra as Property?;
           if (property == null) {
-            return const WkErrorState(failure: WkFailure.notFound);
+            return AppScaffold(body: failureState(context, WkFailure.notFound));
           }
           return ChangeNotifierProvider<PropertyViewModel>(
             create: (_) => PropertyViewModel(
@@ -676,11 +649,6 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
           ),
         ),
       ),
-      GoRoute(
-        parentNavigatorKey: rootKey,
-        path: AppRoutes.catalog,
-        builder: (_, _) => const CatalogScreen(),
-      ),
     ],
   );
 }
@@ -701,3 +669,20 @@ String _postAuthRoute(AppDependencies deps) =>
     deps.syncRoleWithSession() == UserRole.broker
     ? AppRoutes.brokerHome
     : AppRoutes.explore;
+
+class _Shell extends StatelessWidget {
+  const _Shell(this.shell, this.items);
+  final StatefulNavigationShell shell;
+  final List<AppNavItem> items;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    extendBody: true,
+    body: shell,
+    bottomNavigationBar: AppNavBar(
+      items: items,
+      index: shell.currentIndex,
+      onTap: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
+    ),
+  );
+}

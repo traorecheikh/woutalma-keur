@@ -135,7 +135,7 @@ de l'écran Explorer. Pas d'onglet Favoris : absent du cahier des charges MVP.
 | G03 | Téléphone | `WkPhoneField`, +221 présélectionné mais modifiable, raison de la demande | action identifiée → G04 ; retour reprend l'action sans la réaliser |
 | G04 | Code OTP | `Pinput`, collage automatique, renvoyer avec délai, modifier le numéro | G03 → action initiale, B08 ou G05 |
 | G05 | Blocage récupérable | base locale indisponible, seed invalide ou trop d'échecs OTP ; Réessayer et aide | erreur bloquante → écran précédent |
-| S01 | Réglages | taille du texte, thème système/clair/sombre, mode léger, guidage vocal, sons, vibrations, notifications, mode démo, catalogue dev, changer de rôle ; chaque modalité possède un aperçu | C06/B07 → sheets de réglage ou G02 |
+| S01 | Profil / réglages | en-tête d'identité (visiteur ou compte, bouton M'identifier, déconnexion), rôle, retours (vibrations, sons). Plus de mode démonstration ni de catalogue. | onglet Profil, engrenage de C01/B01 → G03 |
 | S02 | Catalogue UI | tous les widgets et états ; visible seulement en debug ou mode démo | S01 → retour S01 |
 
 ### G01 et le choix de langue

@@ -566,3 +566,10 @@ animation ne change la taille stable d'un contrôle. Si la plateforme réduit le
 
 **Do** vérifier chaque écran à ×1.3 de taille de texte et en mode sombre.
 **Don't** figer une hauteur autour d'un texte : le français d'aujourd'hui n'est pas la chaîne la plus longue de demain.
+
+## Journal des décisions
+
+| Date | Décision | Raison |
+|---|---|---|
+| 2026-08-25 | **Système d'interface remplacé** : `forui` + icônes Lucide, police embarquée Plus Jakarta Sans, primitives `App*` dans `lib/app/ui/ui.dart`, fond gris clair `#F6F7F9`, cartes blanches à rayon 24 avec une ombre douce, bouton principal en encre, marine `#0B3B66` réservé à l'accent (onglet actif, liens, sélection). Les composants `Wk*`, le catalogue S02 et le mode démonstration sont retirés. | L'interface précédente lisait comme un gabarit Material et l'accueil montrait une liste de résultats. Référence assumée : Airbnb, même système que Gnawalma. Les jetons de l'en-tête YAML ci-dessus restent la source des couleurs sémantiques (appel, WhatsApp, statuts) ; la typographie système est abandonnée. |
+| 2026-08-25 | Accueil C01 = recherche, catégories, rangées horizontales ; résultats et filtres dans M14 ; « Mes biens » en cartes avec glissement latéral et appui long pour les actions. | Un écran de découverte ne montre pas une liste de résultats ; les actions d'un bien doivent être atteignables sans ouvrir la fiche. |

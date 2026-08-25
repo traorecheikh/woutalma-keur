@@ -1,63 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
-import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_confirm_sheet.dart';
+import 'package:woutalma_keur/app/ui/ui.dart';
 
 /// M06 — expliquer avant de demander.
 ///
-/// Extrait de `location_sheet.dart` pour qu'il n'existe qu'une seule
-/// implémentation de M06 et un seul chemin « refus définitif → réglages ».
-/// Deux appelants : l'amorçage au premier lancement, et le bouton GPS de M02.
-///
-/// `docs/UX-FLOWS.md` §M06 définit ce moment comme une feuille, pas un écran :
-/// une page plein écran posée devant le premier rendu serait un péage, ce que
-/// `docs/screen-contracts/client-discovery.md` interdit explicitement.
+/// Une seule implémentation dans l'application, donc un seul chemin « refus
+/// définitif → réglages ». Deux appelants : l'amorçage au premier lancement et
+/// le bouton GPS de M02.
 Future<LocationResult?> requestClientPosition(
   BuildContext context,
   ClientPositionController positions, {
 
-  /// Proposer les réglages système après un refus définitif.
-  ///
-  /// Seulement quand l'utilisateur a lui-même appuyé sur « Utiliser ma
-  /// position ». Au premier lancement, enchaîner une seconde feuille sur un
-  /// refus serait précisément la boucle de permission que le contrat interdit.
+  /// Au premier lancement, enchaîner une seconde feuille sur un refus serait
+  /// la boucle de permission que le contrat interdit.
   bool offerSettingsOnPermanentDenial = true,
 }) async {
-  final AppL10n l10n = AppL10n.of(context);
-
-  final bool? go = await WkConfirmSheet.show(
+  final l = context.l10n;
+  final go = await _ask(
     context,
-    title: l10n.permissionLocationTitle,
-    body: l10n.permissionLocationBody,
-    confirmLabel: l10n.permissionContinue,
-    cancelLabel: l10n.permissionNotNow,
+    title: l.permissionLocationTitle,
+    body: l.permissionLocationBody,
+    action: l.permissionContinue,
   );
   // Marqué quelle que soit la réponse : « pas maintenant » est un choix, et il
   // ne se redemande pas au lancement suivant.
   await positions.markPrimed();
-  if (go != true || !context.mounted) {
-    return null;
-  }
+  if (!go || !context.mounted) return null;
 
-  final LocationResult result = await positions.locate();
-  if (!context.mounted) {
-    return result;
-  }
+  final result = await positions.locate();
+  if (!context.mounted) return result;
 
   if (result is LocationRefused &&
       result.reason == LocationRefusal.deniedForever &&
       offerSettingsOnPermanentDenial) {
-    final bool? open = await WkConfirmSheet.show(
+    final open = await _ask(
       context,
-      title: l10n.permissionLocationTitle,
-      body: l10n.locationDenied,
-      confirmLabel: l10n.permissionOpenSettings,
-      cancelLabel: l10n.permissionNotNow,
+      title: l.permissionLocationTitle,
+      body: l.locationDenied,
+      action: l.permissionOpenSettings,
     );
-    if (open == true) {
-      await positions.openSettings();
-    }
+    if (open) await positions.openSettings();
   }
   return result;
+}
+
+Future<bool> _ask(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required String action,
+}) async {
+  final chosen = await showAppSheet<bool>(
+    context,
+    title: title,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          body,
+          style: context.text.bodyLarge!.copyWith(
+            color: context.tones.inkSecondary,
+          ),
+        ),
+        const SizedBox(height: Insets.xl),
+        AppButton(
+          action,
+          icon: FIcons.locateFixed,
+          onPressed: () => popSheet(context, true),
+        ),
+        const SizedBox(height: Insets.sm),
+        AppButton(
+          context.l10n.permissionNotNow,
+          variant: AppButtonVariant.ghost,
+          onPressed: () => popSheet(context, false),
+        ),
+      ],
+    ),
+  );
+  return chosen ?? false;
 }

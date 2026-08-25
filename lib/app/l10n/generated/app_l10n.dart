@@ -153,6 +153,12 @@ abstract class AppL10n {
   /// **'Supprimer'**
   String get commonDelete;
 
+  /// Action de modification courte, sur un geste de balayage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get commonEdit;
+
   /// Action de faire lire l'écran à voix haute.
   ///
   /// In fr, this message translates to:
@@ -1425,6 +1431,12 @@ abstract class AppL10n {
   /// **'Rien à traiter pour le moment.'**
   String get brokerHomeNothing;
 
+  /// Libellé du chiffre mis en avant en tête de B01.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacts reçus'**
+  String get brokerHomeContactsLabel;
+
   /// Section de B01 résumant les chiffres utiles.
   ///
   /// In fr, this message translates to:
@@ -1850,6 +1862,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Demande refusée. Vous pouvez recommencer.'**
   String get brokerVerificationRejected;
+
+  /// Même état, en pastille : la phrase complète n'y tient pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande refusée'**
+  String get brokerVerificationTagRejected;
 
   /// Titre de B10.
   ///
@@ -2432,6 +2450,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Sans internet'**
   String get contactSmsHint;
+
+  /// Titre de l'état vide de la recherche.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcourir par quartier'**
+  String get exploreBrowseAreas;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

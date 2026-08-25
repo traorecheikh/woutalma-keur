@@ -52,9 +52,6 @@ abstract final class AppRoutes {
   /// S01 — Réglages.
   static const String settings = '/settings';
 
-  /// S02 — catalogue des composants, visible en debug ou en mode démo.
-  static const String catalog = '/settings/catalog';
-
   /// C02 — Fiche courtier, poussée depuis Explorer.
   static String brokerPath(String id) => '$explore/brokers/$id';
 

@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_trust_screens.dart'
+    show verificationTag;
 import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
-import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_icon_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_property_card.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_rating.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
+import 'package:woutalma_keur/app/shared/formatters.dart';
+import 'package:woutalma_keur/app/ui/ui.dart';
 
-/// B07 — Profil public du courtier.
+const _pad = EdgeInsets.symmetric(horizontal: Insets.page);
+
 class BrokerProfileScreen extends StatelessWidget {
   const BrokerProfileScreen({
     required this.onOpenSettings,
@@ -29,35 +23,34 @@ class BrokerProfileScreen extends StatelessWidget {
   final VoidCallback onOpenVerification;
   final VoidCallback onOpenRanking;
   final void Function(Property property) onOpenProperty;
-
-  /// Ouvre B08 et se termine au retour : le profil se relit alors, sinon
-  /// l'écran continuerait d'afficher l'ancien numéro.
   final Future<void> Function() onEditProfile;
 
   @override
   Widget build(BuildContext context) {
-    final BrokerViewModel model = context.watch<BrokerViewModel>();
-    final BrokerDetail? detail = model.state.valueOrNull;
-
-    return WkScaffold(
-      extendBody: true,
-      topBar: WkTopBar(
-        title: detail?.broker.name ?? context.l10n.brokerProfileTitle,
-        action: WkIconButton(
-          icon: Icons.settings_outlined,
-          label: context.l10n.settingsTitle,
-          onPressed: onOpenSettings,
+    final model = context.watch<BrokerViewModel>();
+    final l = context.l10n;
+    return AppScaffold(
+      title: l.brokerProfileTitle,
+      showBack: false,
+      onRefresh: model.load,
+      actions: [
+        AppIconButton(
+          icon: FIcons.settings,
+          label: l.settingsTitle,
+          onTap: onOpenSettings,
         ),
-      ),
+      ],
       body: model.state.map(
-        initial: () => const SizedBox.shrink(),
-        loading: () => const WkLoadingState(),
-        empty: () => const WkEmptyState(),
-        error: (WkFailure failure) =>
-            WkErrorState(failure: failure, onRetry: model.load),
-        data: (BrokerDetail value) => _ProfileBody(
-          detail: value,
-          onOpenSettings: onOpenSettings,
+        initial: () => const AppSkeleton(height: 96),
+        loading: () => const AppSkeleton(height: 96),
+        empty: () => AppState(
+          kind: AppStateKind.empty,
+          title: l.stateEmptyTitle,
+          message: l.stateEmptyBody,
+        ),
+        error: (failure) => failureState(context, failure, onRetry: model.load),
+        data: (detail) => _Body(
+          detail: detail,
           onOpenVerification: onOpenVerification,
           onOpenRanking: onOpenRanking,
           onOpenProperty: onOpenProperty,
@@ -71,10 +64,9 @@ class BrokerProfileScreen extends StatelessWidget {
   }
 }
 
-class _ProfileBody extends StatelessWidget {
-  const _ProfileBody({
+class _Body extends StatelessWidget {
+  const _Body({
     required this.detail,
-    required this.onOpenSettings,
     required this.onOpenVerification,
     required this.onOpenRanking,
     required this.onOpenProperty,
@@ -82,7 +74,6 @@ class _ProfileBody extends StatelessWidget {
   });
 
   final BrokerDetail detail;
-  final VoidCallback onOpenSettings;
   final VoidCallback onOpenVerification;
   final VoidCallback onOpenRanking;
   final void Function(Property property) onOpenProperty;
@@ -90,152 +81,171 @@ class _ProfileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Broker broker = detail.broker;
-
+    final l = context.l10n;
+    final broker = detail.broker;
     return ListView(
-      padding: EdgeInsets.only(
-        bottom: WkScaffold.bottomInset(context) + WkSpacing.md,
-      ),
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.colors.primaryContainer,
-            borderRadius: BorderRadius.circular(WkRadius.xl),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(WkSpacing.md),
-            child: Column(
+      padding: const EdgeInsets.only(bottom: Insets.xxl),
+      children: [
+        Padding(
+          padding: _pad,
+          child: AppCard(
+            padding: const EdgeInsets.all(Insets.page),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Wrap(
-                  spacing: WkSpacing.xs,
-                  runSpacing: WkSpacing.xs,
-                  children: <Widget>[
-                    WkBadge(
-                      label: broker.isVerified
-                          ? context.l10n.badgeVerified
-                          : context.l10n.brokerVerificationMissing,
-                      icon: broker.isVerified
-                          ? Icons.verified_user
-                          : Icons.verified_user_outlined,
-                      tone: broker.isVerified
-                          ? WkBadgeTone.positive
-                          : WkBadgeTone.brand,
-                    ),
-                    if (broker.pinned)
-                      WkBadge(
-                        label: context.l10n.badgePinned,
-                        icon: Icons.push_pin,
-                        tone: WkBadgeTone.brand,
+              children: [
+                AppAvatar(
+                  name: broker.name,
+                  size: 64,
+                  imagePath: broker.logoAsset,
+                ),
+                const SizedBox(width: Insets.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(broker.name, style: context.text.titleLarge),
+                      const SizedBox(height: Insets.sm),
+                      Wrap(
+                        spacing: Insets.sm,
+                        runSpacing: Insets.xs,
+                        children: [
+                          verificationTag(context, broker.verification),
+                          if (broker.pinned)
+                            AppTag(
+                              l.badgePinned,
+                              tone: AppTone.accent,
+                              icon: FIcons.pin,
+                            ),
+                        ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: WkSpacing.md),
-                WkRating(
-                  value: detail.averageRating,
-                  reviewCount: detail.reviews.length,
-                ),
-                const SizedBox(height: WkSpacing.sm),
-                Text(
-                  context.l10n.brokerResponseRate(
-                    (broker.responseRate * 100).round(),
-                  ),
-                  style: context.text.bodyMedium?.copyWith(
-                    color: context.colors.onPrimaryContainer,
+                      const SizedBox(height: Insets.md),
+                      if (detail.reviews.isEmpty)
+                        Text(
+                          l.ratingNone,
+                          style: context.text.bodySmall!.copyWith(
+                            color: context.tones.inkSecondary,
+                          ),
+                        )
+                      else
+                        AppStars(
+                          detail.averageRating,
+                          count: detail.reviews.length,
+                        ),
+                      const SizedBox(height: Insets.xs),
+                      Text(
+                        l.brokerResponseRate(
+                          (broker.responseRate * 100).round(),
+                        ),
+                        style: context.text.bodySmall!.copyWith(
+                          color: context.tones.inkSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: WkSpacing.lg),
-        _Section(title: context.l10n.brokerCoverage),
-        Wrap(
-          spacing: WkSpacing.xs,
-          runSpacing: WkSpacing.xs,
-          children: <Widget>[
-            for (final String zone in broker.coverage)
-              WkBadge(label: zone, icon: Icons.place_outlined),
-          ],
+        AppSection(l.brokerCoverage),
+        Padding(
+          padding: _pad,
+          child: broker.coverage.isEmpty
+              ? Text(
+                  l.commonUnspecified,
+                  style: context.text.bodyMedium!.copyWith(
+                    color: context.tones.inkSecondary,
+                  ),
+                )
+              : Wrap(
+                  spacing: Insets.sm,
+                  runSpacing: Insets.sm,
+                  children: [
+                    for (final zone in broker.coverage)
+                      AppTag(zone, icon: FIcons.mapPin),
+                  ],
+                ),
         ),
-        const SizedBox(height: WkSpacing.lg),
-        _Section(title: context.l10n.brokerProperties),
-        if (detail.properties.isEmpty)
-          Text(
-            context.l10n.brokerNoProperties,
-            style: context.text.bodyMedium?.copyWith(
-              color: context.colors.onSurfaceVariant,
+        AppSection(l.brokerProperties),
+        Padding(
+          padding: _pad,
+          child: detail.properties.isEmpty
+              ? Text(
+                  l.brokerNoProperties,
+                  style: context.text.bodyMedium!.copyWith(
+                    color: context.tones.inkSecondary,
+                  ),
+                )
+              : _PropertyCard(
+                  property: detail.properties.first,
+                  onTap: () => onOpenProperty(detail.properties.first),
+                ),
+        ),
+        const SizedBox(height: Insets.xl),
+        Padding(
+          padding: _pad,
+          child: AppCard.rows([
+            AppRow(
+              title: l.brokerProfileEditorTitle,
+              leading: const Icon(FIcons.pencil),
+              onTap: onEditProfile,
             ),
-          )
-        else
-          for (final Property property in detail.properties.take(1))
-            Padding(
-              padding: const EdgeInsets.only(bottom: WkSpacing.sm),
-              child: WkPropertyCard(
-                property: property,
-                distanceMeters: detail.distanceMeters,
-                onOpen: () => onOpenProperty(property),
-              ),
+            AppRow(
+              title: l.brokerVerificationTitle,
+              leading: const Icon(FIcons.badgeCheck),
+              onTap: onOpenVerification,
             ),
-        const SizedBox(height: WkSpacing.lg),
-        // Premier de la série : c'est le seul geste qui change quelque chose
-        // au profil qu'on est en train de lire.
-        _LinkButton(
-          label: context.l10n.brokerProfileEditorTitle,
-          icon: Icons.edit_outlined,
-          onPressed: onEditProfile,
-        ),
-        const SizedBox(height: WkSpacing.sm),
-        _LinkButton(
-          label: context.l10n.brokerVerificationTitle,
-          icon: Icons.verified_user_outlined,
-          onPressed: onOpenVerification,
-        ),
-        const SizedBox(height: WkSpacing.sm),
-        _LinkButton(
-          label: context.l10n.brokerRankingTitle,
-          icon: Icons.insights_outlined,
-          onPressed: onOpenRanking,
+            AppRow(
+              title: l.brokerRankingTitle,
+              leading: const Icon(FIcons.chartColumn),
+              onTap: onOpenRanking,
+            ),
+          ]),
         ),
       ],
     );
   }
 }
 
-class _LinkButton extends StatelessWidget {
-  const _LinkButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
+class _PropertyCard extends StatelessWidget {
+  const _PropertyCard({required this.property, required this.onTap});
 
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
+  final Property property;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return WkButton(
-      label: label,
-      icon: icon,
-      variant: WkButtonVariant.secondary,
-      onPressed: onPressed,
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: WkSpacing.sm),
-      child: Semantics(
-        header: true,
-        child: Text(title, style: context.text.headlineMedium),
+    final l = context.l10n;
+    return AppCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppPhoto(
+            property.photoAssets.firstOrNull,
+            aspectRatio: 16 / 10,
+            radius: BorderRadius.zero,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(Insets.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  WkFormat.price(l, property.price, property.transaction),
+                  style: AppText.moneyLg,
+                ),
+                const SizedBox(height: Insets.xs),
+                Text(
+                  property.title,
+                  style: context.text.bodyLarge,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
