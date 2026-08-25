@@ -11,11 +11,11 @@ import 'package:woutalma_keur/app/modules/client/broker/contact_sheet.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_property_photo.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_property_card.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_voice_note.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_toast.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 
@@ -235,7 +235,14 @@ class _Content extends StatelessWidget {
           ),
           const SizedBox(height: WkSpacing.md),
         ],
-        _PhotoGallery(property: property),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(WkRadius.xl),
+          child: WkPhotoCarousel(
+            property: property,
+            height: 240,
+            showVoiceBadge: false,
+          ),
+        ),
         const SizedBox(height: WkSpacing.lg),
         Row(
           children: <Widget>[
@@ -249,53 +256,25 @@ class _Content extends StatelessWidget {
                 style: context.text.headlineLarge,
               ),
             ),
-            WkBadge(
-              label: WkFormat.propertyStatus(context.l10n, property.status),
-              icon: switch (property.status) {
-                PropertyStatus.available => Icons.check_circle_outline,
-                PropertyStatus.reserved => Icons.schedule,
-                PropertyStatus.closed => Icons.do_not_disturb_on_outlined,
-              },
-              tone: switch (property.status) {
-                PropertyStatus.available => WkBadgeTone.positive,
-                PropertyStatus.reserved => WkBadgeTone.brand,
-                PropertyStatus.closed => WkBadgeTone.neutral,
-              },
-            ),
+            WkStatusBadge(status: property.status),
           ],
         ),
         const SizedBox(height: WkSpacing.sm),
         Text(property.title, style: context.text.headlineMedium),
-        const SizedBox(height: WkSpacing.md),
-        Wrap(
-          spacing: WkSpacing.xs,
-          runSpacing: WkSpacing.xs,
-          children: <Widget>[
-            WkBadge(
-              label: WkFormat.transaction(context.l10n, property.transaction),
-              icon: Icons.swap_horiz,
-            ),
-            WkBadge(
-              label: WkFormat.propertyKind(context.l10n, property.kind),
-              icon: Icons.category_outlined,
-            ),
-            if (property.surface != null)
-              WkBadge(
-                label: context.l10n.surfaceValue(property.surface!),
-                icon: Icons.straighten,
-              ),
-            if (property.rooms != null)
-              WkBadge(
-                label: context.l10n.roomCount(property.rooms!),
-                icon: Icons.meeting_room_outlined,
-              ),
-            WkBadge(label: property.neighbourhood, icon: Icons.place_outlined),
-            WkBadge(
-              label: WkFormat.distance(context.l10n, detail.distanceMeters),
-              icon: Icons.near_me_outlined,
-            ),
-          ],
+        const SizedBox(height: WkSpacing.sm),
+        Text(
+          WkFormat.propertyMeta(context.l10n, property, detail.distanceMeters),
+          style: context.text.bodyMedium?.copyWith(
+            color: context.colors.onSurfaceVariant,
+          ),
         ),
+        if (property.hasVoiceNote) ...<Widget>[
+          const SizedBox(height: WkSpacing.lg),
+          WkVoiceNotePlayer(
+            asset: property.voiceAsset!,
+            title: context.l10n.voiceNoteFromBroker,
+          ),
+        ],
         if (property.description.isNotEmpty) ...<Widget>[
           const SizedBox(height: WkSpacing.lg),
           Text(property.description, style: context.text.bodyLarge),
@@ -312,81 +291,6 @@ class _Content extends StatelessWidget {
           Text(detail.broker!.name, style: context.text.headlineMedium),
         ],
       ],
-    );
-  }
-}
-
-class _PhotoGallery extends StatefulWidget {
-  const _PhotoGallery({required this.property});
-
-  final Property property;
-
-  @override
-  State<_PhotoGallery> createState() => _PhotoGalleryState();
-}
-
-class _PhotoGalleryState extends State<_PhotoGallery> {
-  late final PageController _controller = PageController(
-    viewportFraction: widget.property.photoAssets.length > 1 ? 0.92 : 1,
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final List<String> photos = widget.property.photoAssets;
-    if (photos.isEmpty) {
-      // Sans photo, la fiche garde un bloc de la hauteur d'une galerie : la
-      // rabattre ferait commencer l'écran par un prix flottant, et le même
-      // bien paraîtrait plus pauvre qu'il ne l'est.
-      return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(WkRadius.lg),
-          child: const WkPropertyPhotoFallback(icon: Icons.home_work_outlined),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 220,
-      child: PageView.builder(
-        controller: _controller,
-        clipBehavior: Clip.none,
-        padEnds: false,
-        itemCount: photos.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Padding(
-            padding: EdgeInsetsDirectional.only(
-              end: index == photos.length - 1 ? 0 : WkSpacing.sm,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(WkRadius.lg),
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  WkPropertyPhoto(
-                    path: photos[index],
-                    fallbackIcon: Icons.home_work_outlined,
-                  ),
-                  PositionedDirectional(
-                    end: WkSpacing.sm,
-                    bottom: WkSpacing.sm,
-                    child: WkBadge(
-                      label: context.l10n.photosCount(index + 1, photos.length),
-                      icon: Icons.photo_library_outlined,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

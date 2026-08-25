@@ -13,6 +13,7 @@ export interface PropertyRow {
   rooms: number | null;
   neighbourhood: string;
   photoAssets: string[];
+  voiceAsset: string | null;
   status: PropertyStatus;
   createdAt: Date;
   latitude: number;
@@ -33,6 +34,7 @@ export function mapPropertyRow(row: PropertyRow): PropertyDto {
     position: { latitude: row.latitude, longitude: row.longitude },
     neighbourhood: row.neighbourhood,
     photoAssets: row.photoAssets,
+    voiceAsset: row.voiceAsset,
     status: row.status,
     createdAt: row.createdAt,
     // Closed covers both sold and rented — matches Property.isDiscoverable

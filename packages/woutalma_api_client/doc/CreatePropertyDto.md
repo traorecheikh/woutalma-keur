@@ -21,6 +21,8 @@ Name | Type | Description | Notes
 **status** | **String** |  | [optional] 
 **photoAssets** | **BuiltList&lt;String&gt;** |  | [optional] 
 **newPhotos** | [**BuiltList&lt;UploadPhotoDto&gt;**](UploadPhotoDto.md) |  | [optional] 
+**voiceAsset** | **String** | Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged. | [optional] 
+**newVoiceNote** | [**UploadVoiceNoteDto**](UploadVoiceNoteDto.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -156,9 +156,9 @@ d'écran à voix haute restent obligatoires, en français.
 
 | ID | Écran et décision | Contenu / fonctions | Entrées → sorties |
 |:--|:--|:--|:--|
-| C01 | Explorer : qui ou quel bien près de moi ? | quartier actuel, `WkSearchTrigger` épinglé, filtres actifs, segments Courtiers/Biens et Liste/Carte, résultats classés, profil épinglé signalé comme tel ; seule la barre de recherche est fixe, filtres/segments/compteur défilent avec les résultats | shell, M14, M01/M02/M03 → C02 ou C03 |
+| C01 | Accueil : qui ou quel bien près de moi ? | quartier actuel, `WkSearchTrigger`, rangée de catégories, rangées horizontales « Près de chez vous », « Courtiers de confiance », « Nouveautés » (`WkPropertyTile`, `WkBrokerTile`), « Voir tout » et « Carte » vers M14 ; invitation à activer la position quand le GPS manque | shell, M14, M02 → C02 ou C03 |
 | C02 | Fiche courtier : puis-je lui faire confiance ? | identité vérifiée, distance, zone, note + volume, réactivité, biens disponibles, avis récents, Écouter, action Contact fixe ; la première ouverture journalise une consultation dédupliquée | C01/C03/C04 → M04, C03, liste complète des avis ; retour restitue position de liste |
-| C03 | Fiche bien : ce bien correspond-il ? | photos, statut, prix, type, transaction, surface, pièces, description courte, localisation approximative, courtier, Signaler une information, Contact fixe | C01/C02 → galerie, C02 ou M04 ; retour restitue le résultat |
+| C03 | Fiche bien : ce bien correspond-il ? | photos feuilletables (`WkPhotoCarousel`), statut, prix, ligne de métadonnées, message vocal du courtier (`WkVoiceNotePlayer`, s'il existe), description, courtier, Contact fixe | C01/C02 → galerie, C02 ou M04 ; retour restitue le résultat |
 | C04 | Contacts : qui ai-je déjà joint ? | regroupement par courtier, canal/date, résultat, statut « avis possible/déjà donné », recherche locale | onglet ou M05 → C02/C05 ; vide → C01 |
 | C05 | Avis : comment s'est passé le contact ? | étape 1 note globale + trois critères ; étape 2 commentaire facultatif + résumé ; identité du contact rappelée | C04/M05 → confirmation puis C04 ; retour avec saisie → M09 |
 | C06 | Profil client | nom facultatif, téléphone masqué, langue, raccourci Réglages, changer de rôle, suppression des données locales | onglet → G03 pour identifier, S01 ou G02 |
@@ -181,7 +181,7 @@ d'écran à voix haute restent obligatoires, en français.
 |:--|:--|:--|:--|
 | B01 | Accueil : que dois-je traiter maintenant ? | statut de vérification, vues et contacts récents, biens disponibles/réservés, avis à répondre, rang local, action Ajouter un bien | shell → B02/B03/B05/B06/B09/B10 |
 | B02 | Mes biens | filtres Tous/Disponible/Réservé/Clos, cartes compactes, recherche, action Ajouter, menu d'action par bien | onglet/B01 → B03/B04/M08 ; vide → B03 |
-| B03 | Ajouter ou modifier un bien | une route avec 3 étapes : bien+transaction+quartier ; titre+prix+surface+pièces+description ; photos+publication. Quartier, surface et pièces sont des choix ; le titre est composé et corrigeable ; pas de brouillon persistant | B02/B04 → B02 ; retour à l'étape 1 quitte |
+| B03 | Ajouter ou modifier un bien | une route avec 3 étapes : bien+transaction+quartier ; titre+prix+surface+pièces+description ; photos+message vocal+publication. Quartier, surface et pièces sont des choix ; le titre est composé et corrigeable ; le vocal (45 s max, `WkVoiceNoteRecorder`) est facultatif ; pas de brouillon persistant | B02/B04 → B02 ; retour à l'étape 1 quitte |
 | B04 | Aperçu et gestion du bien | rendu proche de C03, statut, modifier, partager l'aperçu, changer statut, supprimer | B02/B03 → B03/M08/M09 ; retour B02 |
 | B05 | Activité | deux segments Consultations/Contacts, date, bien concerné, canal, état lu ; aucune donnée privée inutile | onglet/B01 → B06 ou B04 |
 | B06 | Avis reçus | note moyenne, répartition, avis récents, réponse, signalement et statut de modération | B05/B01 → M12 ; retour restaure filtre |
@@ -197,10 +197,10 @@ changent ; aucun second arbre d'application n'est créé.
 
 | ID | Surface | Ouverture | Action et fermeture |
 |:--|:--|:--|:--|
-| M01 | Filtres | C01, bouton Filtres | transaction, type, rayon, prix ; Appliquer ferme et met C01 à jour ; Réinitialiser explicite |
+| M01 | Filtres | M14, pastille Filtres | transaction et type en pastilles, prix et rayon en curseurs ; Appliquer ferme et met M14 à jour ; Réinitialiser explicite |
 | M02 | Quartier / position | C01, zone actuelle | **GPS en action principale, en tête**, puis recherche de quartier et positions récentes ; choisir ferme ; refus GPS garde la sheet ouverte en manuel |
 | M03 | Voix plein écran | ~~micro global~~ **retiré de l'application** | Décision du 2026-08-14 : la reconnaissance n'était pas réelle (`SimulatedVoiceService`, script figé), et un micro qui ne comprend rien dessert précisément la cible qui ne lit pas. L'écran survit dans le catalogue S02 comme prototype, prêt à revenir dès qu'un moteur réel existe. |
-| M04 | Contacter | C02/C03 | Appeler, SMS, WhatsApp, message vocal ; si invité → G03 puis réouverture ; canal choisi journalisé avant ouverture externe |
+| M04 | Contacter | C02/C03 | en-tête courtier (avatar, réactivité, badges) puis un canal par ligne : Appeler, WhatsApp, SMS, chacun avec son pictogramme coloré et son sous-titre ; si invité → G03 puis réouverture ; canal choisi journalisé avant ouverture externe |
 | M05 | Résultat du contact | retour d'une app externe ou historique | « J'ai échangé » rend l'avis éligible ; « Pas de réponse » conserve le journal sans avis immédiat ; Plus tard ferme |
 | M06 | Permission expliquée | premier lancement (position) puis toute demande photo/notification | Continuer déclenche le prompt système ; Pas maintenant ferme vers l'alternative manuelle ; présentée **une seule fois**, un refus ne se redemande pas |
 | M07 | Sélecteur d'option | tout `WkSelectField` | ligne 56+, icône, libellé, coche ; sélection ferme et restitue la valeur |
@@ -210,7 +210,7 @@ changent ; aucun second arbre d'application n'est créé.
 | M11 | Source photo | B03/B08/B09 | appareil/photo ; permission juste à temps ; compression avant persistance |
 | M12 | Répondre / signaler un avis | B06 | réponse publique facultative ou motif de signalement ; affiche ensuite le statut de modération |
 | M13 | Toast accessible | succès non bloquant | annonce TalkBack, durée suffisante, aucune action critique uniquement dans le toast |
-| M14 | Recherche plein écran | C01, appui sur la barre de recherche | `WkSearchBar` avec clavier, micro, suggestions vivantes ; écrit dans le même état que C01, donc les résultats derrière sont déjà à jour ; « Voir les N résultats » ou retour ferment, la requête survit |
+| M14 | Résultats | C01 : barre, catégorie, « Voir tout » ou « Carte » | `WkSearchBar`, pastilles rapides (À louer/À vendre/types) et Filtres → M01, segments Biens/Courtiers, compteur, Liste/Carte ; les résultats se mettent à jour pendant la frappe et s'ouvrent directement ; retour ferme, la requête survit |
 
 Une sheet non destructive peut être balayée vers le bas. Une saisie, un enregistrement vocal ou
 une action destructive demande confirmation avant de perdre des données.

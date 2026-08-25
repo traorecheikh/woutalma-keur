@@ -8,6 +8,7 @@ import 'package:woutalma_keur/app/domain/photo_service.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_view_model.dart';
 
+import '../support/fake_voice_note_recorder.dart';
 import '../support/pump.dart';
 import '../support/recording_feedback_service.dart';
 
@@ -42,6 +43,7 @@ void main() {
         value: model,
         child: PropertyEditorScreen(
           photos: _NoPhotoService(),
+          voiceNotes: FakeVoiceNoteRecorder(),
           onBack: () {},
           onSaved: (String _) {},
         ),

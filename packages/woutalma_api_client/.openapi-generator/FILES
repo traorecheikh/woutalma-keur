@@ -38,6 +38,7 @@ doc/UpdateBrokerDto.md
 doc/UpdateContactOutcomeDto.md
 doc/UpdatePropertyDto.md
 doc/UploadPhotoDto.md
+doc/UploadVoiceNoteDto.md
 lib/src/api.dart
 lib/src/api/auth_api.dart
 lib/src/api/brokers_api.dart
@@ -83,6 +84,7 @@ lib/src/model/update_broker_dto.dart
 lib/src/model/update_contact_outcome_dto.dart
 lib/src/model/update_property_dto.dart
 lib/src/model/upload_photo_dto.dart
+lib/src/model/upload_voice_note_dto.dart
 lib/src/serializers.dart
 lib/woutalma_api_client.dart
 pubspec.yaml

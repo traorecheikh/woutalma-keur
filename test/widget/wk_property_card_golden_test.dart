@@ -16,7 +16,7 @@ void main() {
         distanceMeters: 1600,
         onOpen: () {},
       ),
-      surfaceSize: const Size(360, 360),
+      surfaceSize: const Size(360, 440),
     );
     await tester.pumpAndSettle();
 

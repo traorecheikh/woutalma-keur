@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../support/fake_location.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
 import 'package:woutalma_keur/app/data/seed/demo_seed.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
-import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
+import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_screen.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
 import 'package:woutalma_keur/app/modules/client/explore/search_overlay.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_avatar.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_broker_card.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_broker_tile.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_property_card.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_property_photo.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_property_tile.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_search_bar.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
 
+import '../support/fake_location.dart';
 import '../support/hardcoded_text.dart';
 import '../support/pump.dart';
 
@@ -38,7 +39,7 @@ void main() {
 
   Future<ExploreViewModel> pumpExplore(
     WidgetTester tester, {
-    void Function(String)? onOpenBroker,
+    void Function(String)? onOpenProperty,
     double textScale = 1,
     Size surfaceSize = const Size(360, 800),
   }) async {
@@ -53,8 +54,8 @@ void main() {
       ChangeNotifierProvider<ExploreViewModel>.value(
         value: model,
         child: ExploreScreen(
-          onOpenBroker: onOpenBroker ?? (String _) {},
-          onOpenProperty: (String _) {},
+          onOpenBroker: (String _) {},
+          onOpenProperty: onOpenProperty ?? (String _) {},
           onOpenSettings: () {},
           location: _FixedLocationService(),
         ),
@@ -68,114 +69,166 @@ void main() {
     return model;
   }
 
-  testWidgets('affiche les courtiers classés, épinglé en tête', (
+  testWidgets('l\'accueil montre des rangées, pas une liste de résultats', (
     WidgetTester tester,
   ) async {
     await pumpExplore(tester);
 
-    expect(find.byType(WkBrokerCard), findsWidgets);
-    final WkBrokerCard first = tester.widget<WkBrokerCard>(
-      find.byType(WkBrokerCard).first,
+    expect(find.text('Près de chez vous'), findsOneWidget);
+    expect(find.text('Courtiers de confiance'), findsOneWidget);
+    expect(find.byType(WkPropertyTile), findsWidgets);
+    expect(find.byType(WkBrokerTile), findsWidgets);
+    expect(find.byType(WkPropertyCard), findsNothing);
+    expect(find.byType(WkBrokerCard), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('les courtiers de confiance sont classés, épinglé en tête', (
+    WidgetTester tester,
+  ) async {
+    await pumpExplore(tester);
+
+    final WkBrokerTile first = tester.widget<WkBrokerTile>(
+      find.byType(WkBrokerTile).first,
     );
     expect(first.listing.broker.id, 'brk-teranga');
+    expect(find.text('AT'), findsWidgets);
   });
 
-  testWidgets('un profil épinglé est signalé comme tel', (
+  testWidgets('les biens près de chez vous sont triés par distance', (
     WidgetTester tester,
   ) async {
     await pumpExplore(tester);
 
-    // Sinon il se confond avec un bon classement organique.
-    expect(find.text('Mis en avant'), findsOneWidget);
+    final List<WkPropertyTile> tiles = tester
+        .widgetList<WkPropertyTile>(find.byType(WkPropertyTile))
+        .toList();
+    final List<double> nearby = tiles
+        .take(3)
+        .map((WkPropertyTile t) => t.distanceMeters)
+        .toList();
+    expect(nearby, orderedEquals(List<double>.of(nearby)..sort()));
   });
 
-  // Tant qu'un courtier n'a pas déposé sa photo, l'identité tient dans ses
-  // initiales : une silhouette générique donnerait la même vignette aux six
-  // courtiers de la liste.
-  testWidgets('un courtier sans photo est identifié par ses initiales', (
-    WidgetTester tester,
-  ) async {
-    await pumpExplore(tester);
-
-    expect(find.text('MN'), findsOneWidget);
-    expect(find.text('AT'), findsOneWidget);
-  });
-
-  testWidgets('changer de segment ne réinitialise pas la recherche', (
+  testWidgets('une catégorie ouvre les résultats déjà filtrés', (
     WidgetTester tester,
   ) async {
     final ExploreViewModel model = await pumpExplore(tester);
 
-    model.search('Mermoz');
+    await tester.ensureVisible(find.text('Terrain').first);
+    await tester.tap(find.text('Terrain').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SearchOverlay), findsOneWidget);
+    expect(model.filters.kind, PropertyKind.land);
+    expect(find.byType(WkPropertyCard), findsWidgets);
+    expect(find.textContaining('résultat'), findsWidgets);
+  });
+
+  testWidgets('la barre ouvre les résultats, un quartier suggéré les filtre', (
+    WidgetTester tester,
+  ) async {
+    final ExploreViewModel model = await pumpExplore(tester);
+
+    await tester.tap(find.byType(WkSearchTrigger));
+    await tester.pumpAndSettle();
+    expect(find.byType(SearchOverlay), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Mer');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.text('Mermoz'), findsWidgets);
+
+    await tester.tap(find.text('Mermoz').first);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(model.filters.query, 'Mermoz');
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.byType(SearchOverlay), findsNothing);
+    expect(find.text('Près de chez vous'), findsOneWidget);
+  });
+
+  testWidgets('toucher une vignette ouvre la fiche du bon bien', (
+    WidgetTester tester,
+  ) async {
+    String? opened;
+    await pumpExplore(tester, onOpenProperty: (String id) => opened = id);
+
+    final WkPropertyTile first = tester.widget<WkPropertyTile>(
+      find.byType(WkPropertyTile).first,
+    );
+    await tester.ensureVisible(find.byType(WkPropertyTile).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(WkPropertyTile).first);
+    await tester.pumpAndSettle();
+
+    expect(opened, first.property.id);
+  });
+
+  testWidgets('la carte est atteignable depuis l\'accueil', (
+    WidgetTester tester,
+  ) async {
+    final ExploreViewModel model = await pumpExplore(tester);
+
+    await tester.ensureVisible(find.text('Carte'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Carte'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SearchOverlay), findsOneWidget);
+    expect(model.view, ExploreView.map);
+    expect(find.text('Liste'), findsOneWidget);
+  });
+
+  testWidgets('une recherche sans résultat propose une sortie', (
+    WidgetTester tester,
+  ) async {
+    await pumpExplore(tester);
+
+    await tester.tap(find.byType(WkSearchTrigger));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'zzzzzz');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
-    model.selectSegment(ExploreSegment.properties);
-    await tester.pumpAndSettle();
-
-    expect(model.filters.query, 'Mermoz');
-    expect(find.byType(WkPropertyCard), findsWidgets);
+    expect(find.text('Personne dans cette zone'), findsOneWidget);
   });
 
-  testWidgets('les biens en recherche montrent photo et compteur galerie', (
+  testWidgets('aucun texte visible n\'est écrit en dur', (
     WidgetTester tester,
   ) async {
-    final ExploreViewModel model = await pumpExplore(tester);
+    await pumpExplore(tester);
 
-    model.selectSegment(ExploreSegment.properties);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(WkPropertyPhoto), findsWidgets);
-    // La pastille compte les photos, elle n'annonce plus « 1/3 » : la carte
-    // n'affiche qu'une photo et ne se feuillette pas.
-    expect(find.textContaining(' photos'), findsWidgets);
+    final Set<String> data = <String>{};
+    for (final Broker b in await InMemoryBrokerRepository(store).all()) {
+      data
+        ..add(b.name)
+        ..add(WkAvatar.initials(b.name))
+        ..addAll(b.coverage);
+    }
+    for (final Property p in await InMemoryPropertyRepository(store).all()) {
+      data
+        ..add(p.title)
+        ..add(p.neighbourhood);
+    }
+    expectNoHardcodedText(tester, data: data);
   });
 
-  // La recherche est devenue un écran : C01 n'expose plus qu'un déclencheur,
-  // et le clavier n'apparaît que si on le demande.
-  testWidgets(
-    'C01 ne montre aucun champ de saisie tant qu\'on ne cherche pas',
-    (WidgetTester tester) async {
-      await pumpExplore(tester);
+  testWidgets('à ×1.3 rien ne déborde', (WidgetTester tester) async {
+    await pumpExplore(tester, textScale: 1.3);
+    expect(tester.takeException(), isNull);
+  });
 
-      expect(find.byType(TextField), findsNothing);
-      expect(find.byType(WkSearchTrigger), findsOneWidget);
-    },
-  );
+  testWidgets('à 320 dp rien ne déborde', (WidgetTester tester) async {
+    await pumpExplore(tester, surfaceSize: const Size(320, 800));
+    expect(tester.takeException(), isNull);
+    final Rect rect = tester.getRect(find.byType(WkSearchTrigger));
+    expect(rect.left, greaterThanOrEqualTo(0));
+    expect(rect.right, lessThanOrEqualTo(320));
+  });
 
-  testWidgets(
-    'la barre ouvre l\'écran de recherche, un quartier suggéré la lance',
-    (WidgetTester tester) async {
-      final ExploreViewModel model = await pumpExplore(tester);
-
-      expect(model.searchSuggestions, contains('Maison'));
-
-      await tester.tap(find.byType(WkSearchTrigger));
-      await tester.pumpAndSettle();
-      expect(find.byType(SearchOverlay), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField), 'Mer');
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pumpAndSettle();
-      expect(find.text('Mermoz'), findsOneWidget);
-
-      await tester.tap(find.text('Mermoz'));
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pumpAndSettle();
-
-      expect(model.filters.query, 'Mermoz');
-      expect(model.searchSuggestions, isNotEmpty);
-
-      // Fermer l'écran de recherche rend la requête visible sur C01.
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
-      expect(find.byType(SearchOverlay), findsNothing);
-      expect(find.text('Mermoz'), findsWidgets);
-    },
-  );
-
-  // Test simple et non widget : l'anti-rebond repose sur un vrai Timer, et
-  // l'horloge de `testWidgets` est simulée — elle ne le ferait jamais partir.
   test('trois frappes rapprochées ne lancent qu\'une recherche', () async {
     final _CountingDiscovery counting = _CountingDiscovery(discovery);
     final ExploreViewModel model = ExploreViewModel(
@@ -185,125 +238,17 @@ void main() {
     addTearDown(model.dispose);
 
     await model.load();
-    final int afterLoad = counting.brokerCalls;
-
+    final int before = counting.brokerCalls;
     model
-      ..search('a')
-      ..search('ap')
-      ..search('app');
+      ..search('M')
+      ..search('Me')
+      ..search('Mer');
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
-    expect(counting.brokerCalls - afterLoad, 1);
-  });
-
-  testWidgets('une recherche sans résultat propose une sortie', (
-    WidgetTester tester,
-  ) async {
-    final ExploreViewModel model = await pumpExplore(tester);
-
-    model.search('zzzzzz');
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(WkEmptyState), findsOneWidget);
-  });
-
-  testWidgets('les filtres appliqués restent visibles et retirables', (
-    WidgetTester tester,
-  ) async {
-    final ExploreViewModel model = await pumpExplore(tester);
-
-    await model.applyFilters(
-      const DiscoveryFilters(
-        transaction: TransactionKind.rent,
-        kind: PropertyKind.apartment,
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('À louer'), findsOneWidget);
-    expect(find.text('Appartement'), findsOneWidget);
-
-    await tester.tap(find.text('Appartement'));
-    await tester.pumpAndSettle();
-
-    expect(model.filters.kind, isNull);
-    expect(model.filters.transaction, TransactionKind.rent);
-  });
-
-  testWidgets('toucher une carte ouvre la fiche du bon courtier', (
-    WidgetTester tester,
-  ) async {
-    String? opened;
-    await pumpExplore(tester, onOpenBroker: (String id) => opened = id);
-
-    await tester.tap(find.byType(WkBrokerCard).first);
-    await tester.pump();
-
-    expect(opened, 'brk-teranga');
-  });
-
-  testWidgets('aucun texte visible n\'est écrit en dur', (
-    WidgetTester tester,
-  ) async {
-    await pumpExplore(tester);
-
-    // Les noms de courtiers viennent du seed : ce sont des données, pas de la
-    // copie. Le test les déclare explicitement plutôt que de les tolérer en
-    // silence.
-    expectNoHardcodedText(
-      tester,
-      data: <String>{
-        'Agence Teranga Immo',
-        'Moussa Ndiaye',
-        'Fatou Sarr',
-        'Mermoz',
-        'Plateau',
-        'Sacré-Cœur',
-      },
-    );
-  });
-
-  testWidgets('la carte est atteignable depuis la liste', (
-    WidgetTester tester,
-  ) async {
-    // `ExploreView.map` et `ResultsMap` existaient, testés unitairement, mais
-    // aucun élément de l'écran n'appelait `selectView` : la carte était
-    // inaccessible à qui utilise l'application.
-    final ExploreViewModel model = await pumpExplore(tester);
-    expect(model.view, ExploreView.list);
-
-    await tester.tap(find.text('Carte'));
-    await tester.pump();
-
-    expect(model.view, ExploreView.map);
-    expect(find.text('Liste'), findsOneWidget);
-  });
-
-  testWidgets('à ×1.3 rien ne déborde', (WidgetTester tester) async {
-    await pumpExplore(tester, textScale: 1.3);
-
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('le dock de recherche reste dans la largeur du téléphone', (
-    WidgetTester tester,
-  ) async {
-    await pumpExplore(tester, surfaceSize: const Size(320, 800));
-
-    for (final Finder finder in <Finder>[
-      find.text('Quartier'),
-      find.text('Filtres'),
-      find.text('Quartier, courtier ou bien'),
-    ]) {
-      final Rect rect = tester.getRect(finder);
-      expect(rect.left, greaterThanOrEqualTo(0));
-      expect(rect.right, lessThanOrEqualTo(320));
-    }
+    expect(counting.brokerCalls - before, 1);
   });
 }
 
-/// Position figée : un test ne demande jamais une vraie autorisation.
 class _FixedLocationService implements LocationService {
   @override
   Future<LocationResult> current() async =>
@@ -319,7 +264,6 @@ class _FixedLocationService implements LocationService {
   List<Neighbourhood> knownNeighbourhoods() => dakarNeighbourhoods;
 }
 
-/// Compte les appels au service pour prouver l'anti-rebond.
 class _CountingDiscovery implements DiscoveryService {
   _CountingDiscovery(this._inner);
 

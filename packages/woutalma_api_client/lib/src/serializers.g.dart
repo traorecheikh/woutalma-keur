@@ -61,6 +61,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(UpdatePropertyDtoTransactionEnum.serializer)
       ..add(UploadPhotoDto.serializer)
       ..add(UploadPhotoDtoMimeTypeEnum.serializer)
+      ..add(UploadVoiceNoteDto.serializer)
+      ..add(UploadVoiceNoteDtoMimeTypeEnum.serializer)
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(BrokerListingDto)]),
           () => ListBuilder<BrokerListingDto>())

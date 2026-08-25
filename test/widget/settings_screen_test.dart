@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
@@ -37,8 +38,10 @@ void main() {
       textScale: 1.3,
     );
 
-    expect(find.text('Réglages'), findsWidgets);
+    expect(find.text('Profil'), findsWidgets);
     expect(find.text('Je cherche un logement'), findsWidgets);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pumpAndSettle();
     expect(find.text('Mode démonstration'), findsWidgets);
     expectNoClippedText(tester);
     expectTouchTargets(tester);

@@ -170,6 +170,7 @@ Property mapProperty(api.PropertyDto dto) {
     position: mapGeoPoint(dto.position),
     neighbourhood: dto.neighbourhood,
     photoAssets: dto.photoAssets.toList(),
+    voiceAsset: dto.voiceAsset,
     status: _propertyStatus(dto.status),
     createdAt: dto.createdAt,
   );

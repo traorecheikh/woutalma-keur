@@ -12,8 +12,10 @@ import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/domain/photo_service.dart';
+import 'package:woutalma_keur/app/domain/voice_note_service.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_option_sheet.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_photo_picker.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_voice_note.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_text_field.dart';
@@ -54,6 +56,7 @@ class PropertyEditorScreen extends StatefulWidget {
     required this.onBack,
     required this.onSaved,
     required this.photos,
+    required this.voiceNotes,
     super.key,
   });
 
@@ -62,6 +65,7 @@ class PropertyEditorScreen extends StatefulWidget {
 
   /// Sélection et compression des photos.
   final PhotoService photos;
+  final VoiceNoteRecorder voiceNotes;
 
   @override
   State<PropertyEditorScreen> createState() => _PropertyEditorScreenState();
@@ -345,6 +349,12 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
       style: context.text.bodySmall?.copyWith(
         color: context.colors.onSurfaceVariant,
       ),
+    ),
+    const SizedBox(height: WkSpacing.lg),
+    WkVoiceNoteRecorder(
+      asset: model.voiceNote,
+      recorder: widget.voiceNotes,
+      onChanged: model.setVoiceNote,
     ),
     const SizedBox(height: WkSpacing.md),
     // Publier, c'est rendre disponible. Demander le statut à la création

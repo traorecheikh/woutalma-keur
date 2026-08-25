@@ -40,6 +40,9 @@ export class PropertyDto {
   @ApiProperty({ type: [String] })
   photoAssets!: string[];
 
+  @ApiProperty({ type: String, required: false, nullable: true })
+  voiceAsset!: string | null;
+
   @ApiProperty({ enum: PropertyStatus })
   status!: PropertyStatus;
 

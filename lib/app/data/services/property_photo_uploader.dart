@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:woutalma_keur/app/domain/photo_service.dart';
+import 'package:woutalma_keur/app/domain/voice_note_service.dart';
 
 /// Prépare les photos d'un bien avant l'envoi au serveur.
 ///
@@ -77,6 +78,123 @@ class PreparedPhotos {
 
 /// Lit les octets d'un chemin local. Injectable pour tester sans appareil.
 typedef PhotoBytesReader = Future<Uint8List> Function(String path);
+
+/// Pourquoi un vocal n'a pas pu partir.
+enum VoiceNoteUploadRefusal { unsupportedType, tooLarge, unreadable }
+
+@immutable
+class VoiceNoteUploadFailed implements Exception {
+  const VoiceNoteUploadFailed(this.refusal);
+
+  final VoiceNoteUploadRefusal refusal;
+
+  @override
+  String toString() => 'VoiceNoteUploadFailed(${refusal.name})';
+}
+
+/// Ce que le serveur reçoit pour le vocal d'un bien.
+///
+/// Trois cas, un seul objet : [upload] non nul pour un fichier local,
+/// [retained] pour une clé `api:` déjà connue, [clear] pour retirer le vocal
+/// existant. Le serveur lit `voiceAsset: ''` comme un retrait.
+@immutable
+class PreparedVoiceNote {
+  const PreparedVoiceNote({this.retained, this.upload, this.clear = false});
+
+  final String? retained;
+  final PreparedPhoto? upload;
+  final bool clear;
+
+  static const PreparedVoiceNote none = PreparedVoiceNote();
+}
+
+class PropertyVoiceNoteUploader {
+  const PropertyVoiceNoteUploader({
+    this.constraints = const VoiceNoteConstraints(),
+    PhotoBytesReader readBytes = _readFile,
+  }) : _readBytes = readBytes;
+
+  final VoiceNoteConstraints constraints;
+  final PhotoBytesReader _readBytes;
+
+  static Future<Uint8List> _readFile(String path) => File(path).readAsBytes();
+
+  /// [asset] tel que porté par `Property.voiceAsset`. [previous] est ce que
+  /// le serveur connaissait : c'est ce qui distingue « jamais eu de vocal »
+  /// de « vocal retiré ».
+  Future<PreparedVoiceNote> prepare(String? asset, {String? previous}) async {
+    if (asset == null || asset.isEmpty) {
+      return previous == null
+          ? PreparedVoiceNote.none
+          : const PreparedVoiceNote(clear: true);
+    }
+    if (PropertyPhotoUploader.isServerKey(asset)) {
+      return PreparedVoiceNote(retained: asset);
+    }
+
+    Uint8List bytes;
+    try {
+      bytes = await _readBytes(asset);
+    } on Object {
+      throw const VoiceNoteUploadFailed(VoiceNoteUploadRefusal.unreadable);
+    }
+    if (bytes.isEmpty) {
+      throw const VoiceNoteUploadFailed(VoiceNoteUploadRefusal.unreadable);
+    }
+    if (bytes.length > constraints.maxUploadBytes) {
+      throw const VoiceNoteUploadFailed(VoiceNoteUploadRefusal.tooLarge);
+    }
+    final String? mimeType = _mimeOf(bytes);
+    if (mimeType == null) {
+      throw const VoiceNoteUploadFailed(VoiceNoteUploadRefusal.unsupportedType);
+    }
+    return PreparedVoiceNote(
+      upload: PreparedPhoto(
+        mimeType: mimeType,
+        dataBase64: base64Encode(bytes),
+      ),
+    );
+  }
+
+  /// Type déduit des octets. Un `.m4a` d'Android est un conteneur MP4 :
+  /// « ftyp » en position 4.
+  static String? _mimeOf(Uint8List bytes) {
+    if (bytes.length >= 12 &&
+        bytes[4] == 0x66 &&
+        bytes[5] == 0x74 &&
+        bytes[6] == 0x79 &&
+        bytes[7] == 0x70) {
+      return 'audio/mp4';
+    }
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x4F &&
+        bytes[1] == 0x67 &&
+        bytes[2] == 0x67 &&
+        bytes[3] == 0x53) {
+      return 'audio/ogg';
+    }
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x1A &&
+        bytes[1] == 0x45 &&
+        bytes[2] == 0xDF &&
+        bytes[3] == 0xA3) {
+      return 'audio/webm';
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0x49 &&
+        bytes[1] == 0x44 &&
+        bytes[2] == 0x33) {
+      return 'audio/mpeg';
+    }
+    if (bytes.length >= 2 && bytes[0] == 0xFF && (bytes[1] & 0xF6) == 0xF0) {
+      return 'audio/aac';
+    }
+    if (bytes.length >= 2 && bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) {
+      return 'audio/mpeg';
+    }
+    return null;
+  }
+}
 
 /// Recompresse un fichier et rend les octets, ou `null` si impossible.
 typedef PhotoRecompressor =

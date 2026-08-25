@@ -89,6 +89,7 @@ class PropertyRow {
   late double longitude;
   late String neighbourhood;
   late List<String> photoAssets;
+  String? voiceAsset;
 
   @enumerated
   late PropertyStatus status;
@@ -108,6 +109,7 @@ class PropertyRow {
     position: GeoPoint(latitude, longitude),
     neighbourhood: neighbourhood,
     photoAssets: photoAssets,
+    voiceAsset: voiceAsset,
     status: status,
     createdAt: createdAt,
   );
@@ -126,6 +128,7 @@ class PropertyRow {
     ..longitude = property.position.longitude
     ..neighbourhood = property.neighbourhood
     ..photoAssets = property.photoAssets
+    ..voiceAsset = property.voiceAsset
     ..status = property.status
     ..createdAt = property.createdAt;
 }

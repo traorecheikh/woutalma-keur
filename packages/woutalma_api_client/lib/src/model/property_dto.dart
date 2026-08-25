@@ -25,6 +25,7 @@ part 'property_dto.g.dart';
 /// * [position]
 /// * [neighbourhood]
 /// * [photoAssets]
+/// * [voiceAsset]
 /// * [status]
 /// * [createdAt]
 /// * [isDiscoverable]
@@ -68,6 +69,9 @@ abstract class PropertyDto implements Built<PropertyDto, PropertyDtoBuilder> {
 
   @BuiltValueField(wireName: r'photoAssets')
   BuiltList<String> get photoAssets;
+
+  @BuiltValueField(wireName: r'voiceAsset')
+  String? get voiceAsset;
 
   @BuiltValueField(wireName: r'status')
   PropertyDtoStatusEnum get status;
@@ -166,6 +170,13 @@ class _$PropertyDtoSerializer implements PrimitiveSerializer<PropertyDto> {
       object.photoAssets,
       specifiedType: const FullType(BuiltList, [FullType(String)]),
     );
+    if (object.voiceAsset != null) {
+      yield r'voiceAsset';
+      yield serializers.serialize(
+        object.voiceAsset,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     yield r'status';
     yield serializers.serialize(
       object.status,
@@ -291,6 +302,14 @@ class _$PropertyDtoSerializer implements PrimitiveSerializer<PropertyDto> {
             specifiedType: const FullType(BuiltList, [FullType(String)]),
           ) as BuiltList<String>;
           result.photoAssets.replace(valueDes);
+          break;
+        case r'voiceAsset':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.voiceAsset = valueDes;
           break;
         case r'status':
           final valueDes = serializers.deserialize(

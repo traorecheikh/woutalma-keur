@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:woutalma_keur/app/domain/contact_launcher.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/data/repositories/in_memory_repositories.dart';
@@ -93,21 +94,13 @@ void main() {
     expect(find.text('Moussa Ndiaye'), findsOneWidget);
   });
 
-  testWidgets('la galerie du seed montre un compteur visible', (
-    WidgetTester tester,
-  ) async {
-    await pumpProperty(tester, preview: false);
-
-    expect(find.text('1 sur 3'), findsOneWidget);
-  });
-
   testWidgets('la galerie laisse voir qu\'il y a d\'autres photos', (
     WidgetTester tester,
   ) async {
     await pumpProperty(tester, preview: false);
 
-    final PageView gallery = tester.widget<PageView>(find.byType(PageView));
-    expect(gallery.controller?.viewportFraction, lessThan(1));
+    expect(find.byType(PageView), findsOneWidget);
+    expect(find.byType(SmoothPageIndicator), findsOneWidget);
   });
 
   testWidgets('la fiche bien reste lisible à 320 dp et ×1.3', (

@@ -45,6 +45,10 @@ dependencies:
   # Google Sign-In — real mode's primary auth method (docs/PRODUCT.md §8bis).
   google_sign_in: ^7.2.0
   flutter_secure_storage: ^11.0.0
+  record: ^6.1.0
+  audioplayers: ^6.7.0
+  smooth_page_indicator: ^3.0.0
+  skeletonizer: ^2.1.3
 
 dev_dependencies:
   flutter_test:

@@ -218,6 +218,8 @@ class _$PropertyDto extends PropertyDto {
   @override
   final BuiltList<String> photoAssets;
   @override
+  final String? voiceAsset;
+  @override
   final PropertyDtoStatusEnum status;
   @override
   final DateTime createdAt;
@@ -240,6 +242,7 @@ class _$PropertyDto extends PropertyDto {
       required this.position,
       required this.neighbourhood,
       required this.photoAssets,
+      this.voiceAsset,
       required this.status,
       required this.createdAt,
       required this.isDiscoverable})
@@ -267,6 +270,7 @@ class _$PropertyDto extends PropertyDto {
         position == other.position &&
         neighbourhood == other.neighbourhood &&
         photoAssets == other.photoAssets &&
+        voiceAsset == other.voiceAsset &&
         status == other.status &&
         createdAt == other.createdAt &&
         isDiscoverable == other.isDiscoverable;
@@ -287,6 +291,7 @@ class _$PropertyDto extends PropertyDto {
     _$hash = $jc(_$hash, position.hashCode);
     _$hash = $jc(_$hash, neighbourhood.hashCode);
     _$hash = $jc(_$hash, photoAssets.hashCode);
+    _$hash = $jc(_$hash, voiceAsset.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jc(_$hash, isDiscoverable.hashCode);
@@ -309,6 +314,7 @@ class _$PropertyDto extends PropertyDto {
           ..add('position', position)
           ..add('neighbourhood', neighbourhood)
           ..add('photoAssets', photoAssets)
+          ..add('voiceAsset', voiceAsset)
           ..add('status', status)
           ..add('createdAt', createdAt)
           ..add('isDiscoverable', isDiscoverable))
@@ -371,6 +377,10 @@ class PropertyDtoBuilder implements Builder<PropertyDto, PropertyDtoBuilder> {
   set photoAssets(ListBuilder<String>? photoAssets) =>
       _$this._photoAssets = photoAssets;
 
+  String? _voiceAsset;
+  String? get voiceAsset => _$this._voiceAsset;
+  set voiceAsset(String? voiceAsset) => _$this._voiceAsset = voiceAsset;
+
   PropertyDtoStatusEnum? _status;
   PropertyDtoStatusEnum? get status => _$this._status;
   set status(PropertyDtoStatusEnum? status) => _$this._status = status;
@@ -403,6 +413,7 @@ class PropertyDtoBuilder implements Builder<PropertyDto, PropertyDtoBuilder> {
       _position = $v.position.toBuilder();
       _neighbourhood = $v.neighbourhood;
       _photoAssets = $v.photoAssets.toBuilder();
+      _voiceAsset = $v.voiceAsset;
       _status = $v.status;
       _createdAt = $v.createdAt;
       _isDiscoverable = $v.isDiscoverable;
@@ -448,6 +459,7 @@ class PropertyDtoBuilder implements Builder<PropertyDto, PropertyDtoBuilder> {
             neighbourhood: BuiltValueNullFieldError.checkNotNull(
                 neighbourhood, r'PropertyDto', 'neighbourhood'),
             photoAssets: photoAssets.build(),
+            voiceAsset: voiceAsset,
             status: BuiltValueNullFieldError.checkNotNull(
                 status, r'PropertyDto', 'status'),
             createdAt: BuiltValueNullFieldError.checkNotNull(

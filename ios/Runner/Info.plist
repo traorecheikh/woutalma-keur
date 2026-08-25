@@ -62,6 +62,8 @@
 	<!-- Même phrase que la feuille M06 (permissionLocationBody) : l'explication
 	     de l'application et celle du système doivent dire la même chose, sinon
 	     la seconde a l'air d'une demande différente. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Le micro sert à enregistrer un message vocal sur un bien que vous publiez.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Votre position sert à trier les courtiers du plus proche au plus loin. Elle ne quitte pas le téléphone.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>

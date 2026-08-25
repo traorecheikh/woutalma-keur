@@ -1,37 +1,33 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:woutalma_keur/app/core/location/client_position_controller.dart';
-import 'package:woutalma_keur/app/modules/client/explore/location_permission_flow.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
-import 'package:woutalma_keur/app/domain/entities.dart';
-import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/domain/discovery.dart';
-import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
+import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
-import 'package:woutalma_keur/app/modules/client/explore/filters_sheet.dart';
+import 'package:woutalma_keur/app/domain/ranking.dart';
+import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
+import 'package:woutalma_keur/app/modules/client/explore/location_permission_flow.dart';
 import 'package:woutalma_keur/app/modules/client/explore/location_sheet.dart';
-import 'package:woutalma_keur/app/modules/client/explore/results_map.dart';
 import 'package:woutalma_keur/app/modules/client/explore/search_overlay.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_broker_card.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_broker_tile.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_chip_group.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_icon_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_property_card.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_property_tile.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_search_bar.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_segmented_control.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_section_header.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 
-/// C01 — Explorer.
-///
-/// Premier écran du parcours client, et le seul qui doive tenir la promesse
-/// des trois écrans : d'ici, un contact est à deux gestes.
+/// C01 — Accueil. Recherche, catégories, puis des rangées qui défilent :
+/// près de chez vous, courtiers de confiance, nouveautés. La liste complète
+/// vit dans M14.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({
     required this.onOpenBroker,
@@ -44,8 +40,6 @@ class ExploreScreen extends StatefulWidget {
   final void Function(String brokerId) onOpenBroker;
   final void Function(String propertyId) onOpenProperty;
   final VoidCallback onOpenSettings;
-
-  /// Position du téléphone et quartiers connus.
   final LocationService location;
 
   @override
@@ -56,77 +50,69 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
-    // Décision C : le GPS est la position par défaut. On explique d'abord —
-    // M06 — puis le système demande. Une seule fois dans la vie de
-    // l'installation : `docs/screen-contracts/client-discovery.md` interdit
-    // toute boucle de permission, donc un refus ne se redemande jamais au
-    // lancement suivant. Le bouton GPS de M02 reste la porte de rattrapage.
     WidgetsBinding.instance.addPostFrameCallback((_) => _primeLocation());
   }
 
   Future<void> _primeLocation() async {
     final ClientPositionController positions = context
         .read<ClientPositionController>();
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     if (positions.hasBeenPrimed) {
-      // Déjà expliqué une fois : on relit la position sans rien redemander.
       await positions.refreshIfPermitted();
       return;
     }
     await requestClientPosition(
       context,
       positions,
-      // Au premier lancement, enchaîner « ouvrez les réglages » sur un refus
-      // serait la relance que le contrat interdit.
       offerSettingsOnPermanentDenial: false,
     );
   }
 
-  Future<void> _openSearch(BuildContext context, ExploreViewModel model) {
-    return SearchOverlay.show(
+  Future<void> _openSearch(
+    ExploreViewModel model, {
+    DiscoveryFilters? filters,
+    ExploreSegment? segment,
+    ExploreView? view,
+    bool autofocus = false,
+  }) async {
+    if (segment != null) model.selectSegment(segment);
+    if (view != null) model.selectView(view);
+    if (filters != null) await model.applyFilters(filters);
+    if (!mounted) return;
+    await SearchOverlay.show(
       context,
       model: model,
       onOpenBroker: widget.onOpenBroker,
       onOpenProperty: widget.onOpenProperty,
+      autofocus: autofocus,
     );
   }
 
-  Future<void> _openPlace(BuildContext context, ExploreViewModel model) async {
+  Future<void> _openPlace(ExploreViewModel model) async {
     final Neighbourhood? place = await LocationSheet.show(
       context,
       service: widget.location,
       positions: context.read<ClientPositionController>(),
       recents: model.recentPlaces,
     );
-    if (place != null) {
-      await model.moveTo(place);
-    }
-  }
-
-  Future<void> _openFilters(
-    BuildContext context,
-    ExploreViewModel model,
-  ) async {
-    final DiscoveryFilters? applied = await FiltersSheet.show(
-      context,
-      initial: model.filters,
-      countResults: model.previewCount,
-    );
-    if (applied != null) {
-      await model.applyFilters(applied);
-    }
+    if (place != null) await model.moveTo(place);
   }
 
   @override
   Widget build(BuildContext context) {
     final ExploreViewModel model = context.watch<ExploreViewModel>();
+    final ClientPositionController positions = context
+        .watch<ClientPositionController>();
 
     return WkScaffold(
       extendBody: true,
+      padHorizontal: false,
       topBar: WkTopBar(
-        title: model.placeName ?? context.l10n.exploreNearYou,
+        title:
+            model.placeName ??
+            (model.isOutsideServiceArea
+                ? context.l10n.exploreDefaultArea
+                : context.l10n.exploreNearYou),
         onBack: null,
         action: WkIconButton(
           icon: Icons.settings_outlined,
@@ -134,424 +120,349 @@ class _ExploreScreenState extends State<ExploreScreen> {
           onPressed: widget.onOpenSettings,
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const SizedBox(height: WkSpacing.sm),
-          // Seule pièce épinglée. Filtres, segments et compteur défilent avec
-          // les résultats : trois blocs figés au-dessus d'une liste ne
-          // laissaient voir qu'une carte et demie sur un écran de 5 pouces.
-          WkSearchTrigger(
-            hint: context.l10n.exploreSearchHint,
-            semanticLabel: context.l10n.exploreSearchOpen,
-            query: model.filters.query,
-            onOpen: () => _openSearch(context, model),
+      body: RefreshIndicator(
+        onRefresh: model.load,
+        color: context.colors.primary,
+        child: ListView(
+          padding: EdgeInsets.only(
+            bottom: WkScaffold.bottomInset(context) + WkSpacing.lg,
           ),
-          Expanded(
-            child: _Body(
-              model: model,
-              screen: widget,
-              onFilters: () => _openFilters(context, model),
-              onPlace: () => _openPlace(context, model),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Filtres, quartier et segments. Défile avec les résultats.
-class _Controls extends StatelessWidget {
-  const _Controls({
-    required this.model,
-    required this.onFilters,
-    required this.onPlace,
-  });
-
-  final ExploreViewModel model;
-  final VoidCallback onFilters;
-  final VoidCallback onPlace;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        const SizedBox(height: WkSpacing.betweenTargets),
-        Row(
           children: <Widget>[
-            Expanded(
-              child: WkButton(
-                label: context.l10n.filtersActive(model.filters.activeCount),
-                icon: Icons.tune,
-                variant: WkButtonVariant.secondary,
-                onPressed: onFilters,
-              ),
-            ),
-            const SizedBox(width: WkSpacing.betweenTargets),
-            Expanded(
-              child: WkButton(
-                label: model.placeName ?? context.l10n.locationShort,
-                icon: Icons.place_outlined,
-                variant: WkButtonVariant.secondary,
-                onPressed: onPlace,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: WkSpacing.lg),
-        _ActiveFilters(model: model),
-        WkSegmentedControl<ExploreSegment>(
-          value: model.segment,
-          onChanged: model.selectSegment,
-          segments: <(ExploreSegment, String)>[
-            (ExploreSegment.brokers, context.l10n.exploreSegmentBrokers),
-            (ExploreSegment.properties, context.l10n.exploreSegmentProperties),
-          ],
-        ),
-        const SizedBox(height: WkSpacing.md),
-      ],
-    );
-  }
-}
-
-class _ActiveFilters extends StatelessWidget {
-  const _ActiveFilters({required this.model});
-
-  final ExploreViewModel model;
-
-  @override
-  Widget build(BuildContext context) {
-    final DiscoveryFilters filters = model.filters;
-    if (filters.activeCount == 0) {
-      return const SizedBox.shrink();
-    }
-    final List<Widget> chips = <Widget>[
-      if (filters.transaction != null)
-        _FilterChip(
-          label: WkFormat.transaction(context.l10n, filters.transaction!),
-          icon: Icons.sell_outlined,
-          onRemove: () =>
-              model.applyFilters(filters.copyWith(clearTransaction: true)),
-        ),
-      if (filters.kind != null)
-        _FilterChip(
-          label: WkFormat.propertyKind(context.l10n, filters.kind!),
-          icon: WkFormat.propertyKindIcon(filters.kind!),
-          onRemove: () => model.applyFilters(filters.copyWith(clearKind: true)),
-        ),
-      if (filters.maxPrice != null)
-        _FilterChip(
-          label: context.l10n.filtersPriceValue(
-            NumberFormat('#,##0', 'fr').format(filters.maxPrice),
-          ),
-          icon: Icons.payments_outlined,
-          onRemove: () =>
-              model.applyFilters(filters.copyWith(clearMaxPrice: true)),
-        ),
-      if (filters.radiusMeters != null)
-        _FilterChip(
-          label: context.l10n.filtersRadiusValue(
-            (filters.radiusMeters! / 1000).round(),
-          ),
-          icon: Icons.place_outlined,
-          onRemove: () =>
-              model.applyFilters(filters.copyWith(clearRadius: true)),
-        ),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: WkSpacing.md),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: <Widget>[
-            for (int i = 0; i < chips.length; i++) ...<Widget>[
-              chips[i],
-              if (i < chips.length - 1) const SizedBox(width: WkSpacing.sm),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.icon,
-    required this.onRemove,
-  });
-
-  final String label;
-  final IconData icon;
-  final Future<void> Function() onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: Material(
-        color: context.colors.primaryContainer,
-        borderRadius: BorderRadius.circular(WkRadius.full),
-        child: InkWell(
-          onTap: () => unawaited(onRemove()),
-          borderRadius: BorderRadius.circular(WkRadius.full),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: WkTouch.min),
-            padding: const EdgeInsetsDirectional.only(
-              start: WkSpacing.md,
-              end: WkSpacing.sm,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(icon, size: 18, color: context.colors.onPrimaryContainer),
-                const SizedBox(width: WkSpacing.xs),
-                Text(
-                  label,
-                  style: context.text.labelMedium?.copyWith(
-                    color: context.colors.onPrimaryContainer,
-                  ),
+            const SizedBox(height: WkSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+              child: WkSearchTrigger(
+                hint: context.l10n.exploreSearchHint,
+                semanticLabel: context.l10n.exploreSearchOpen,
+                onOpen: () => _openSearch(
+                  model,
+                  filters: const DiscoveryFilters(),
+                  segment: ExploreSegment.properties,
+                  autofocus: true,
                 ),
-                const SizedBox(width: WkSpacing.xs),
-                Icon(
-                  Icons.close,
-                  size: 18,
-                  color: context.colors.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: WkSpacing.md),
+            WkChipGroup<_Category>(
+              chips: <WkChip<_Category>>[
+                WkChip<_Category>(
+                  value: _Category.all,
+                  label: context.l10n.exploreCategoryAll,
+                  icon: Icons.grid_view_outlined,
+                ),
+                WkChip<_Category>(
+                  value: _Category.rent,
+                  label: context.l10n.transactionRent,
+                  icon: Icons.vpn_key_outlined,
+                ),
+                WkChip<_Category>(
+                  value: _Category.sale,
+                  label: context.l10n.transactionSale,
+                  icon: Icons.sell_outlined,
+                ),
+                for (final PropertyKind kind in PropertyKind.values)
+                  WkChip<_Category>(
+                    value: _Category.kinds[kind]!,
+                    label: WkFormat.propertyKind(context.l10n, kind),
+                    icon: WkFormat.propertyKindIcon(kind),
+                  ),
+                WkChip<_Category>(
+                  value: _Category.brokers,
+                  label: context.l10n.exploreSegmentBrokers,
+                  icon: Icons.support_agent_outlined,
+                ),
+              ],
+              selected: null,
+              onSelected: (_Category c) =>
+                  _openSearch(model, filters: c.filters, segment: c.segment),
+            ),
+            if (!positions.isFromGps && model.placeName == null) ...<Widget>[
+              const SizedBox(height: WkSpacing.lg),
+              _LocationPrompt(
+                onEnable: () => requestClientPosition(
+                  context,
+                  positions,
+                  offerSettingsOnPermanentDenial: true,
+                ),
+                onChoose: () => _openPlace(model),
+              ),
+            ],
+            const SizedBox(height: WkSpacing.lg),
+            _Sections(
+              model: model,
+              onOpenBroker: widget.onOpenBroker,
+              onOpenProperty: widget.onOpenProperty,
+              onSeeAll: (ExploreSegment segment) => _openSearch(
+                model,
+                filters: const DiscoveryFilters(),
+                segment: segment,
+              ),
+              onOpenMap: () => _openSearch(
+                model,
+                filters: const DiscoveryFilters(),
+                segment: ExploreSegment.properties,
+                view: ExploreView.map,
+              ),
+              onChangePlace: () => _openPlace(model),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Category {
+  const _Category(this.filters, this.segment);
+
+  final DiscoveryFilters filters;
+  final ExploreSegment segment;
+
+  static const _Category all = _Category(
+    DiscoveryFilters(),
+    ExploreSegment.properties,
+  );
+  static const _Category rent = _Category(
+    DiscoveryFilters(transaction: TransactionKind.rent),
+    ExploreSegment.properties,
+  );
+  static const _Category sale = _Category(
+    DiscoveryFilters(transaction: TransactionKind.sale),
+    ExploreSegment.properties,
+  );
+  static const _Category brokers = _Category(
+    DiscoveryFilters(),
+    ExploreSegment.brokers,
+  );
+  static final Map<PropertyKind, _Category> kinds = <PropertyKind, _Category>{
+    for (final PropertyKind kind in PropertyKind.values)
+      kind: _Category(DiscoveryFilters(kind: kind), ExploreSegment.properties),
+  };
+}
+
+class _LocationPrompt extends StatelessWidget {
+  const _LocationPrompt({required this.onEnable, required this.onChoose});
+
+  final VoidCallback onEnable;
+  final VoidCallback onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+      child: Container(
+        padding: const EdgeInsets.all(WkSpacing.md),
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(WkRadius.xl),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(Icons.near_me_outlined, color: context.colors.primary),
+                const SizedBox(width: WkSpacing.sm),
+                Expanded(
+                  child: Text(
+                    context.l10n.exploreEnableLocationTitle,
+                    style: context.text.titleMedium,
+                  ),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Body extends StatelessWidget {
-  const _Body({
-    required this.model,
-    required this.screen,
-    required this.onFilters,
-    required this.onPlace,
-  });
-
-  final ExploreViewModel model;
-  final ExploreScreen screen;
-  final VoidCallback onFilters;
-  final VoidCallback onPlace;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget controls = _Controls(
-      model: model,
-      onFilters: onFilters,
-      onPlace: onPlace,
-    );
-
-    return model.state.map(
-      initial: () => controls,
-      loading: () => _Scrolled(
-        controls: controls,
-        sliver: const SliverFillRemaining(
-          hasScrollBody: false,
-          child: WkLoadingState(),
-        ),
-      ),
-      empty: () => _Scrolled(
-        controls: controls,
-        sliver: SliverFillRemaining(
-          hasScrollBody: false,
-          child: WkEmptyState(
-            title: context.l10n.exploreEmptyTitle,
-            body: context.l10n.exploreEmptyBody,
-            actionLabel: model.filters.isEmpty
-                ? null
-                : context.l10n.exploreClearFilters,
-            onAction: model.filters.isEmpty ? null : model.clearFilters,
-          ),
-        ),
-      ),
-      error: (WkFailure failure) => _Scrolled(
-        controls: controls,
-        sliver: SliverFillRemaining(
-          hasScrollBody: false,
-          child: WkErrorState(failure: failure, onRetry: model.load),
-        ),
-      ),
-      data: (ExploreResults results) => _Results(
-        results: results,
-        model: model,
-        screen: screen,
-        controls: controls,
-      ),
-    );
-  }
-}
-
-/// Coquille de défilement commune : les commandes en tête, l'état en dessous.
-///
-/// Les commandes vivent **dans** le défilement, pas au-dessus : c'est ce qui
-/// rend la liste au premier plan dès qu'on pousse le pouce.
-class _Scrolled extends StatelessWidget {
-  const _Scrolled({required this.controls, required this.sliver});
-
-  final Widget controls;
-  final Widget sliver;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: <Widget>[
-        SliverToBoxAdapter(child: controls),
-        sliver,
-      ],
-    );
-  }
-}
-
-class _Results extends StatelessWidget {
-  const _Results({
-    required this.results,
-    required this.model,
-    required this.screen,
-    required this.controls,
-  });
-
-  final ExploreResults results;
-  final ExploreViewModel model;
-  final ExploreScreen screen;
-  final Widget controls;
-
-  Widget _card(BuildContext context, int index) {
-    if (model.segment == ExploreSegment.brokers) {
-      final BrokerListing listing = results.brokers[index];
-      return WkBrokerCard(
-        listing: listing,
-        onOpen: () => screen.onOpenBroker(listing.broker.id),
-      );
-    }
-    final Property property = results.properties[index];
-    return WkPropertyCard(
-      property: property,
-      distanceMeters: distanceMeters(model.position, property.position),
-      onOpen: () => screen.onOpenProperty(property.id),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final int count = results.countFor(model.segment);
-    final Widget header = _ResultsHeader(model: model, count: count);
-
-    // La carte ne défile pas : elle se manipule, et une carte posée dans une
-    // liste vole le geste de défilement à celui qui voulait lire la suite.
-    if (model.view == ExploreView.map) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          controls,
-          header,
-          const SizedBox(height: WkSpacing.sm),
-          Expanded(
-            child: ResultsMap(
-              center: model.position,
-              markers: model.segment == ExploreSegment.brokers
-                  ? <(String, GeoPoint)>[
-                      for (final BrokerListing l in results.brokers)
-                        (l.broker.id, l.broker.position),
-                    ]
-                  : <(String, GeoPoint)>[
-                      for (final Property p in results.properties)
-                        (p.id, p.position),
-                    ],
-              onSelect: (String id) => model.segment == ExploreSegment.brokers
-                  ? screen.onOpenBroker(id)
-                  : screen.onOpenProperty(id),
-            ),
-          ),
-          SizedBox(height: WkScaffold.bottomInset(context) + WkSpacing.sm),
-        ],
-      );
-    }
-
-    if (count == 0) {
-      return _Scrolled(
-        controls: controls,
-        sliver: SliverFillRemaining(
-          hasScrollBody: false,
-          child: WkEmptyState(
-            title: context.l10n.exploreEmptyTitle,
-            body: context.l10n.exploreEmptyBody,
-          ),
-        ),
-      );
-    }
-
-    return CustomScrollView(
-      // La position de défilement survit au retour d'une fiche.
-      key: PageStorageKey<ExploreSegment>(model.segment),
-      slivers: <Widget>[
-        SliverToBoxAdapter(child: controls),
-        SliverToBoxAdapter(child: header),
-        const SliverToBoxAdapter(child: SizedBox(height: WkSpacing.sm)),
-        SliverList.separated(
-          itemCount: count,
-          separatorBuilder: (_, _) => const SizedBox(height: WkSpacing.sm),
-          itemBuilder: _card,
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: WkScaffold.bottomInset(context) + WkSpacing.md,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Nombre de résultats et bascule liste/carte.
-class _ResultsHeader extends StatelessWidget {
-  const _ResultsHeader({required this.model, required this.count});
-
-  final ExploreViewModel model;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Semantics(
-            liveRegion: true,
-            child: Text(
-              context.l10n.exploreResults(count),
+            const SizedBox(height: WkSpacing.xs),
+            Text(
+              context.l10n.exploreEnableLocationBody,
               style: context.text.bodyMedium?.copyWith(
                 color: context.colors.onSurfaceVariant,
               ),
             ),
-          ),
+            const SizedBox(height: WkSpacing.sm),
+            WkButton(
+              label: context.l10n.exploreEnableLocationTitle,
+              icon: Icons.my_location,
+              variant: WkButtonVariant.secondary,
+              onPressed: onEnable,
+            ),
+            const SizedBox(height: WkSpacing.xs),
+            WkButton(
+              label: context.l10n.exploreChooseArea,
+              icon: Icons.place_outlined,
+              variant: WkButtonVariant.ghost,
+              onPressed: onChoose,
+            ),
+          ],
         ),
-        // La bascule vit ici, à côté du nombre de résultats : la carte
-        // existait déjà mais rien à l'écran n'y menait, donc personne ne
-        // pouvait l'atteindre. Elle se demande, elle ne s'impose pas — elle
-        // télécharge des tuiles, donc de la data.
-        WkButton(
-          label: model.view == ExploreView.map
-              ? context.l10n.exploreShowList
-              : context.l10n.exploreShowMap,
-          icon: model.view == ExploreView.map ? Icons.list : Icons.map_outlined,
-          variant: WkButtonVariant.ghost,
-          expand: false,
-          onPressed: () => model.selectView(
-            model.view == ExploreView.map ? ExploreView.list : ExploreView.map,
+      ),
+    );
+  }
+}
+
+class _Sections extends StatelessWidget {
+  const _Sections({
+    required this.model,
+    required this.onOpenBroker,
+    required this.onOpenProperty,
+    required this.onSeeAll,
+    required this.onOpenMap,
+    required this.onChangePlace,
+  });
+
+  final ExploreViewModel model;
+  final void Function(String brokerId) onOpenBroker;
+  final void Function(String propertyId) onOpenProperty;
+  final void Function(ExploreSegment segment) onSeeAll;
+  final VoidCallback onOpenMap;
+  final VoidCallback onChangePlace;
+
+  @override
+  Widget build(BuildContext context) {
+    return model.home.map(
+      initial: () => const SizedBox.shrink(),
+      loading: () => Skeletonizer(child: _rows(context, _placeholder)),
+      empty: () => WkEmptyState(
+        title: context.l10n.exploreEmptyTitle,
+        body: context.l10n.exploreEmptyBody,
+        actionLabel: context.l10n.exploreChooseArea,
+        onAction: onChangePlace,
+      ),
+      error: (WkFailure failure) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+        child: WkErrorState(failure: failure, onRetry: model.load),
+      ),
+      data: (ExploreResults results) => _rows(context, results),
+    );
+  }
+
+  Widget _rows(BuildContext context, ExploreResults results) {
+    final List<Property> nearby = results.properties.take(8).toList();
+    final List<Property> newest = results.newest.take(8).toList();
+    final List<BrokerListing> brokers = results.brokers.take(8).toList();
+    final TextScaler scaler = MediaQuery.textScalerOf(context);
+    final double propertyHeight = 150 + scaler.scale(116);
+    final double brokerHeight = 92 + scaler.scale(150);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (nearby.isNotEmpty) ...<Widget>[
+          WkSectionHeader(
+            title: context.l10n.exploreNearbyProperties,
+            actionLabel: context.l10n.exploreSeeAll,
+            onAction: () => onSeeAll(ExploreSegment.properties),
+          ),
+          const SizedBox(height: WkSpacing.sm),
+          _strip(
+            height: propertyHeight,
+            children: <Widget>[
+              for (final Property p in nearby)
+                WkPropertyTile(
+                  property: p,
+                  distanceMeters: distanceMeters(model.position, p.position),
+                  onOpen: () => onOpenProperty(p.id),
+                ),
+            ],
+          ),
+          const SizedBox(height: WkSpacing.xl),
+        ],
+        if (brokers.isNotEmpty) ...<Widget>[
+          WkSectionHeader(
+            title: context.l10n.exploreTrustedBrokers,
+            actionLabel: context.l10n.exploreSeeAll,
+            onAction: () => onSeeAll(ExploreSegment.brokers),
+          ),
+          const SizedBox(height: WkSpacing.sm),
+          _strip(
+            height: brokerHeight,
+            children: <Widget>[
+              for (final BrokerListing l in brokers)
+                WkBrokerTile(
+                  listing: l,
+                  onOpen: () => onOpenBroker(l.broker.id),
+                ),
+            ],
+          ),
+          const SizedBox(height: WkSpacing.xl),
+        ],
+        if (newest.length > 1) ...<Widget>[
+          WkSectionHeader(
+            title: context.l10n.exploreNewListings,
+            actionLabel: context.l10n.exploreSeeAll,
+            onAction: () => onSeeAll(ExploreSegment.properties),
+          ),
+          const SizedBox(height: WkSpacing.sm),
+          _strip(
+            height: propertyHeight,
+            children: <Widget>[
+              for (final Property p in newest)
+                WkPropertyTile(
+                  property: p,
+                  distanceMeters: distanceMeters(model.position, p.position),
+                  onOpen: () => onOpenProperty(p.id),
+                ),
+            ],
+          ),
+          const SizedBox(height: WkSpacing.lg),
+        ],
+        Center(
+          child: WkButton(
+            label: context.l10n.exploreShowMap,
+            icon: Icons.map_outlined,
+            variant: WkButtonVariant.ghost,
+            expand: false,
+            onPressed: onOpenMap,
           ),
         ),
       ],
     );
   }
+
+  Widget _strip({required double height, required List<Widget> children}) {
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+        itemCount: children.length,
+        separatorBuilder: (_, _) => const SizedBox(width: WkSpacing.md),
+        itemBuilder: (_, int i) => children[i],
+      ),
+    );
+  }
+
+  static final ExploreResults _placeholder = ExploreResults(
+    brokers: List<BrokerListing>.generate(
+      3,
+      (int i) => BrokerListing(
+        broker: Broker(
+          id: 'skeleton-$i',
+          kind: BrokerKind.individual,
+          name: 'Courtier Dakar',
+          phone: '',
+          position: const GeoPoint(0, 0),
+          coverage: const <String>[],
+        ),
+        distanceMeters: 1200,
+        averageRating: 4,
+        reviewCount: 3,
+        availableProperties: 2,
+        score: 0,
+      ),
+    ),
+    properties: List<Property>.generate(
+      3,
+      (int i) => Property(
+        id: 'skeleton-$i',
+        brokerId: '',
+        kind: PropertyKind.apartment,
+        transaction: TransactionKind.rent,
+        title: 'Appartement 3 pièces à Mermoz',
+        price: 250000,
+        position: const GeoPoint(0, 0),
+        neighbourhood: 'Mermoz',
+        createdAt: DateTime(2026),
+      ),
+    ),
+  );
 }

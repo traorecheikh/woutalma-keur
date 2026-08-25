@@ -43,6 +43,7 @@ import 'package:woutalma_api_client/src/model/update_broker_dto.dart';
 import 'package:woutalma_api_client/src/model/update_contact_outcome_dto.dart';
 import 'package:woutalma_api_client/src/model/update_property_dto.dart';
 import 'package:woutalma_api_client/src/model/upload_photo_dto.dart';
+import 'package:woutalma_api_client/src/model/upload_voice_note_dto.dart';
 
 part 'serializers.g.dart';
 
@@ -76,6 +77,7 @@ part 'serializers.g.dart';
   UpdateContactOutcomeDto,
   UpdatePropertyDto,
   UploadPhotoDto,
+  UploadVoiceNoteDto,
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(

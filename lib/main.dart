@@ -18,11 +18,6 @@ import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Dernier filet. En debug une erreur non capturée s'affiche en console ; en
-  // release elle disparaissait sans laisser de trace, ce qui a rendu invisibles
-  // des pannes de session entières. On ne peut pas montrer une boîte de
-  // dialogue à quelqu'un qui déchiffre difficilement, mais on peut au moins
-  // consigner.
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('[wk] erreur de rendu : ${details.exceptionAsString()}');
@@ -32,24 +27,12 @@ Future<void> main() async {
     return true;
   };
   if (kDebugMode) {
-    // Matérialise l'arbre sémantique en debug. L'accessibilité est une
-    // contrainte produit ici : elle doit être inspectable à tout moment, pas
-    // seulement quand un lecteur d'écran tourne.
     SemanticsBinding.instance.ensureSemantics();
   }
-  // `bootstrap` retombe seul sur le magasin mémoire là où aucune base native
-  // n'existe : l'appelant n'a pas à connaître la plateforme.
   final AppDependencies deps = await AppDependencies.bootstrap();
   runApp(WoutalmaKeurApp(deps: deps));
 }
 
-/// Toutes les délégations de localisation de l'application.
-///
-/// Nommée plutôt qu'écrite en ligne : c'est ce qu'un test peut vérifier, et
-/// c'est la liste que le prochain paquet à traduire devra rejoindre. Sans
-/// celles de `phone_form_field`, le sélecteur de pays s'ouvrait en anglais —
-/// « Search », « Algeria », « Germany » — au milieu d'une application qui ne
-/// parle que français.
 const List<LocalizationsDelegate<Object?>> wkLocalizationsDelegates =
     <LocalizationsDelegate<Object?>>[
       ...AppL10n.localizationsDelegates,

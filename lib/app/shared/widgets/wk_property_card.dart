@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
@@ -6,9 +7,8 @@ import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_property_photo.dart';
 
-/// Résultat de recherche pour un bien.
-///
-/// Le prix domine : c'est le premier tri que fait un client dans sa tête.
+/// Résultat de recherche pour un bien. Le prix domine ; les photos se
+/// feuillettent sur place.
 class WkPropertyCard extends StatelessWidget {
   const WkPropertyCard({
     required this.property,
@@ -23,70 +23,60 @@ class WkPropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color dim = context.colors.onSurfaceVariant;
     return Semantics(
       button: true,
       child: Material(
         color: context.colors.surface,
-        borderRadius: BorderRadius.circular(WkRadius.lg),
+        borderRadius: BorderRadius.circular(WkRadius.xl),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onOpen,
-          borderRadius: BorderRadius.circular(WkRadius.lg),
-          child: Padding(
-            padding: const EdgeInsets.all(WkSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _PhotoStrip(property: property),
-                const SizedBox(height: WkSpacing.md),
-                Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              WkPhotoCarousel(property: property, height: 180),
+              Padding(
+                padding: const EdgeInsets.all(WkSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        WkFormat.price(
-                          context.l10n,
-                          property.price,
-                          property.transaction,
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            WkFormat.price(
+                              context.l10n,
+                              property.price,
+                              property.transaction,
+                            ),
+                            style: context.text.headlineMedium,
+                          ),
                         ),
-                        style: context.text.headlineMedium,
-                      ),
+                        if (property.status != PropertyStatus.available)
+                          WkStatusBadge(status: property.status),
+                      ],
                     ),
-                    _StatusBadge(status: property.status),
-                  ],
-                ),
-                const SizedBox(height: WkSpacing.xs),
-                Text(
-                  property.title,
-                  style: context.text.bodyLarge,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-                const SizedBox(height: WkSpacing.sm),
-                Wrap(
-                  spacing: WkSpacing.sm,
-                  runSpacing: WkSpacing.xs,
-                  children: <Widget>[
-                    _Meta(
-                      icon: Icons.category_outlined,
-                      label: WkFormat.propertyKind(context.l10n, property.kind),
+                    const SizedBox(height: WkSpacing.xs),
+                    Text(
+                      property.title,
+                      style: context.text.bodyLarge,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (property.surface != null)
-                      _Meta(
-                        icon: Icons.straighten,
-                        label: context.l10n.surfaceValue(property.surface!),
+                    const SizedBox(height: WkSpacing.xs),
+                    Text(
+                      WkFormat.propertyMeta(
+                        context.l10n,
+                        property,
+                        distanceMeters,
                       ),
-                    if (property.rooms != null)
-                      _Meta(
-                        icon: Icons.meeting_room_outlined,
-                        label: context.l10n.roomCount(property.rooms!),
-                      ),
-                    _Meta(
-                      icon: Icons.place_outlined,
-                      label: WkFormat.distance(context.l10n, distanceMeters),
+                      style: context.text.bodyMedium?.copyWith(color: dim),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -94,53 +84,78 @@ class WkPropertyCard extends StatelessWidget {
   }
 }
 
-class _PhotoStrip extends StatelessWidget {
-  const _PhotoStrip({required this.property});
+/// Photos d'un bien qui se feuillettent, avec leurs points de position.
+class WkPhotoCarousel extends StatefulWidget {
+  const WkPhotoCarousel({
+    required this.property,
+    required this.height,
+    this.showVoiceBadge = true,
+    super.key,
+  });
 
   final Property property;
+  final double height;
+  final bool showVoiceBadge;
+
+  @override
+  State<WkPhotoCarousel> createState() => _WkPhotoCarouselState();
+}
+
+class _WkPhotoCarouselState extends State<WkPhotoCarousel> {
+  final PageController _controller = PageController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final int photoCount = property.photoAssets.length;
-
-    return Container(
-      height: 132,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: context.colors.primaryContainer,
-        borderRadius: BorderRadius.circular(WkRadius.md),
-      ),
-      clipBehavior: Clip.antiAlias,
+    final List<String> photos = widget.property.photoAssets;
+    return SizedBox(
+      height: widget.height,
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          // Un bien fraîchement publié n'a souvent aucune photo : la bande
-          // garde sa hauteur — sinon la liste sauterait d'une carte à l'autre
-          // — et porte le même repli que partout ailleurs.
-          if (property.photoAssets.isEmpty)
+          if (photos.isEmpty)
             const WkPropertyPhotoFallback(icon: Icons.home_work_outlined)
           else
-            WkPropertyPhoto(
-              path: property.photoAssets.first,
-              fallbackIcon: Icons.home_work_outlined,
+            PageView.builder(
+              controller: _controller,
+              itemCount: photos.length,
+              itemBuilder: (_, int i) => WkPropertyPhoto(
+                path: photos[i],
+                fallbackIcon: Icons.home_work_outlined,
+              ),
             ),
-          PositionedDirectional(
-            start: WkSpacing.sm,
-            bottom: WkSpacing.sm,
-            child: WkBadge(
-              label: property.neighbourhood,
-              icon: Icons.place_outlined,
-              tone: WkBadgeTone.neutral,
-            ),
-          ),
-          if (photoCount > 1)
-            PositionedDirectional(
-              end: WkSpacing.sm,
+          if (photos.length > 1)
+            Positioned(
               bottom: WkSpacing.sm,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SmoothPageIndicator(
+                  controller: _controller,
+                  count: photos.length,
+                  effect: ExpandingDotsEffect(
+                    dotHeight: 6,
+                    dotWidth: 6,
+                    expansionFactor: 3,
+                    activeDotColor: context.colors.surface,
+                    dotColor: context.colors.surface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          if (widget.showVoiceBadge && widget.property.hasVoiceNote)
+            PositionedDirectional(
+              start: WkSpacing.sm,
+              top: WkSpacing.sm,
               child: WkBadge(
-                label: context.l10n.photoCountBadge(photoCount),
-                icon: Icons.photo_library_outlined,
-                tone: WkBadgeTone.neutral,
+                label: context.l10n.voiceNoteBadge,
+                icon: Icons.mic,
+                tone: WkBadgeTone.brand,
               ),
             ),
         ],
@@ -149,8 +164,8 @@ class _PhotoStrip extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
+class WkStatusBadge extends StatelessWidget {
+  const WkStatusBadge({required this.status, super.key});
 
   final PropertyStatus status;
 
@@ -168,30 +183,6 @@ class _StatusBadge extends StatelessWidget {
         PropertyStatus.reserved => WkBadgeTone.brand,
         PropertyStatus.closed => WkBadgeTone.neutral,
       },
-    );
-  }
-}
-
-class _Meta extends StatelessWidget {
-  const _Meta({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(icon, size: 16, color: context.colors.onSurfaceVariant),
-        const SizedBox(width: WkSpacing.xs),
-        Text(
-          label,
-          style: context.text.bodyMedium?.copyWith(
-            color: context.colors.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }

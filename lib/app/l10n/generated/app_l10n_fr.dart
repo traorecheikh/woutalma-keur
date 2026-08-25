@@ -1307,4 +1307,120 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get catalogStateLoading => 'En cours';
+
+  @override
+  String get exploreDefaultArea => 'Dakar';
+
+  @override
+  String get exploreNearbyProperties => 'Près de chez vous';
+
+  @override
+  String get exploreTrustedBrokers => 'Courtiers de confiance';
+
+  @override
+  String get exploreNewListings => 'Nouveautés';
+
+  @override
+  String get exploreSeeAll => 'Voir tout';
+
+  @override
+  String get exploreCategoryAll => 'Tout';
+
+  @override
+  String get exploreEnableLocationTitle => 'Activer ma position';
+
+  @override
+  String get exploreEnableLocationBody =>
+      'Pour trier les biens et les courtiers du plus proche au plus loin.';
+
+  @override
+  String get exploreChooseArea => 'Choisir un quartier';
+
+  @override
+  String get exploreSearchAll => 'Tous les résultats';
+
+  @override
+  String get filtersPriceAny => 'Sans limite';
+
+  @override
+  String get filtersRadiusAny => 'Toute la ville';
+
+  @override
+  String get voiceNoteLabel => 'Message vocal';
+
+  @override
+  String get voiceNoteHint =>
+      'Décrivez le bien avec vos mots. 45 secondes au plus.';
+
+  @override
+  String get voiceNoteRecord => 'Enregistrer un message vocal';
+
+  @override
+  String get voiceNoteStop => 'Arrêter';
+
+  @override
+  String voiceNoteRecording(int seconds) {
+    return 'Enregistrement… $seconds s';
+  }
+
+  @override
+  String get voiceNoteDelete => 'Supprimer le vocal';
+
+  @override
+  String get voiceNoteRedo => 'Réenregistrer';
+
+  @override
+  String get voiceNotePlay => 'Écouter';
+
+  @override
+  String get voiceNotePause => 'Pause';
+
+  @override
+  String get voiceNoteFromBroker => 'Le courtier vous en parle';
+
+  @override
+  String get voiceNoteBadge => 'Vocal';
+
+  @override
+  String get voiceNotePermissionDenied =>
+      'Micro refusé. Autorisez-le dans les réglages du téléphone pour enregistrer.';
+
+  @override
+  String get voiceNoteFailed => 'Le message vocal n\'a pas pu être enregistré.';
+
+  @override
+  String get voiceNoteUnavailable => 'Le message vocal n\'a pas pu être lu.';
+
+  @override
+  String get voiceNoteTooLarge =>
+      'Le message vocal est trop lourd pour être envoyé.';
+
+  @override
+  String get voiceNoteReady => 'Message vocal prêt';
+
+  @override
+  String get profileVisitor => 'Visiteur';
+
+  @override
+  String get profileSignInHint =>
+      'Identifiez-vous pour contacter un courtier et retrouver vos contacts.';
+
+  @override
+  String get profileRoleClient => 'Client';
+
+  @override
+  String get profileRoleBroker => 'Courtier';
+
+  @override
+  String get contactSheetHint =>
+      'Le contact est noté dans vos contacts pour pouvoir laisser un avis.';
+
+  @override
+  String get contactCallHint => 'Appel direct';
+
+  @override
+  String get contactWhatsappHint => 'Message ou vocal';
+
+  @override
+  String get contactSmsHint => 'Sans internet';
 }

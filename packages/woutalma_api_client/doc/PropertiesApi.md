@@ -14,6 +14,7 @@ Method | HTTP request | Description
 [**propertiesControllerFindAll**](PropertiesApi.md#propertiescontrollerfindall) | **GET** /properties | Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly&#x3D;true for the latter.
 [**propertiesControllerFindById**](PropertiesApi.md#propertiescontrollerfindbyid) | **GET** /properties/{id} | Mirrors PropertyRepository.byId.
 [**propertiesControllerFindPhoto**](PropertiesApi.md#propertiescontrollerfindphoto) | **GET** /properties/photos/{photoId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; photoAssets entry. Public, like the listing itself.
+[**propertiesControllerFindVoiceNote**](PropertiesApi.md#propertiescontrollerfindvoicenote) | **GET** /properties/voice-notes/{noteId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; voiceAsset key. Public, like the listing itself.
 [**propertiesControllerUpdate**](PropertiesApi.md#propertiescontrollerupdate) | **PATCH** /properties/{id} | Edit one of the caller’s own listings. 403 for someone else’s.
 
 
@@ -205,6 +206,46 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **photoId** | **String**|  | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **propertiesControllerFindVoiceNote**
+> propertiesControllerFindVoiceNote(noteId)
+
+Bytes behind an `api:<id>` voiceAsset key. Public, like the listing itself.
+
+### Example
+```dart
+import 'package:woutalma_api_client/api.dart';
+
+final api = WoutalmaApiClient().getPropertiesApi();
+final String noteId = noteId_example; // String | 
+
+try {
+    api.propertiesControllerFindVoiceNote(noteId);
+} on DioException catch (e) {
+    print('Exception when calling PropertiesApi->propertiesControllerFindVoiceNote: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **noteId** | **String**|  | 
 
 ### Return type
 

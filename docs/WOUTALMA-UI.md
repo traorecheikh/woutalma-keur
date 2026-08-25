@@ -124,10 +124,14 @@ composants dans tous leurs états — c'est là qu'on valide avant d'écrire le 
 md, état de chargement, pictogramme), `WkIconButton`, `WkListAction`.
 
 **Saisie** — `WkTextField`, `WkPhoneField`, `WkOtpField`, `WkSelectField` + `WkOptionSheet<T>`,
-`WkChipGroup`, `WkSearchBar`, `WkPhotoPicker`.
+`WkChipGroup` (rangée de pastilles à défilement horizontal), `WkSearchBar`, `WkPhotoPicker`,
+`WkVoiceNoteRecorder` (repos / enregistrement / vocal prêt, sur le paquet `record`).
 
-**Contenu** — `WkBrokerCard`, `WkPropertyCard`, `WkRating` (étoiles + valeur chiffrée),
-`WkBadge`, `WkAvatar`, `WkInfoRow`, `WkPriceTag`.
+**Contenu** — `WkBrokerCard`, `WkPropertyCard` (photos feuilletables via `WkPhotoCarousel` et
+`smooth_page_indicator`), `WkPropertyTile` et `WkBrokerTile` (vignettes des rangées de l'accueil),
+`WkSectionHeader`, `WkVoiceNotePlayer` (sur `audioplayers`), `WkRating` (étoiles + valeur
+chiffrée), `WkBadge`, `WkAvatar`, `WkInfoRow`, `WkPriceTag`. Les états de chargement des rangées
+passent par `skeletonizer`.
 
 **Vocal** — `WkVoiceButton`, `WkVoiceOverlay`, `WkSpeakButton`, `WkAudioRecorderTile`,
 `WkAudioPlayerTile`.

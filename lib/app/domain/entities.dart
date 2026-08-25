@@ -148,6 +148,7 @@ class Property {
     this.surface,
     this.rooms,
     this.photoAssets = const <String>[],
+    this.voiceAsset,
     this.status = PropertyStatus.available,
   });
 
@@ -167,12 +168,18 @@ class Property {
   final GeoPoint position;
   final String neighbourhood;
   final List<String> photoAssets;
+
+  /// Message vocal du courtier : clé `api:<id>` une fois publié, chemin de
+  /// fichier local avant l'envoi. `null` quand il n'en a pas enregistré.
+  final String? voiceAsset;
   final PropertyStatus status;
   final DateTime createdAt;
 
   /// Un bien clos sort de la découverte mais reste dans la gestion du
   /// courtier.
   bool get isDiscoverable => status != PropertyStatus.closed;
+
+  bool get hasVoiceNote => voiceAsset != null && voiceAsset!.isNotEmpty;
 }
 
 @immutable

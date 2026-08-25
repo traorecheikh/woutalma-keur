@@ -7,13 +7,10 @@ import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
 
-/// Ce que C01 montre : des courtiers ou des biens.
 enum ExploreSegment { brokers, properties }
 
-/// Comment C01 le montre. Deux vues du **même** résultat, pas deux écrans.
 enum ExploreView { list, map }
 
-/// Contenu résolu de l'écran Explorer.
 @immutable
 class ExploreResults {
   const ExploreResults({required this.brokers, required this.properties});
@@ -25,11 +22,15 @@ class ExploreResults {
     ExploreSegment.brokers => brokers.length,
     ExploreSegment.properties => properties.length,
   };
+
+  /// Derniers publiés d'abord.
+  List<Property> get newest =>
+      List<Property>.of(properties)
+        ..sort((Property a, Property b) => b.createdAt.compareTo(a.createdAt));
 }
 
-/// Coordonne C01.
-///
-/// Aucun widget ne filtre ni ne trie : il lit cet état et émet des intentions.
+/// Coordonne C01 (accueil) et M14 (résultats). L'accueil lit [home], toujours
+/// sans filtre ; la recherche lit [state], qui suit [filters].
 class ExploreViewModel extends ChangeNotifier {
   ExploreViewModel({
     required DiscoveryService discovery,
@@ -38,43 +39,36 @@ class ExploreViewModel extends ChangeNotifier {
   }) : _discovery = discovery,
        _positions = position,
        _debounce = debounce {
-    // C01 vit dans un `StatefulShellRoute` : il est construit avant que le GPS
-    // ait répondu et reste vivant ensuite. Sans cette écoute, une position
-    // arrivée après le premier rendu ne reclasserait jamais les résultats.
     _positions.addListener(_onPositionChanged);
   }
 
   final DiscoveryService _discovery;
   final ClientPositionController _positions;
-
-  /// Anti-rebond de la frappe. Trois frappes rapprochées ne déclenchent
-  /// qu'une recherche.
   final Duration _debounce;
 
   Timer? _timer;
 
-  /// Nom de l'endroit où l'on cherche, affiché en titre. `null` tant qu'on
-  /// n'a rien choisi explicitement — la barre affiche alors « Près de vous ».
   String? get placeName => _positions.placeName;
+  bool get isFromGps => _positions.isFromGps;
+  bool get isOutsideServiceArea => _positions.isOutsideServiceArea;
 
-  /// Derniers quartiers choisis, les plus récents d'abord.
   final List<Neighbourhood> recentPlaces = <Neighbourhood>[];
 
+  ScreenState<ExploreResults> _home =
+      const ScreenState<ExploreResults>.initial();
   ScreenState<ExploreResults> _state =
       const ScreenState<ExploreResults>.initial();
-  ExploreSegment _segment = ExploreSegment.brokers;
-
-  /// La liste par défaut : la carte coûte de la data, elle se demande.
+  ExploreSegment _segment = ExploreSegment.properties;
   ExploreView _view = ExploreView.list;
   DiscoveryFilters _filters = const DiscoveryFilters();
   List<String> _searchSuggestions = const <String>[];
 
+  ScreenState<ExploreResults> get home => _home;
   ScreenState<ExploreResults> get state => _state;
   ExploreSegment get segment => _segment;
   ExploreView get view => _view;
   DiscoveryFilters get filters => _filters;
   GeoPoint get position => _positions.position;
-
   List<String> get searchSuggestions => _searchSuggestions;
 
   @override
@@ -84,45 +78,32 @@ class ExploreViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Recherche en cours déclenchée par un changement de position. Retenue pour
-  /// que [moveTo] puisse l'attendre : sans cela l'appelant reprendrait la main
-  /// avant que les résultats soient reclassés, et un test — comme un écran —
-  /// lirait l'ancien classement.
   Future<void>? _pendingPositionRun;
 
   void _onPositionChanged() {
     notifyListeners();
-    _pendingPositionRun = _run();
+    _pendingPositionRun = Future.wait(<Future<void>>[_loadHome(), _run()]);
   }
 
   Future<void> load() async {
+    _home = const ScreenState<ExploreResults>.loading();
     _state = const ScreenState<ExploreResults>.loading();
     notifyListeners();
-    await _run();
+    await Future.wait(<Future<void>>[_loadHome(), _run()]);
   }
 
-  /// Bascule liste/carte. Ne touche ni aux filtres, ni à la requête, ni au
-  /// segment : c'est une présentation, pas une recherche.
   void selectView(ExploreView value) {
-    if (_view == value) {
-      return;
-    }
+    if (_view == value) return;
     _view = value;
     notifyListeners();
   }
 
-  /// Changer de segment **ne réinitialise pas** les filtres ni la requête :
-  /// c'est une autre vue du même résultat, pas une nouvelle recherche.
   void selectSegment(ExploreSegment value) {
-    if (_segment == value) {
-      return;
-    }
+    if (_segment == value) return;
     _segment = value;
     notifyListeners();
   }
 
-  /// Appelée à chaque frappe. Ne montre pas d'indicateur : les résultats
-  /// précédents restent lisibles pendant le calcul, et la liste ne saute pas.
   void search(String query) {
     _filters = _filters.copyWith(query: query);
     notifyListeners();
@@ -130,25 +111,17 @@ class ExploreViewModel extends ChangeNotifier {
     _timer = Timer(_debounce, _run);
   }
 
-  /// Combien de résultats donnerait ce jeu de filtres, sans l'appliquer.
-  ///
-  /// Sert l'aperçu en direct de M01 : on apprend qu'un filtre vide la liste
-  /// **avant** de le poser, pas après.
-  /// Un seul appel, celui du segment affiché : compter les deux revenait à
-  /// payer deux allers-retours pour un chiffre dont un seul s'affiche.
   Future<int> previewCount(DiscoveryFilters candidate) async {
     if (_segment == ExploreSegment.brokers) {
-      final List<BrokerListing> brokers = await _discovery.findBrokers(
+      return (await _discovery.findBrokers(
         from: _positions.position,
         filters: candidate,
-      );
-      return brokers.length;
+      )).length;
     }
-    final List<Property> properties = await _discovery.findProperties(
+    return (await _discovery.findProperties(
       from: _positions.position,
       filters: candidate,
-    );
-    return properties.length;
+    )).length;
   }
 
   Future<void> applyFilters(DiscoveryFilters value) async {
@@ -158,64 +131,59 @@ class ExploreViewModel extends ChangeNotifier {
   }
 
   Future<void> clearFilters() async {
-    // La requête texte survit : effacer les filtres n'efface pas ce que
-    // l'utilisateur vient d'écrire.
     _filters = DiscoveryFilters(query: _filters.query);
     notifyListeners();
     await _run();
   }
 
-  /// Change l'endroit où l'on cherche.
-  ///
-  /// Les filtres et la requête survivent : déplacer la recherche n'est pas la
-  /// recommencer.
   Future<void> moveTo(Neighbourhood place) async {
     recentPlaces
       ..remove(place)
       ..insert(0, place);
-    if (recentPlaces.length > 3) {
-      recentPlaces.removeLast();
-    }
-    // Le contrôleur notifie, ce qui relance la recherche : pas de second
-    // appel ici, sinon la même requête part deux fois.
+    if (recentPlaces.length > 3) recentPlaces.removeLast();
     _pendingPositionRun = null;
     _positions.moveTo(place);
     await _pendingPositionRun;
   }
 
-  Future<void> _run() async {
+  Future<ScreenState<ExploreResults>> _fetch(DiscoveryFilters filters) async {
     try {
       final List<BrokerListing> brokers = await _discovery.findBrokers(
         from: _positions.position,
-        filters: _filters,
+        filters: filters,
       );
       final List<Property> properties = await _discovery.findProperties(
         from: _positions.position,
-        filters: _filters,
+        filters: filters,
       );
+      return brokers.isEmpty && properties.isEmpty
+          ? const ScreenState<ExploreResults>.empty()
+          : ScreenState<ExploreResults>.data(
+              ExploreResults(brokers: brokers, properties: properties),
+            );
+    } on DioException catch (error) {
+      return ScreenState<ExploreResults>.error(
+        error.response == null ? WkFailure.network : WkFailure.unknown,
+      );
+    } on Object {
+      return const ScreenState<ExploreResults>.error(WkFailure.unknown);
+    }
+  }
+
+  Future<void> _loadHome() async {
+    _home = await _fetch(const DiscoveryFilters());
+    notifyListeners();
+  }
+
+  Future<void> _run() async {
+    _state = await _fetch(_filters);
+    try {
       _searchSuggestions = await _discovery.suggestions(
         from: _positions.position,
         filters: _filters,
       );
-
-      final ExploreResults results = ExploreResults(
-        brokers: brokers,
-        properties: properties,
-      );
-
-      // Vide seulement si les deux vues le sont : basculer de segment ne doit
-      // pas donner l'impression que la recherche a échoué.
-      _state = brokers.isEmpty && properties.isEmpty
-          ? const ScreenState<ExploreResults>.empty()
-          : ScreenState<ExploreResults>.data(results);
-    } on DioException catch (error) {
-      // Hors ligne sans copie locale : le dire, plutôt que « cause non
-      // identifiée », qui n'aide personne dans un tunnel.
-      _state = ScreenState<ExploreResults>.error(
-        error.response == null ? WkFailure.network : WkFailure.unknown,
-      );
     } on Object {
-      _state = const ScreenState<ExploreResults>.error(WkFailure.unknown);
+      _searchSuggestions = const <String>[];
     }
     notifyListeners();
   }

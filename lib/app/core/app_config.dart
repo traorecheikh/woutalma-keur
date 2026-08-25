@@ -6,12 +6,13 @@
 /// moindre accès disque. Un `.env` chargé de façon asynchrone ajouterait une
 /// attente là où l'application doit déjà se lever vite.
 ///
-/// Build local contre l'émulateur Android :
+/// `flutter run` sans option parle au serveur de recette Render, identification
+/// comprise. Build local contre l'émulateur Android :
 ///
 /// ```sh
 /// flutter run \
 ///   --dart-define=WK_API_BASE_URL=http://10.0.2.2:3000 \
-///   --dart-define=WK_DEV_AUTH=true
+///   --dart-define=WK_DEV_AUTH_SECRET=<DEV_AUTH_SECRET du serveur local>
 /// ```
 ///
 /// Build hors ligne (Isar + jeu de démonstration, aucun réseau) :
@@ -26,18 +27,22 @@ abstract final class AppConfig {
     defaultValue: 'https://woutalma-api.onrender.com',
   );
 
-  /// Ouvre `POST /auth/dev` côté application.
+  /// Identification de recette (téléphone, code rendu par le serveur).
   ///
-  /// Aucun client OAuth Google n'est configuré sur ce déploiement ; sans ce
-  /// drapeau il n'existe aucun moyen de se connecter. Le secret n'est **pas**
-  /// compilé dans l'application : le serveur l'exige en en-tête, donc un build
-  /// avec `WK_DEV_AUTH=true` ne suffit pas à ouvrir une session sur un
-  /// déploiement qui n'a pas activé ce chemin.
-  static const bool devAuth = bool.fromEnvironment('WK_DEV_AUTH');
+  /// Activée par défaut : le serveur de recette n'a pas de client OAuth
+  /// Google, et un `flutter run` sans option doit ouvrir une session.
+  /// `--dart-define=WK_DEV_AUTH=false` rend le chemin Google.
+  static const bool devAuth = bool.fromEnvironment(
+    'WK_DEV_AUTH',
+    defaultValue: true,
+  );
 
-  /// Secret `x-dev-auth-secret`. Vide sur un build distribué.
+  /// Secret `x-dev-auth-secret` du serveur de recette. Celui de Render est
+  /// compilé par défaut ; passer `WK_DEV_AUTH_SECRET` pour un serveur local.
   static const String devAuthSecret = String.fromEnvironment(
     'WK_DEV_AUTH_SECRET',
+    defaultValue:
+        '1a7f68f1c31043cae51d8ce004134d0098fd171e634bfc2eaced7cfc41ab07e3',
   );
 
   /// Ouvre le catalogue des composants dans les réglages.

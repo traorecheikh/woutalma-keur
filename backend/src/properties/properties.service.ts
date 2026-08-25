@@ -6,20 +6,24 @@ import { mapPropertyRow, PropertyRow } from './property-row.mapper';
 import { PropertyDto } from './dto/property.dto';
 import {
   ALLOWED_PHOTO_MIME_TYPES,
+  ALLOWED_VOICE_NOTE_MIME_TYPES,
   CreatePropertyDto,
   MAX_PHOTOS_PER_PROPERTY,
   MAX_PHOTO_BYTES,
+  MAX_VOICE_NOTE_BYTES,
   UpdatePropertyDto,
   UploadPhotoDto,
+  UploadVoiceNoteDto,
 } from './dto/write-property.dto';
 
-/// Prefix marking a photoAssets entry that resolves to bytes in
-/// `property_photos` rather than a bundled seed asset.
-const API_PHOTO_PREFIX = 'api:';
+/// Prefix marking a display key that resolves to bytes stored here —
+/// `property_photos` or `property_voice_notes` — rather than a bundled seed
+/// asset.
+const API_ASSET_PREFIX = 'api:';
 
 const SELECT_COLUMNS = Prisma.sql`
   "id", "brokerId", "kind", "transaction", "title", "description", "price",
-  "surface", "rooms", "neighbourhood", "photoAssets", "status", "createdAt",
+  "surface", "rooms", "neighbourhood", "photoAssets", "voiceAsset", "status", "createdAt",
   ${selectLatLng(Prisma.raw('"position"'))}
 `;
 
@@ -73,6 +77,19 @@ export class PropertiesService {
     return { mimeType: photo.mimeType, bytes: Buffer.from(photo.bytes) };
   }
 
+  /// Raw bytes for an `api:<id>` voice note key. Public for the same reason
+  /// the photos are: it is part of a public listing.
+  async findVoiceNote(noteId: string): Promise<{ mimeType: string; bytes: Buffer }> {
+    const note = await this.prisma.propertyVoiceNote.findUnique({
+      where: { id: noteId },
+      select: { mimeType: true, bytes: true },
+    });
+    if (!note) {
+      throw new NotFoundException(`Voice note ${noteId} not found`);
+    }
+    return { mimeType: note.mimeType, bytes: Buffer.from(note.bytes) };
+  }
+
   /// Mirrors PropertyRepository.save() for a new listing. `position` is an
   /// Unsupported() column, so the insert is raw — and must supply updatedAt
   /// itself, since Prisma's @updatedAt is client-side only and the column has
@@ -104,6 +121,12 @@ export class PropertiesService {
         await tx.$executeRaw(Prisma.sql`
           UPDATE "properties" SET "photoAssets" = ${textArray([...retained, ...appended])}
           WHERE "id" = ${id}
+        `);
+      }
+      if (dto.newVoiceNote) {
+        const key = await this.storeVoiceNote(tx, id, dto.newVoiceNote);
+        await tx.$executeRaw(Prisma.sql`
+          UPDATE "properties" SET "voiceAsset" = ${key} WHERE "id" = ${id}
         `);
       }
     });
@@ -154,6 +177,20 @@ export class PropertiesService {
         // otherwise every edit would leak a row nothing references.
         await this.pruneOrphanPhotos(tx, id, finalAssets);
         assignments.push(Prisma.sql`"photoAssets" = ${textArray(finalAssets)}`);
+      }
+
+      if (dto.newVoiceNote) {
+        assignments.push(Prisma.sql`"voiceAsset" = ${await this.storeVoiceNote(tx, id, dto.newVoiceNote)}`);
+      } else if (dto.voiceAsset === '') {
+        await tx.propertyVoiceNote.deleteMany({ where: { propertyId: id } });
+        assignments.push(Prisma.sql`"voiceAsset" = NULL`);
+      } else if (dto.voiceAsset !== undefined) {
+        // A key the listing does not currently hold is a stale client, not a
+        // request to adopt someone else's recording.
+        const current = await tx.property.findUnique({ where: { id }, select: { voiceAsset: true } });
+        if (current?.voiceAsset !== dto.voiceAsset) {
+          throw new BadRequestException('Unknown voice note key');
+        }
       }
 
       if (assignments.length === 0) {
@@ -212,9 +249,24 @@ export class PropertiesService {
         data: { propertyId, mimeType: upload.mimeType, bytes, sortOrder: startOrder + index },
         select: { id: true },
       });
-      keys.push(`${API_PHOTO_PREFIX}${created.id}`);
+      keys.push(`${API_ASSET_PREFIX}${created.id}`);
     }
     return keys;
+  }
+
+  /// Stores the recording and drops the ones it replaces — a listing holds a
+  /// single note, so anything else on the property is now unreferenced.
+  private async storeVoiceNote(
+    tx: Prisma.TransactionClient,
+    propertyId: string,
+    upload: UploadVoiceNoteDto,
+  ): Promise<string> {
+    const created = await tx.propertyVoiceNote.create({
+      data: { propertyId, mimeType: upload.mimeType, bytes: decodeVoiceNote(upload) },
+      select: { id: true },
+    });
+    await tx.propertyVoiceNote.deleteMany({ where: { propertyId, id: { not: created.id } } });
+    return `${API_ASSET_PREFIX}${created.id}`;
   }
 
   private async pruneOrphanPhotos(
@@ -223,8 +275,8 @@ export class PropertiesService {
     keptAssets: string[],
   ): Promise<void> {
     const keptIds = keptAssets
-      .filter((asset) => asset.startsWith(API_PHOTO_PREFIX))
-      .map((asset) => asset.slice(API_PHOTO_PREFIX.length));
+      .filter((asset) => asset.startsWith(API_ASSET_PREFIX))
+      .map((asset) => asset.slice(API_ASSET_PREFIX.length));
     await tx.propertyPhoto.deleteMany({
       where: { propertyId, ...(keptIds.length > 0 ? { id: { notIn: keptIds } } : {}) },
     });
@@ -257,6 +309,22 @@ function decodePhoto(upload: UploadPhotoDto): Buffer {
   }
   if (bytes.length > MAX_PHOTO_BYTES) {
     throw new BadRequestException(`Photo exceeds ${MAX_PHOTO_BYTES} bytes after decoding — compress it first`);
+  }
+  return bytes;
+}
+
+function decodeVoiceNote(upload: UploadVoiceNoteDto): Buffer {
+  if (!(ALLOWED_VOICE_NOTE_MIME_TYPES as readonly string[]).includes(upload.mimeType)) {
+    throw new BadRequestException(`Unsupported voice note type ${upload.mimeType}`);
+  }
+  const bytes = Buffer.from(upload.dataBase64, 'base64');
+  if (bytes.length === 0) {
+    throw new BadRequestException('Voice note payload is empty or not valid base64');
+  }
+  if (bytes.length > MAX_VOICE_NOTE_BYTES) {
+    throw new BadRequestException(
+      `Voice note exceeds ${MAX_VOICE_NOTE_BYTES} bytes after decoding — record a shorter message`,
+    );
   }
   return bytes;
 }

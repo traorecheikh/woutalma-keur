@@ -25,6 +25,19 @@ export const MAX_PHOTOS_PER_PROPERTY = 3;
 export const MAX_PHOTO_BYTES = 160 * 1024;
 export const ALLOWED_PHOTO_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
+/// One optional voice note per listing, same storage bargain as the photos.
+/// 512 KB is roughly a minute of the AAC/Opus a phone recorder produces at the
+/// bitrate speech needs — long enough to describe a listing, short enough that
+/// a free-tier database survives it.
+export const MAX_VOICE_NOTE_BYTES = 512 * 1024;
+export const ALLOWED_VOICE_NOTE_MIME_TYPES = [
+  'audio/mp4',
+  'audio/aac',
+  'audio/mpeg',
+  'audio/ogg',
+  'audio/webm',
+] as const;
+
 /// Where the line is drawn on free text, and why.
 ///
 /// The only defects a phone keyboard produces *by accident* are whitespace
@@ -101,6 +114,23 @@ export class UploadPhotoDto {
 
   @ApiProperty({
     description: `Base64-encoded image bytes. Decoded size must not exceed ${MAX_PHOTO_BYTES} bytes — compress before sending.`,
+  })
+  @IsString()
+  dataBase64!: string;
+}
+
+export class UploadVoiceNoteDto {
+  @ApiProperty({ enum: ALLOWED_VOICE_NOTE_MIME_TYPES })
+  @IsEnum(
+    ALLOWED_VOICE_NOTE_MIME_TYPES.reduce<Record<string, string>>(
+      (acc, mime) => ({ ...acc, [mime]: mime }),
+      {},
+    ),
+  )
+  mimeType!: string;
+
+  @ApiProperty({
+    description: `Base64-encoded audio bytes. Decoded size must not exceed ${MAX_VOICE_NOTE_BYTES} bytes — record short, at a speech bitrate.`,
   })
   @IsString()
   dataBase64!: string;
@@ -225,6 +255,23 @@ export class CreatePropertyDto {
   @Type(() => UploadPhotoDto)
   @ArrayMaxSize(MAX_PHOTOS_PER_PROPERTY)
   newPhotos?: UploadPhotoDto[];
+
+  @ApiPropertyOptional({
+    description:
+      'Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.',
+    maxLength: 200,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  voiceAsset?: string;
+
+  /// A new recording, replacing whatever the listing carried.
+  @ApiPropertyOptional({ type: UploadVoiceNoteDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UploadVoiceNoteDto)
+  newVoiceNote?: UploadVoiceNoteDto;
 }
 
 export class UpdatePropertyDto extends PartialType(CreatePropertyDto) {}

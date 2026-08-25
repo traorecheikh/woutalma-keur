@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_avatar.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_badge.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 
-/// M04 — feuille de mise en relation.
-///
-/// Un canal par bouton, chacun avec son verbe. Un canal que le courtier n'a
-/// pas **n'apparaît pas** : un bouton mort coûte plus cher qu'un bouton
-/// absent, surtout à quelqu'un qui essaie déjà de se débrouiller.
+/// M04 — feuille de mise en relation. Un canal par ligne ; un canal absent
+/// chez le courtier n'apparaît pas.
 class ContactSheet extends StatelessWidget {
   const ContactSheet({required this.broker, super.key});
 
@@ -21,10 +21,8 @@ class ContactSheet extends StatelessWidget {
   }) {
     return showModalBottomSheet<ContactChannel>(
       context: context,
-      // Racine, pas la branche : une feuille ouverte dans le Navigator
-      // d'un onglet laisserait la barre d'onglets cliquable au-dessus de
-      // sa propre barrière modale.
       useRootNavigator: true,
+      isScrollControlled: true,
       backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(WkRadius.xxl)),
@@ -35,166 +33,211 @@ class ContactSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color dim = context.colors.onSurfaceVariant;
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(WkSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(
-                context.l10n.contactSheetTitle,
-                style: context.text.headlineMedium,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            WkSpacing.page,
+            WkSpacing.lg,
+            WkSpacing.page,
+            WkSpacing.md,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  WkAvatar(
+                    name: broker.name,
+                    kind: broker.kind,
+                    imagePath: broker.logoAsset,
+                    size: 56,
+                  ),
+                  const SizedBox(width: WkSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            context.l10n.contactSheetTitle,
+                            style: context.text.labelMedium?.copyWith(
+                              color: dim,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          broker.name,
+                          style: context.text.headlineMedium,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: WkSpacing.xs),
+                        Text(
+                          context.l10n.brokerResponseRate(
+                            (broker.responseRate * 100).round(),
+                          ),
+                          style: context.text.bodySmall?.copyWith(color: dim),
+                        ),
+                        const SizedBox(height: WkSpacing.sm),
+                        Wrap(
+                          spacing: WkSpacing.xs,
+                          runSpacing: WkSpacing.xs,
+                          children: <Widget>[
+                            if (broker.isVerified)
+                              WkBadge(
+                                label: context.l10n.badgeVerified,
+                                icon: Icons.verified_user,
+                                tone: WkBadgeTone.positive,
+                              ),
+                            if (broker.coverage.isNotEmpty)
+                              WkBadge(
+                                label: broker.coverage.first,
+                                icon: Icons.place_outlined,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: WkSpacing.xs),
-            _BrokerContactHeader(broker: broker),
-            const SizedBox(height: WkSpacing.lg),
-            WkButton(
-              label: context.l10n.contactCall,
-              icon: Icons.call,
-              variant: WkButtonVariant.call,
-              onPressed: () => Navigator.of(context).pop(ContactChannel.call),
-            ),
-            const SizedBox(height: WkSpacing.betweenTargets),
-            if (broker.whatsapp != null) ...<Widget>[
-              WkButton(
-                label: context.l10n.contactWhatsapp,
-                icon: Icons.chat,
-                variant: WkButtonVariant.whatsapp,
-                onPressed: () =>
-                    Navigator.of(context).pop(ContactChannel.whatsapp),
+              const SizedBox(height: WkSpacing.lg),
+              _Channel(
+                label: context.l10n.contactCall,
+                hint: context.l10n.contactCallHint,
+                icon: Icons.call,
+                color: context.colors.call,
+                onColor: context.colors.onCall,
+                channel: ContactChannel.call,
               ),
+              if (broker.whatsapp != null) ...<Widget>[
+                const SizedBox(height: WkSpacing.betweenTargets),
+                _Channel(
+                  label: context.l10n.contactWhatsapp,
+                  hint: context.l10n.contactWhatsappHint,
+                  icon: Icons.chat,
+                  color: context.colors.whatsapp,
+                  onColor: context.colors.onWhatsapp,
+                  channel: ContactChannel.whatsapp,
+                ),
+              ],
               const SizedBox(height: WkSpacing.betweenTargets),
+              _Channel(
+                label: context.l10n.contactSms,
+                hint: context.l10n.contactSmsHint,
+                icon: Icons.sms_outlined,
+                color: context.colors.primaryContainer,
+                onColor: context.colors.onPrimaryContainer,
+                channel: ContactChannel.sms,
+              ),
+              const SizedBox(height: WkSpacing.md),
+              Text(
+                context.l10n.contactSheetHint,
+                style: context.text.bodySmall?.copyWith(color: dim),
+                textAlign: TextAlign.center,
+              ),
             ],
-            WkButton(
-              label: context.l10n.contactSms,
-              icon: Icons.sms_outlined,
-              variant: WkButtonVariant.secondary,
-              onPressed: () => Navigator.of(context).pop(ContactChannel.sms),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _BrokerContactHeader extends StatelessWidget {
-  const _BrokerContactHeader({required this.broker});
+class _Channel extends StatelessWidget {
+  const _Channel({
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.color,
+    required this.onColor,
+    required this.channel,
+  });
 
-  final Broker broker;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final Color color;
+  final Color onColor;
+  final ContactChannel channel;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(WkSpacing.md),
-      decoration: BoxDecoration(
-        color: context.colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(WkRadius.lg),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: context.colors.primaryContainer,
-              borderRadius: BorderRadius.circular(WkRadius.full),
+    return Semantics(
+      button: true,
+      label: label,
+      hint: hint,
+      child: Material(
+        color: context.colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(WkRadius.lg),
+          side: BorderSide(color: context.colors.outlineVariant, width: 1.5),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(WkRadius.lg),
+          onTap: () {
+            context.read<InteractionFeedbackService?>()?.emit(
+              FeedbackIntent.selection,
+            );
+            Navigator.of(context).pop(channel);
+          },
+          child: Container(
+            constraints: const BoxConstraints(minHeight: WkTouch.comfy),
+            padding: const EdgeInsets.symmetric(
+              horizontal: WkSpacing.md,
+              vertical: WkSpacing.sm,
             ),
-            child: Icon(
-              Icons.support_agent_outlined,
-              color: context.colors.onPrimaryContainer,
-            ),
-          ),
-          const SizedBox(width: WkSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: <Widget>[
-                Text(
-                  broker.name,
-                  style: context.text.headlineMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: onColor, size: 24),
                 ),
-                const SizedBox(height: WkSpacing.sm),
-                _MetaLine(
-                  icon: Icons.bolt_outlined,
-                  label: context.l10n.brokerResponseRate(
-                    (broker.responseRate * 100).round(),
+                const SizedBox(width: WkSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(label, style: context.text.titleMedium),
+                      Text(
+                        hint,
+                        style: context.text.bodySmall?.copyWith(
+                          color: context.colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: WkSpacing.sm),
-                Wrap(
-                  spacing: WkSpacing.xs,
-                  runSpacing: WkSpacing.xs,
-                  children: <Widget>[
-                    if (broker.isVerified)
-                      WkBadge(
-                        label: context.l10n.badgeVerified,
-                        icon: Icons.verified_user,
-                        tone: WkBadgeTone.positive,
-                      ),
-                    if (broker.coverage.isNotEmpty)
-                      WkBadge(
-                        label: broker.coverage.first,
-                        icon: Icons.place_outlined,
-                      ),
-                  ],
+                Icon(
+                  Icons.chevron_right,
+                  color: context.colors.onSurfaceVariant,
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetaLine extends StatelessWidget {
-  const _MetaLine({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(icon, size: 18, color: context.colors.onSurfaceVariant),
-        const SizedBox(width: WkSpacing.xs),
-        Expanded(
-          child: Text(
-            label,
-            style: context.text.bodyMedium?.copyWith(
-              color: context.colors.onSurfaceVariant,
-            ),
-          ),
         ),
-      ],
+      ),
     );
   }
 }
 
 /// M05 — résultat du contact, posé au retour de l'application externe.
-///
-/// « Pas de réponse » n'est pas un échec de l'application : il ne produit
-/// aucun retour d'erreur, seulement une trace honnête.
 class ContactOutcomeSheet extends StatelessWidget {
   const ContactOutcomeSheet({super.key});
 
   static Future<ContactOutcome?> show(BuildContext context) {
     return showModalBottomSheet<ContactOutcome>(
       context: context,
-      // Racine, pas la branche : une feuille ouverte dans le Navigator
-      // d'un onglet laisserait la barre d'onglets cliquable au-dessus de
-      // sa propre barrière modale.
       useRootNavigator: true,
       backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(

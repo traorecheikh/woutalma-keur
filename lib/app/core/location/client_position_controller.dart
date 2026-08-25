@@ -3,6 +3,7 @@ import 'package:woutalma_keur/app/data/local/cache_meta_store.dart';
 import 'package:woutalma_keur/app/data/seed/demo_seed.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
+import 'package:woutalma_keur/app/domain/ranking.dart';
 
 /// D'où l'on cherche.
 ///
@@ -31,7 +32,12 @@ class ClientPositionController extends ChangeNotifier {
   GeoPoint _position;
   String? _placeName;
   bool _isFromGps = false;
+  bool _isOutsideServiceArea = false;
   bool _hasBeenPrimed;
+
+  /// Au-delà, le téléphone n'est pas à Dakar : classer six courtiers à
+  /// 4 000 km n'aide personne, on repart du centre-ville.
+  static const double serviceAreaRadiusMeters = 120000;
 
   /// Jamais nulle : sans GPS ni choix manuel, on part du centre de Dakar,
   /// pour que les distances affichées veuillent dire quelque chose.
@@ -42,6 +48,10 @@ class ClientPositionController extends ChangeNotifier {
   String? get placeName => _placeName;
 
   bool get isFromGps => _isFromGps;
+
+  /// Le GPS a répondu, mais loin de la zone couverte. La recherche part de
+  /// Dakar et la barre le dit, au lieu d'annoncer « près de vous ».
+  bool get isOutsideServiceArea => _isOutsideServiceArea;
 
   /// L'explication de la permission a déjà été montrée une fois.
   ///
@@ -67,8 +77,12 @@ class ClientPositionController extends ChangeNotifier {
   Future<LocationResult> locate() async {
     final LocationResult result = await _location.current();
     if (result is LocationFound) {
-      _position = result.position;
-      _isFromGps = true;
+      final bool outside =
+          distanceMeters(DemoSeed.clientPosition, result.position) >
+          serviceAreaRadiusMeters;
+      _position = outside ? DemoSeed.clientPosition : result.position;
+      _isFromGps = !outside;
+      _isOutsideServiceArea = outside;
       // Le nom retombe à null : on est « près de vous », pas dans un quartier
       // nommé, et afficher l'ancien quartier serait faux.
       _placeName = null;
@@ -101,6 +115,7 @@ class ClientPositionController extends ChangeNotifier {
     _position = place.position;
     _placeName = place.name;
     _isFromGps = false;
+    _isOutsideServiceArea = false;
     notifyListeners();
   }
 }

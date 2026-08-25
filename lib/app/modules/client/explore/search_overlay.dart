@@ -1,40 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
+import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
+import 'package:woutalma_keur/app/modules/client/explore/filters_sheet.dart';
+import 'package:woutalma_keur/app/modules/client/explore/results_map.dart';
+import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
-import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_broker_card.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_chip_group.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_property_card.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_search_bar.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_segmented_control.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_states.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_top_bar.dart';
 
-/// Recherche de C01, en plein écran.
-///
-/// La barre vivait en permanence au-dessus des résultats, avec ses suggestions
-/// et ses deux boutons : un bloc flottant qui mangeait un tiers de l'écran
-/// pendant les 95 % du temps où l'on ne cherche pas, et sous lequel la liste
-/// disparaissait. Elle est devenue un écran, ouvert à la demande, fermé dès que
-/// la requête est posée.
-///
-/// L'écran écrit dans le même view model que C01 : les résultats derrière sont
-/// déjà à jour quand il se ferme, et revenir en arrière ne perd pas la frappe.
-///
-/// **Les résultats s'affichent pendant la frappe.** L'écran ne montrait que des
-/// suggestions de mots et un bouton « Voir N résultats » : il connaissait la
-/// réponse — il la comptait — et demandait quand même un geste de plus pour la
-/// livrer. Chercher « mermoz » donnait un écran vide sous un compteur qui
-/// disait « 1 ». Toucher un résultat ouvre maintenant directement la fiche ;
-/// le bouton du bas ne sert plus qu'à revenir à la liste entière.
+/// M14 — Résultats. Recherche, filtres, segments, liste ou carte. Les
+/// résultats se mettent à jour pendant la frappe.
 class SearchOverlay extends StatefulWidget {
   const SearchOverlay({
     required this.model,
     required this.onOpenBroker,
     required this.onOpenProperty,
+    this.autofocus = false,
     super.key,
   });
 
@@ -42,19 +35,23 @@ class SearchOverlay extends StatefulWidget {
   final void Function(String brokerId) onOpenBroker;
   final void Function(String propertyId) onOpenProperty;
 
+  /// Clavier ouvert d'emblée : seulement quand on vient de la barre.
+  final bool autofocus;
+
   static Future<void> show(
     BuildContext context, {
     required ExploreViewModel model,
     required void Function(String brokerId) onOpenBroker,
     required void Function(String propertyId) onOpenProperty,
+    bool autofocus = false,
   }) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
-        fullscreenDialog: true,
         builder: (_) => SearchOverlay(
           model: model,
           onOpenBroker: onOpenBroker,
           onOpenProperty: onOpenProperty,
+          autofocus: autofocus,
         ),
       ),
     );
@@ -63,6 +60,8 @@ class SearchOverlay extends StatefulWidget {
   @override
   State<SearchOverlay> createState() => _SearchOverlayState();
 }
+
+enum _Quick { rent, sale, apartment, house, land, studio, room }
 
 class _SearchOverlayState extends State<SearchOverlay> {
   late final TextEditingController _query = TextEditingController(
@@ -83,180 +82,317 @@ class _SearchOverlayState extends State<SearchOverlay> {
   }
 
   void _onModelChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
+
+  ExploreViewModel get model => widget.model;
 
   void _select(String value) {
     _query.text = value;
     _query.selection = TextSelection.collapsed(offset: value.length);
-    widget.model.search(value);
+    model.search(value);
+  }
+
+  _Quick? get _quickSelected {
+    final DiscoveryFilters f = model.filters;
+    if (f.kind != null) {
+      return _Quick.values.byName(f.kind!.name);
+    }
+    return switch (f.transaction) {
+      TransactionKind.rent => _Quick.rent,
+      TransactionKind.sale => _Quick.sale,
+      null => null,
+    };
+  }
+
+  Future<void> _quick(_Quick q) {
+    final DiscoveryFilters f = model.filters;
+    final bool off = _quickSelected == q;
+    return switch (q) {
+      _Quick.rent || _Quick.sale => model.applyFilters(
+        off
+            ? f.copyWith(clearTransaction: true)
+            : f.copyWith(
+                transaction: q == _Quick.rent
+                    ? TransactionKind.rent
+                    : TransactionKind.sale,
+                clearKind: true,
+              ),
+      ),
+      _ => model.applyFilters(
+        off
+            ? f.copyWith(clearKind: true)
+            : f.copyWith(kind: PropertyKind.values.byName(q.name)),
+      ),
+    };
+  }
+
+  Future<void> _openFilters() async {
+    final DiscoveryFilters? applied = await FiltersSheet.show(
+      context,
+      initial: model.filters,
+      countResults: model.previewCount,
+    );
+    if (applied != null) await model.applyFilters(applied);
   }
 
   @override
   Widget build(BuildContext context) {
-    // « Aucun résultat » et « la requête a échoué » ne se disent pas de la
-    // même façon. Avec `error: (_) => 0`, un réseau tombé rendait un bouton
-    // « Aucun résultat » mort, sans un mot : impossible de distinguer une
-    // recherche vide d'une recherche cassée, donc impossible de réessayer.
-    final WkFailure? failure = widget.model.state.map(
-      initial: () => null,
-      loading: () => null,
-      empty: () => null,
-      error: (WkFailure value) => value,
-      data: (_) => null,
-    );
-    final int count = widget.model.state.map(
-      initial: () => 0,
-      loading: () => 0,
-      empty: () => 0,
-      error: (_) => 0,
-      data: (ExploreResults results) => results.countFor(widget.model.segment),
-    );
-
+    final bool searching = _query.text.trim().isNotEmpty;
     return WkScaffold(
+      padHorizontal: false,
       topBar: WkTopBar(
-        title: context.l10n.exploreSearchTitle,
+        title: searching
+            ? context.l10n.exploreSearchTitle
+            : context.l10n.exploreSearchAll,
         onBack: () => Navigator.of(context).pop(),
       ),
-      bottomAction: failure == null
-          ? WkButton(
-              label: context.l10n.exploreSearchSubmit(count),
-              icon: Icons.arrow_forward,
-              onPressed: count == 0 ? null : () => Navigator.of(context).pop(),
-            )
-          : WkButton(
-              label: context.l10n.commonRetry,
-              icon: Icons.refresh,
-              onPressed: () => widget.model.search(_query.text),
-            ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          WkSearchBar(
-            controller: _query,
-            hint: context.l10n.exploreSearchHint,
-            autofocus: true,
-            onChanged: widget.model.search,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+            child: WkSearchBar(
+              controller: _query,
+              hint: context.l10n.exploreSearchHint,
+              autofocus: widget.autofocus,
+              onChanged: model.search,
+            ),
           ),
-          const SizedBox(height: WkSpacing.md),
-          Expanded(child: _body(context, failure)),
+          const SizedBox(height: WkSpacing.sm),
+          _quickChips(context),
+          const SizedBox(height: WkSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+            child: WkSegmentedControl<ExploreSegment>(
+              value: model.segment,
+              onChanged: model.selectSegment,
+              segments: <(ExploreSegment, String)>[
+                (
+                  ExploreSegment.properties,
+                  context.l10n.exploreSegmentProperties,
+                ),
+                (ExploreSegment.brokers, context.l10n.exploreSegmentBrokers),
+              ],
+            ),
+          ),
+          const SizedBox(height: WkSpacing.sm),
+          Expanded(child: _body(context)),
         ],
       ),
     );
   }
 
-  Widget _body(BuildContext context, WkFailure? failure) {
-    if (failure != null) {
-      // Une seule action de reprise, celle du bas : deux boutons
-      // « Réessayer » sur le même écran font hésiter.
-      return WkErrorState(failure: failure);
-    }
-    if (widget.model.state.isLoading) {
+  Widget _quickChips(BuildContext context) {
+    final DiscoveryFilters f = model.filters;
+    final int extra = <bool>[
+      f.maxPrice != null,
+      f.radiusMeters != null,
+    ].where((bool b) => b).length;
+    return Row(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: WkSpacing.page),
+          child: WkChipGroup<String>(
+            padding: EdgeInsets.zero,
+            chips: <WkChip<String>>[
+              WkChip<String>(
+                value: 'filters',
+                label: context.l10n.filtersActive(extra),
+                icon: Icons.tune,
+              ),
+            ],
+            selected: extra > 0 ? 'filters' : null,
+            onSelected: (_) => _openFilters(),
+          ),
+        ),
+        const SizedBox(width: WkSpacing.sm),
+        Expanded(
+          child: WkChipGroup<_Quick>(
+            padding: const EdgeInsetsDirectional.only(end: WkSpacing.page),
+            selected: _quickSelected,
+            onSelected: _quick,
+            chips: <WkChip<_Quick>>[
+              WkChip<_Quick>(
+                value: _Quick.rent,
+                label: context.l10n.transactionRent,
+                icon: Icons.vpn_key_outlined,
+              ),
+              WkChip<_Quick>(
+                value: _Quick.sale,
+                label: context.l10n.transactionSale,
+                icon: Icons.sell_outlined,
+              ),
+              for (final PropertyKind kind in PropertyKind.values)
+                WkChip<_Quick>(
+                  value: _Quick.values.byName(kind.name),
+                  label: WkFormat.propertyKind(context.l10n, kind),
+                  icon: WkFormat.propertyKindIcon(kind),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _body(BuildContext context) {
+    final ScreenState<ExploreResults> state = model.state;
+    if (state.isLoading || state is ScreenInitial<ExploreResults>) {
       return const WkLoadingState();
     }
-
-    final ExploreResults? results = widget.model.state.valueOrNull;
-    final List<String> suggestions = widget.model.searchSuggestions;
-    final bool searching = _query.text.trim().isNotEmpty;
-
-    // Rien de tapé : les suggestions sont tout ce qu'on peut proposer.
-    if (!searching || results == null) {
-      return _suggestionList(suggestions);
+    final WkFailure? failure = state.map(
+      initial: () => null,
+      loading: () => null,
+      empty: () => null,
+      error: (WkFailure v) => v,
+      data: (_) => null,
+    );
+    if (failure != null) {
+      return WkErrorState(
+        failure: failure,
+        onRetry: () => model.search(_query.text),
+      );
+    }
+    final ExploreResults? results = state.valueOrNull;
+    final int count = results?.countFor(model.segment) ?? 0;
+    if (results == null || count == 0) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+        child: WkEmptyState(
+          icon: Icons.search_off,
+          title: context.l10n.exploreEmptyTitle,
+          body: context.l10n.exploreSearchNoMatch,
+          actionLabel: model.filters.activeCount == 0
+              ? null
+              : context.l10n.exploreClearFilters,
+          onAction: model.filters.activeCount == 0 ? null : model.clearFilters,
+        ),
+      );
     }
 
-    final int count = results.countFor(widget.model.segment);
-    if (count == 0) {
-      // Aucun résultat : les suggestions redeviennent utiles, ce sont les
-      // pistes pour reformuler.
+    final Widget header = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                context.l10n.exploreResults(count),
+                style: context.text.bodyMedium?.copyWith(
+                  color: context.colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          WkButton(
+            label: model.view == ExploreView.map
+                ? context.l10n.exploreShowList
+                : context.l10n.exploreShowMap,
+            icon: model.view == ExploreView.map
+                ? Icons.list
+                : Icons.map_outlined,
+            variant: WkButtonVariant.ghost,
+            expand: false,
+            onPressed: () => model.selectView(
+              model.view == ExploreView.map
+                  ? ExploreView.list
+                  : ExploreView.map,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (model.view == ExploreView.map) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          WkEmptyState(
-            icon: Icons.search_off,
-            title: context.l10n.stateEmptyTitle,
-            body: context.l10n.exploreSearchNoMatch,
+          header,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: WkSpacing.page),
+              child: ResultsMap(
+                center: model.position,
+                markers: model.segment == ExploreSegment.brokers
+                    ? <(String, GeoPoint)>[
+                        for (final BrokerListing l in results.brokers)
+                          (l.broker.id, l.broker.position),
+                      ]
+                    : <(String, GeoPoint)>[
+                        for (final Property p in results.properties)
+                          (p.id, p.position),
+                      ],
+                onSelect: (String id) => model.segment == ExploreSegment.brokers
+                    ? widget.onOpenBroker(id)
+                    : widget.onOpenProperty(id),
+              ),
+            ),
           ),
-          if (suggestions.isNotEmpty) ...<Widget>[
-            const SizedBox(height: WkSpacing.md),
-            Expanded(child: _suggestionList(suggestions)),
-          ],
+          const SizedBox(height: WkSpacing.md),
         ],
       );
     }
 
-    // Les deux, dans cet ordre : quelques complétions pour finir un mot à
-    // moitié tapé — « Mer » → « Mermoz » — puis les résultats eux-mêmes.
-    // Ne montrer que les complétions cachait la réponse ; ne montrer que les
-    // résultats retirerait le raccourci à qui tape lentement sur un clavier de
-    // téléphone.
-    final List<String> hints = suggestions.take(3).toList();
-
+    final List<String> hints = searchingHints(results);
     return ListView.builder(
+      key: PageStorageKey<ExploreSegment>(model.segment),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.only(bottom: WkSpacing.lg),
       itemCount: hints.length + 1 + count,
       itemBuilder: (BuildContext context, int index) {
         if (index < hints.length) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: WkSpacing.xs),
+            padding: const EdgeInsets.fromLTRB(
+              WkSpacing.page,
+              0,
+              WkSpacing.page,
+              WkSpacing.xs,
+            ),
             child: _Suggestion(
               label: hints[index],
               onTap: () => _select(hints[index]),
             ),
           );
         }
-        if (index == hints.length) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: WkSpacing.sm),
-            child: Text(
-              context.l10n.exploreSearchCount(count),
-              style: context.text.labelLarge?.copyWith(
-                color: context.colors.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
+        if (index == hints.length) return header;
         return Padding(
-          padding: const EdgeInsets.only(bottom: WkSpacing.sm),
+          padding: const EdgeInsets.fromLTRB(
+            WkSpacing.page,
+            WkSpacing.sm,
+            WkSpacing.page,
+            0,
+          ),
           child: _result(results, index - hints.length - 1),
         );
       },
     );
   }
 
-  /// Même carte que sur C01 : ce qu'on touche ici ouvre la même fiche.
+  List<String> searchingHints(ExploreResults results) {
+    if (_query.text.trim().isEmpty) return const <String>[];
+    return model.searchSuggestions
+        .where(
+          (String s) => s.toLowerCase() != _query.text.trim().toLowerCase(),
+        )
+        .take(3)
+        .toList();
+  }
+
   Widget _result(ExploreResults results, int index) {
-    if (widget.model.segment == ExploreSegment.brokers) {
+    if (model.segment == ExploreSegment.brokers) {
       final BrokerListing listing = results.brokers[index];
       return WkBrokerCard(
         listing: listing,
-        onOpen: () {
-          Navigator.of(context).pop();
-          widget.onOpenBroker(listing.broker.id);
-        },
+        onOpen: () => widget.onOpenBroker(listing.broker.id),
       );
     }
     final Property property = results.properties[index];
     return WkPropertyCard(
       property: property,
-      distanceMeters: distanceMeters(widget.model.position, property.position),
-      onOpen: () {
-        Navigator.of(context).pop();
-        widget.onOpenProperty(property.id);
-      },
-    );
-  }
-
-  Widget _suggestionList(List<String> suggestions) {
-    return ListView.separated(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount: suggestions.length,
-      separatorBuilder: (_, _) => const SizedBox(height: WkSpacing.xs),
-      itemBuilder: (BuildContext context, int index) => _Suggestion(
-        label: suggestions[index],
-        onTap: () => _select(suggestions[index]),
-      ),
+      distanceMeters: distanceMeters(model.position, property.position),
+      onOpen: () => widget.onOpenProperty(property.id),
     );
   }
 }
@@ -305,3 +441,6 @@ class _Suggestion extends StatelessWidget {
     );
   }
 }
+
+/// Étiquette d'un prix en FCFA, pour les curseurs de M01.
+String formatPriceLabel(int value) => NumberFormat('#,##0', 'fr').format(value);

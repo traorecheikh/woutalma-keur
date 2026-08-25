@@ -2,10 +2,9 @@
 # Lance (ou compile) l'application contre le serveur de recette, avec la
 # connexion par téléphone sans SMS.
 #
-# Sans ces `--dart-define`, l'application retombe silencieusement sur la
-# connexion Google, qui n'a pas de client OAuth sur ce déploiement : l'écran
-# dit alors seulement que la connexion a échoué, et on cherche un problème de
-# réseau qui n'existe pas. C'est arrivé assez de fois pour mériter un script.
+# Depuis que `AppConfig` compile le secret de recette par défaut, un simple
+# `flutter run` suffit. Ce script reste utile pour forcer un autre secret ou
+# une autre URL (rotation du secret côté Render, serveur local).
 #
 #   tool/run_staging.sh              # flutter run
 #   tool/run_staging.sh build apk    # n'importe quelle sous-commande flutter

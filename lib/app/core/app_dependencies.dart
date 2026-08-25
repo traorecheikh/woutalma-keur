@@ -24,6 +24,8 @@ import 'package:woutalma_keur/app/data/services/dio_log_interceptor.dart';
 import 'package:woutalma_keur/app/data/services/geolocator_location_service.dart';
 import 'package:woutalma_keur/app/data/services/google_backend_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/image_picker_photo_service.dart';
+import 'package:woutalma_keur/app/data/services/record_voice_note_recorder.dart';
+import 'package:woutalma_keur/app/domain/voice_note_service.dart';
 import 'package:woutalma_keur/app/data/services/session_expiry.dart';
 import 'package:woutalma_keur/app/data/services/staging_auth_service.dart';
 import 'package:woutalma_keur/app/data/services/token_store.dart';
@@ -56,6 +58,7 @@ class AppDependencies {
     required this.auth,
     required this.location,
     required this.photos,
+    required this.voiceNotes,
     required this.clientPosition,
     required this.cacheStatus,
     required this.sessionExpiry,
@@ -84,6 +87,9 @@ class AppDependencies {
 
   /// Photos de biens, systématiquement allégées avant stockage.
   final PhotoService photos;
+
+  /// Message vocal d'un bien, enregistré dans B03.
+  final VoiceNoteRecorder voiceNotes;
 
   /// Position retenue pour la recherche : celle du GPS dès qu'elle arrive,
   /// sinon le quartier choisi à la main.
@@ -432,6 +438,7 @@ class AppDependencies {
       settings: SettingsViewModel(seed: seed, mode: mode),
       location: locationService,
       photos: ImagePickerPhotoService(),
+      voiceNotes: RecordVoiceNoteRecorder(),
       clientPosition: ClientPositionController(
         location: locationService,
         meta: meta,

@@ -227,6 +227,10 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
   final BuiltList<String>? photoAssets;
   @override
   final BuiltList<UploadPhotoDto>? newPhotos;
+  @override
+  final String? voiceAsset;
+  @override
+  final UploadVoiceNoteDto? newVoiceNote;
 
   factory _$UpdatePropertyDto(
           [void Function(UpdatePropertyDtoBuilder)? updates]) =>
@@ -245,7 +249,9 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
       this.neighbourhood,
       this.status,
       this.photoAssets,
-      this.newPhotos})
+      this.newPhotos,
+      this.voiceAsset,
+      this.newVoiceNote})
       : super._();
   @override
   UpdatePropertyDto rebuild(void Function(UpdatePropertyDtoBuilder) updates) =>
@@ -271,7 +277,9 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
         neighbourhood == other.neighbourhood &&
         status == other.status &&
         photoAssets == other.photoAssets &&
-        newPhotos == other.newPhotos;
+        newPhotos == other.newPhotos &&
+        voiceAsset == other.voiceAsset &&
+        newVoiceNote == other.newVoiceNote;
   }
 
   @override
@@ -290,6 +298,8 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, photoAssets.hashCode);
     _$hash = $jc(_$hash, newPhotos.hashCode);
+    _$hash = $jc(_$hash, voiceAsset.hashCode);
+    _$hash = $jc(_$hash, newVoiceNote.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -309,7 +319,9 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
           ..add('neighbourhood', neighbourhood)
           ..add('status', status)
           ..add('photoAssets', photoAssets)
-          ..add('newPhotos', newPhotos))
+          ..add('newPhotos', newPhotos)
+          ..add('voiceAsset', voiceAsset)
+          ..add('newVoiceNote', newVoiceNote))
         .toString();
   }
 }
@@ -376,6 +388,16 @@ class UpdatePropertyDtoBuilder
   set newPhotos(ListBuilder<UploadPhotoDto>? newPhotos) =>
       _$this._newPhotos = newPhotos;
 
+  String? _voiceAsset;
+  String? get voiceAsset => _$this._voiceAsset;
+  set voiceAsset(String? voiceAsset) => _$this._voiceAsset = voiceAsset;
+
+  UploadVoiceNoteDtoBuilder? _newVoiceNote;
+  UploadVoiceNoteDtoBuilder get newVoiceNote =>
+      _$this._newVoiceNote ??= UploadVoiceNoteDtoBuilder();
+  set newVoiceNote(UploadVoiceNoteDtoBuilder? newVoiceNote) =>
+      _$this._newVoiceNote = newVoiceNote;
+
   UpdatePropertyDtoBuilder() {
     UpdatePropertyDto._defaults(this);
   }
@@ -396,6 +418,8 @@ class UpdatePropertyDtoBuilder
       _status = $v.status;
       _photoAssets = $v.photoAssets?.toBuilder();
       _newPhotos = $v.newPhotos?.toBuilder();
+      _voiceAsset = $v.voiceAsset;
+      _newVoiceNote = $v.newVoiceNote?.toBuilder();
       _$v = null;
     }
     return this;
@@ -432,6 +456,8 @@ class UpdatePropertyDtoBuilder
             status: status,
             photoAssets: _photoAssets?.build(),
             newPhotos: _newPhotos?.build(),
+            voiceAsset: voiceAsset,
+            newVoiceNote: _newVoiceNote?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -440,6 +466,9 @@ class UpdatePropertyDtoBuilder
         _photoAssets?.build();
         _$failedField = 'newPhotos';
         _newPhotos?.build();
+
+        _$failedField = 'newVoiceNote';
+        _newVoiceNote?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'UpdatePropertyDto', _$failedField, e.toString());

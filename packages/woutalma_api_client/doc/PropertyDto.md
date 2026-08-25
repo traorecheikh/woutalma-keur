@@ -20,6 +20,7 @@ Name | Type | Description | Notes
 **position** | [**GeoPointDto**](GeoPointDto.md) |  | 
 **neighbourhood** | **String** |  | 
 **photoAssets** | **BuiltList&lt;String&gt;** |  | 
+**voiceAsset** | **String** |  | [optional] 
 **status** | **String** |  | 
 **createdAt** | [**DateTime**](DateTime.md) |  | 
 **isDiscoverable** | **bool** |  | 

@@ -109,9 +109,9 @@ void main() {
     );
     // Deux fois : la barre haute et le corps de la fiche.
     expect(find.text(freshTitle), findsNWidgets(2));
-    expect(find.text('Mermoz'), findsOneWidget);
-    expect(find.text('Terrain'), findsOneWidget);
-    expect(find.text('À vendre'), findsOneWidget);
+    expect(find.textContaining('Mermoz'), findsOneWidget);
+    expect(find.textContaining('Terrain'), findsWidgets);
+    expect(find.textContaining('À vendre'), findsOneWidget);
 
     // Aucun champ nul ne fuit à l'écran, sous aucune forme.
     expect(find.textContaining('null'), findsNothing);
@@ -119,6 +119,8 @@ void main() {
     expect(find.textContaining('pièce'), findsNothing);
 
     // Pas de bloc « Proposé par » vide : le courtier existe, il est nommé.
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
     expect(find.text('Proposé par'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -136,7 +138,7 @@ void main() {
 
     // Un bloc écrasé serait pire qu'une photo manquante : la fiche
     // commencerait par une bande grise inexplicable.
-    final Size size = tester.getSize(find.byType(AspectRatio).first);
+    final Size size = tester.getSize(find.byType(WkPhotoCarousel).first);
     expect(size.height, greaterThan(120));
     expect(size.width, greaterThan(280));
   });
@@ -157,7 +159,6 @@ void main() {
         '${AppConfig.apiBaseUrl}/properties/photos/ph-fresh-1',
       ),
     );
-    expect(find.text('1 sur 1'), findsOneWidget);
   });
 
   testWidgets('une photo serveur qui n\'est pas encore arrivée laisse le '
@@ -210,6 +211,8 @@ void main() {
       tester,
       freshListing(description: 'Terrain viabilisé, clôturé, titre foncier.'),
     );
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
     expect(
       find.text('Terrain viabilisé, clôturé, titre foncier.'),
       findsOneWidget,
@@ -250,8 +253,8 @@ void main() {
       'puce vide ni « null »', (WidgetTester tester) async {
     await pumpCard(tester, freshListing());
 
-    expect(find.text('Terrain'), findsOneWidget);
-    expect(find.text('1,2 km'), findsOneWidget);
+    expect(find.textContaining('Terrain'), findsOneWidget);
+    expect(find.textContaining('1,2 km'), findsOneWidget);
     expect(find.textContaining('null'), findsNothing);
     expect(find.textContaining('m²'), findsNothing);
     expect(find.textContaining('pièce'), findsNothing);
@@ -370,7 +373,12 @@ void main() {
     await tester.scrollUntilVisible(
       freshCard(),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView).last,
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.tap(freshCard());
@@ -455,7 +463,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(WkPropertyCard),
-        matching: find.text(
+        matching: find.textContaining(
           '${NumberFormat('#,##0.#', 'fr').format(own / 1000)} km',
         ),
       ),

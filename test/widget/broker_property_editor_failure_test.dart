@@ -10,6 +10,7 @@ import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_screen.dart';
 import 'package:woutalma_keur/app/modules/broker/property_editor_view_model.dart';
 
+import '../support/fake_voice_note_recorder.dart';
 import '../support/pump.dart';
 
 /// Aucun accès à l'appareil photo dans un test, et une limite plus large que
@@ -75,6 +76,7 @@ void main() {
         value: model,
         child: PropertyEditorScreen(
           photos: _GenerousPhotoService(),
+          voiceNotes: FakeVoiceNoteRecorder(),
           onBack: () {},
           onSaved: (String _) {},
         ),

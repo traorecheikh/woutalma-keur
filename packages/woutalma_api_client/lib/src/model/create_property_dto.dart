@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
 import 'package:woutalma_api_client/src/model/upload_photo_dto.dart';
+import 'package:woutalma_api_client/src/model/upload_voice_note_dto.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -26,6 +27,8 @@ part 'create_property_dto.g.dart';
 /// * [status]
 /// * [photoAssets]
 /// * [newPhotos]
+/// * [voiceAsset] - Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.
+/// * [newVoiceNote]
 @BuiltValue()
 abstract class CreatePropertyDto
     implements Built<CreatePropertyDto, CreatePropertyDtoBuilder> {
@@ -76,6 +79,13 @@ abstract class CreatePropertyDto
 
   @BuiltValueField(wireName: r'newPhotos')
   BuiltList<UploadPhotoDto>? get newPhotos;
+
+  /// Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.
+  @BuiltValueField(wireName: r'voiceAsset')
+  String? get voiceAsset;
+
+  @BuiltValueField(wireName: r'newVoiceNote')
+  UploadVoiceNoteDto? get newVoiceNote;
 
   CreatePropertyDto._();
 
@@ -178,6 +188,20 @@ class _$CreatePropertyDtoSerializer
       yield serializers.serialize(
         object.newPhotos,
         specifiedType: const FullType(BuiltList, [FullType(UploadPhotoDto)]),
+      );
+    }
+    if (object.voiceAsset != null) {
+      yield r'voiceAsset';
+      yield serializers.serialize(
+        object.voiceAsset,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.newVoiceNote != null) {
+      yield r'newVoiceNote';
+      yield serializers.serialize(
+        object.newVoiceNote,
+        specifiedType: const FullType(UploadVoiceNoteDto),
       );
     }
   }
@@ -303,6 +327,22 @@ class _$CreatePropertyDtoSerializer
           ) as BuiltList<UploadPhotoDto>?;
           if (valueDes == null) continue;
           result.newPhotos.replace(valueDes);
+          break;
+        case r'voiceAsset':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.voiceAsset = valueDes;
+          break;
+        case r'newVoiceNote':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(UploadVoiceNoteDto),
+          ) as UploadVoiceNoteDto?;
+          if (valueDes == null) continue;
+          result.newVoiceNote.replace(valueDes);
           break;
         default:
           unhandled.add(key);

@@ -118,6 +118,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ça n\'a pas marché'), findsNothing);
-    expect(find.textContaining('Voir '), findsOneWidget);
+    expect(find.textContaining('résultat'), findsWidgets);
   });
 }

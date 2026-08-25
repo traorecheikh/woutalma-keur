@@ -15,13 +15,23 @@ Statut : **Draft — capture de référence non approuvée**
 ## Hiérarchie visible
 
 1. Top bar : marque compacte, quartier actuel et action Écouter.
-2. Zone de recherche : champ texte et grand bouton vocal ; le quartier reste modifiable.
-3. Filtres actifs : seulement les choix appliqués, avec suppression directe et accès M01.
-4. Segments Courtiers/Biens puis Liste/Carte sans perdre l'état.
-5. Résultats classés avec distance et confiance avant les détails secondaires.
+2. Zone de recherche : `WkSearchTrigger` ; le quartier reste modifiable.
+3. Catégories : une rangée de pastilles (Tout, À louer, À vendre, types de bien, Courtiers) qui
+   ouvre M14 déjà filtré.
+4. Rangées horizontales : « Près de chez vous » (biens par distance), « Courtiers de confiance »
+   (classement), « Nouveautés » (derniers publiés). Chaque rangée porte « Voir tout » → M14.
+5. « Carte » en bas de page → M14 en vue carte.
 
-Le premier viewport doit montrer la recherche et le début d'au moins un résultat. Aucun héros,
-carrousel promotionnel ou carte imbriquée n'est autorisé.
+Le premier viewport doit montrer la recherche, les catégories et le début de la première rangée.
+Aucun contenu promotionnel, aucune carte imbriquée. Les rangées sont des résultats classés, pas
+des mises en avant payées.
+
+> **Décision (2026-08-25) — C01 devient un accueil, la liste vit dans M14.** La liste de
+> résultats sur l'accueil faisait de la recherche un doublon : un écran de découverte montre des
+> rangées qui défilent et renvoie vers les résultats. Filtres actifs, segments Courtiers/Biens et
+> Liste/Carte déménagent dans M14 avec la barre de saisie. Un GPS qui répond à plus de 120 km de
+> Dakar est ignoré : la recherche part du centre-ville et la barre dit « Dakar », pas « Près de
+> vous ».
 
 ## Actions et destinations
 

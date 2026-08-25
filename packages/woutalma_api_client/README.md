@@ -88,6 +88,7 @@ Class | Method | HTTP request | Description
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerFindAll**](doc/PropertiesApi.md#propertiescontrollerfindall) | **GET** /properties | Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly&#x3D;true for the latter.
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerFindById**](doc/PropertiesApi.md#propertiescontrollerfindbyid) | **GET** /properties/{id} | Mirrors PropertyRepository.byId.
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerFindPhoto**](doc/PropertiesApi.md#propertiescontrollerfindphoto) | **GET** /properties/photos/{photoId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; photoAssets entry. Public, like the listing itself.
+[*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerFindVoiceNote**](doc/PropertiesApi.md#propertiescontrollerfindvoicenote) | **GET** /properties/voice-notes/{noteId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; voiceAsset key. Public, like the listing itself.
 [*PropertiesApi*](doc/PropertiesApi.md) | [**propertiesControllerUpdate**](doc/PropertiesApi.md#propertiescontrollerupdate) | **PATCH** /properties/{id} | Edit one of the caller’s own listings. 403 for someone else’s.
 [*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerAll**](doc/ReviewsApi.md#reviewscontrollerall) | **GET** /reviews | Published reviews only, every broker together — feeds the client-side averages.
 [*ReviewsApi*](doc/ReviewsApi.md) | [**reviewsControllerByBroker**](doc/ReviewsApi.md#reviewscontrollerbybroker) | **GET** /reviews/broker/{brokerId} | Published reviews of one broker. &#x60;onlyPublic&#x3D;false&#x60; additionally returns the pending/rejected ones, and only to the broker who owns the profile — for anyone else it is ignored.
@@ -130,6 +131,7 @@ Class | Method | HTTP request | Description
  - [UpdateContactOutcomeDto](doc/UpdateContactOutcomeDto.md)
  - [UpdatePropertyDto](doc/UpdatePropertyDto.md)
  - [UploadPhotoDto](doc/UploadPhotoDto.md)
+ - [UploadVoiceNoteDto](doc/UploadVoiceNoteDto.md)
 
 
 ## Documentation For Authorization

@@ -29,7 +29,7 @@ void main() {
     return found.length;
   }
 
-  Future<DiscoveryFilters?> openSheet(WidgetTester tester) async {
+  Future<DiscoveryFilters? Function()> openSheet(WidgetTester tester) async {
     DiscoveryFilters? applied;
     await pumpWk(
       tester,
@@ -47,33 +47,18 @@ void main() {
           ),
         ),
       ),
+      surfaceSize: const Size(360, 900),
     );
     await tester.tap(find.text('ouvrir'));
     await tester.pumpAndSettle();
-    return applied;
+    return () => applied;
   }
 
   testWidgets('le bouton porte le nombre de résultats avant application', (
     WidgetTester tester,
   ) async {
     await openSheet(tester);
-
-    // Six courtiers dans le seed, aucun filtre posé.
     expect(find.text('Voir 6 résultats'), findsOneWidget);
-  });
-
-  testWidgets('un sélecteur s\'ouvre depuis l\'intérieur de la feuille', (
-    WidgetTester tester,
-  ) async {
-    // Une feuille dans une feuille : si le navigateur choisi était le mauvais,
-    // le sélecteur ne s'afficherait jamais et les filtres seraient
-    // inutilisables.
-    await openSheet(tester);
-
-    await tester.tap(find.text('Type de bien'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Terrain'), findsOneWidget);
   });
 
   testWidgets('poser un filtre met le compteur à jour', (
@@ -81,13 +66,10 @@ void main() {
   ) async {
     await openSheet(tester);
 
-    await tester.tap(find.text('Type de bien'));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Terrain'));
     await tester.tap(find.text('Terrain'));
     await tester.pumpAndSettle();
 
-    // Deux courtiers proposent un terrain dans le seed. Le compteur doit
-    // l'annoncer avant qu'on applique quoi que ce soit.
     expect(find.text('Voir 2 résultats'), findsOneWidget);
   });
 
@@ -96,51 +78,42 @@ void main() {
   ) async {
     await openSheet(tester);
 
-    await tester.tap(find.text('Type de bien'));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Terrain'));
     await tester.tap(find.text('Terrain'));
     await tester.pumpAndSettle();
     expect(find.text('Voir 2 résultats'), findsOneWidget);
 
-    await tester.tap(find.text('Terrain').last);
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Peu importe').last);
     await tester.tap(find.text('Peu importe').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Voir 6 résultats'), findsOneWidget);
   });
 
+  testWidgets('le curseur de distance pose un rayon', (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester);
+
+    await tester.tap(find.text('Toute la ville'));
+    final Finder slider = find.byType(Slider).last;
+    await tester.drag(slider, const Offset(-300, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 km autour de moi'), findsOneWidget);
+  });
+
   testWidgets('appliquer renvoie les filtres choisis', (
     WidgetTester tester,
   ) async {
-    DiscoveryFilters? applied;
-    await pumpWk(
-      tester,
-      Builder(
-        builder: (BuildContext context) => Center(
-          child: TextButton(
-            onPressed: () async {
-              applied = await FiltersSheet.show(
-                context,
-                initial: const DiscoveryFilters(),
-                countResults: countBrokers,
-              );
-            },
-            child: const Text('ouvrir'),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.text('ouvrir'));
-    await tester.pumpAndSettle();
+    final DiscoveryFilters? Function() applied = await openSheet(tester);
 
-    await tester.tap(find.text('Louer ou acheter'));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('À vendre'));
     await tester.tap(find.text('À vendre'));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Voir '));
     await tester.pumpAndSettle();
 
-    expect(applied?.transaction, TransactionKind.sale);
+    expect(applied()?.transaction, TransactionKind.sale);
   });
 }

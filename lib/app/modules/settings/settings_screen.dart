@@ -8,7 +8,9 @@ import 'package:woutalma_keur/app/modules/settings/settings_view_model.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_motion.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_spacing.dart';
 import 'package:woutalma_keur/app/shared/theme/wk_theme.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_avatar.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_busy_indicator.dart';
+import 'package:woutalma_keur/app/shared/widgets/wk_button.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_confirm_sheet.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_option_sheet.dart';
 import 'package:woutalma_keur/app/shared/widgets/wk_scaffold.dart';
@@ -49,33 +51,38 @@ class SettingsScreen extends StatelessWidget {
     final SettingsViewModel model = context.watch<SettingsViewModel>();
 
     return WkScaffold(
-      topBar: WkTopBar(title: context.l10n.settingsTitle, onBack: onBack),
+      topBar: WkTopBar(
+        title: onBack == null
+            ? context.l10n.tabProfile
+            : context.l10n.settingsTitle,
+        onBack: onBack,
+      ),
       extendBody: true,
       body: ListView(
         padding: EdgeInsets.only(
           bottom: WkScaffold.bottomInset(context) + WkSpacing.md,
         ),
         children: <Widget>[
-          _SectionTitle(context.l10n.settingsSectionAccount),
+          _ProfileHeader(role: model.role, onSignIn: onSignIn),
           Builder(
             builder: (BuildContext context) {
-              // `watch` et non `read` : la session change pendant que cet
-              // écran est monté, et il doit le voir.
               final Account? account = context.watch<AuthService>().current;
               if (account == null) {
-                return _ActionRow(
-                  label: context.l10n.settingsSignIn,
-                  icon: Icons.login,
-                  onTap: onSignIn,
-                );
+                return const SizedBox.shrink();
               }
-              return _ActionRow(
-                label: context.l10n.settingsSignedInAs(account.displayIdentity),
-                icon: Icons.verified_user_outlined,
-                // Connecté, l'action utile est de partir : rouvrir l'écran
-                // d'identification n'avait aucun sens, et il n'existait
-                // nulle part de moyen de fermer sa session.
-                onTap: () => _confirmSignOut(context),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const SizedBox(height: WkSpacing.lg),
+                  _SectionTitle(context.l10n.settingsSectionAccount),
+                  _ActionRow(
+                    label: context.l10n.settingsSignedInAs(
+                      account.displayIdentity,
+                    ),
+                    icon: Icons.verified_user_outlined,
+                    onTap: () => _confirmSignOut(context),
+                  ),
+                ],
               );
             },
           ),
@@ -263,6 +270,87 @@ class _SettingGroup extends StatelessWidget {
                 indent: WkTouch.min + WkSpacing.md,
                 color: context.colors.outlineVariant,
               ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({required this.role, required this.onSignIn});
+
+  final UserRole role;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final Account? account = context.watch<AuthService>().current;
+    final String identity = account?.displayIdentity ?? '';
+    final String name = account?.name ?? identity;
+    final Color dim = context.colors.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.all(WkSpacing.md),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(WkRadius.xl),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.colors.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: account?.name == null
+                    ? Icon(
+                        Icons.person_outline,
+                        color: context.colors.onPrimaryContainer,
+                        size: 28,
+                      )
+                    : Text(
+                        WkAvatar.initials(name.isEmpty ? '?' : name),
+                        style: context.text.titleLarge?.copyWith(
+                          color: context.colors.onPrimaryContainer,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: WkSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      account == null ? context.l10n.profileVisitor : name,
+                      style: context.text.headlineMedium,
+                    ),
+                    Text(
+                      account == null
+                          ? context.l10n.profileSignInHint
+                          : role == UserRole.broker
+                          ? context.l10n.profileRoleBroker
+                          : context.l10n.profileRoleClient,
+                      style: context.text.bodySmall?.copyWith(color: dim),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (account == null) ...<Widget>[
+            const SizedBox(height: WkSpacing.md),
+            WkButton(
+              label: context.l10n.settingsSignIn,
+              icon: Icons.login,
+              onPressed: onSignIn,
+            ),
           ],
         ],
       ),

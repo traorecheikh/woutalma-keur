@@ -107,7 +107,9 @@ class RemotePropertyRepository implements PropertyRepository {
     this._propertiesApi,
     this._brokersApi, {
     PropertyPhotoUploader photos = const PropertyPhotoUploader(),
-  }) : _photos = photos;
+    PropertyVoiceNoteUploader voiceNotes = const PropertyVoiceNoteUploader(),
+  }) : _photos = photos,
+       _voiceNotes = voiceNotes;
 
   final api.PropertiesApi _propertiesApi;
 
@@ -117,6 +119,7 @@ class RemotePropertyRepository implements PropertyRepository {
 
   /// Sépare les clés déjà connues du serveur des fichiers locaux à téléverser.
   final PropertyPhotoUploader _photos;
+  final PropertyVoiceNoteUploader _voiceNotes;
 
   @override
   Future<List<Property>> all() async {
@@ -186,6 +189,20 @@ class RemotePropertyRepository implements PropertyRepository {
   Future<Property> save(Property property) async {
     final Property? existing = await byId(property.id);
     final PreparedPhotos photos = await _photos.prepare(property.photoAssets);
+    final PreparedVoiceNote voice = await _voiceNotes.prepare(
+      property.voiceAsset,
+      previous: existing?.voiceAsset,
+    );
+    final String? voiceAsset = voice.clear ? '' : voice.retained;
+    final api.UploadVoiceNoteDto? newVoiceNote = voice.upload == null
+        ? null
+        : api.UploadVoiceNoteDto(
+            (b) => b
+              ..mimeType = api.UploadVoiceNoteDtoMimeTypeEnum.valueOf(
+                voice.upload!.mimeType,
+              )
+              ..dataBase64 = voice.upload!.dataBase64,
+          );
 
     if (existing == null) {
       final response = await _propertiesApi.propertiesControllerCreate(
@@ -209,7 +226,9 @@ class RemotePropertyRepository implements PropertyRepository {
               propertyStatusWireName(property.status),
             )
             ..photoAssets.addAll(photos.retained)
-            ..newPhotos.addAll(photos.uploads.map(_uploadDto)),
+            ..newPhotos.addAll(photos.uploads.map(_uploadDto))
+            ..voiceAsset = voiceAsset
+            ..newVoiceNote = newVoiceNote?.toBuilder(),
         ),
       );
       return mapProperty(response.data!);
@@ -236,7 +255,9 @@ class RemotePropertyRepository implements PropertyRepository {
             propertyStatusWireName(property.status),
           )
           ..photoAssets.addAll(photos.retained)
-          ..newPhotos.addAll(photos.uploads.map(_uploadDto)),
+          ..newPhotos.addAll(photos.uploads.map(_uploadDto))
+          ..voiceAsset = voiceAsset
+          ..newVoiceNote = newVoiceNote?.toBuilder(),
       ),
     );
     return mapProperty(response.data!);

@@ -667,6 +667,7 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
             ),
             child: PropertyEditorScreen(
               photos: deps.photos,
+              voiceNotes: deps.voiceNotes,
               onBack: () => context.pop(),
               // Retour à la liste, qui se recharge : le bien publié doit
               // apparaître immédiatement, sinon on doute d'avoir réussi.

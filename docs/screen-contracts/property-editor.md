@@ -17,7 +17,7 @@ Une route, trois étapes. `WkStepHeader` annonce « Étape n sur 3 ».
 
 1. **Le bien et son quartier** — transaction (louer/vendre), type de bien, quartier.
 2. **Infos essentielles** — titre, prix, surface, pièces, description.
-3. **Photos et publication** — photos, statut (modification seulement), effet du statut.
+3. **Photos et publication** — photos, message vocal, statut (modification seulement), effet du statut.
 
 Suivant reste l'action dominante ; à la dernière étape il devient Enregistrer. Retour revient à
 l'étape précédente ; à la première étape il quitte l'écran.
@@ -49,6 +49,7 @@ remplacer une phrase que le courtier a écrite lui-même.
 | Pièces | choix, 1 à 6 | facultatif ; **absent pour un terrain** |
 | Description | texte composé | facultatif, corrigeable ; jamais écrasée si le courtier l'a écrite |
 | Photos | galerie/appareil | facultatif, 3 au plus |
+| Message vocal | micro, 45 s au plus | facultatif ; un seul, réécoutable, remplaçable, supprimable ; 512 Ko au plus après encodage (AAC mono 32 kbit/s) |
 | Statut | choix, 3 options | **modification seulement** |
 
 Paliers de surface : chambre et studio de trois en trois jusqu'à 30 m² ; appartement et maison de

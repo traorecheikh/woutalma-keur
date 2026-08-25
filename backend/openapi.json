@@ -587,6 +587,30 @@
         ]
       }
     },
+    "/properties/voice-notes/{noteId}": {
+      "get": {
+        "operationId": "PropertiesController_findVoiceNote",
+        "summary": "Bytes behind an `api:<id>` voiceAsset key. Public, like the listing itself.",
+        "parameters": [
+          {
+            "name": "noteId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "properties"
+        ]
+      }
+    },
     "/properties/{id}": {
       "get": {
         "operationId": "PropertiesController_findById",
@@ -1854,6 +1878,10 @@
               "type": "string"
             }
           },
+          "voiceAsset": {
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -1900,6 +1928,29 @@
           "dataBase64": {
             "type": "string",
             "description": "Base64-encoded image bytes. Decoded size must not exceed 163840 bytes — compress before sending."
+          }
+        },
+        "required": [
+          "mimeType",
+          "dataBase64"
+        ]
+      },
+      "UploadVoiceNoteDto": {
+        "type": "object",
+        "properties": {
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "audio/mp4",
+              "audio/aac",
+              "audio/mpeg",
+              "audio/ogg",
+              "audio/webm"
+            ]
+          },
+          "dataBase64": {
+            "type": "string",
+            "description": "Base64-encoded audio bytes. Decoded size must not exceed 524288 bytes — record short, at a speech bitrate."
           }
         },
         "required": [
@@ -1989,6 +2040,14 @@
             "items": {
               "$ref": "#/components/schemas/UploadPhotoDto"
             }
+          },
+          "voiceAsset": {
+            "type": "string",
+            "description": "Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.",
+            "maxLength": 200
+          },
+          "newVoiceNote": {
+            "$ref": "#/components/schemas/UploadVoiceNoteDto"
           }
         },
         "required": [
@@ -2083,6 +2142,14 @@
             "items": {
               "$ref": "#/components/schemas/UploadPhotoDto"
             }
+          },
+          "voiceAsset": {
+            "type": "string",
+            "description": "Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.",
+            "maxLength": 200
+          },
+          "newVoiceNote": {
+            "$ref": "#/components/schemas/UploadVoiceNoteDto"
           }
         }
       },

@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
+    <!-- Message vocal d'un bien, enregistré par le courtier dans B03. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
     <!-- Un téléphone sans GPS reste servi par la saisie manuelle de quartier. -->
     <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
 

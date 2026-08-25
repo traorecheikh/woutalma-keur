@@ -140,12 +140,16 @@ model Property {
   position      Unsupported("geography(Point,4326)")
   neighbourhood String
   photoAssets   String[]
+  /// `api:<PropertyVoiceNote.id>` for the single note a listing may carry,
+  /// null when the broker recorded none.
+  voiceAsset    String?
   status        PropertyStatus  @default(AVAILABLE)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
   contactLogs ContactLog[]
   photos      PropertyPhoto[]
+  voiceNotes  PropertyVoiceNote[]
 
   @@index([status])
   @@index([position], type: Gist)
@@ -175,6 +179,24 @@ model PropertyPhoto {
 
   @@index([propertyId])
   @@map("property_photos")
+}
+
+/// Broker-recorded audio describing a listing, for a client who reads little.
+///
+/// Same demo-window storage choice as PropertyPhoto — bytes in Postgres,
+/// capped hard on the upload path (UploadVoiceNoteDto). A property carries at
+/// most one: `Property.voiceAsset` holds the single `api:<id>` display key,
+/// and replacing the note deletes the rows it supersedes.
+model PropertyVoiceNote {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  mimeType   String
+  bytes      Bytes
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+  @@map("property_voice_notes")
 }
 
 model Review {

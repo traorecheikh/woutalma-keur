@@ -36,6 +36,14 @@ export class PropertiesController {
     res.type(photo.mimeType).send(photo.bytes);
   }
 
+  @Get('voice-notes/:noteId')
+  @ApiOperation({ summary: 'Bytes behind an `api:<id>` voiceAsset key. Public, like the listing itself.' })
+  @Header('Cache-Control', 'public, max-age=31536000, immutable')
+  async findVoiceNote(@Param('noteId') noteId: string, @Res() res: Response): Promise<void> {
+    const note = await this.properties.findVoiceNote(noteId);
+    res.type(note.mimeType).send(note.bytes);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Mirrors PropertyRepository.byId.' })
   @ApiOkResponse({ type: PropertyDto })

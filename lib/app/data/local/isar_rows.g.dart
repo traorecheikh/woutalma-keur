@@ -2324,6 +2324,11 @@ const PropertyRowSchema = CollectionSchema(
       enumMap: _PropertyRowtransactionEnumValueMap,
     ),
     r'uid': PropertySchema(id: 14, name: r'uid', type: IsarType.string),
+    r'voiceAsset': PropertySchema(
+      id: 15,
+      name: r'voiceAsset',
+      type: IsarType.string,
+    ),
   },
 
   estimateSize: _propertyRowEstimateSize,
@@ -2386,6 +2391,12 @@ int _propertyRowEstimateSize(
   }
   bytesCount += 3 + object.title.length * 3;
   bytesCount += 3 + object.uid.length * 3;
+  {
+    final value = object.voiceAsset;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -2410,6 +2421,7 @@ void _propertyRowSerialize(
   writer.writeString(offsets[12], object.title);
   writer.writeByte(offsets[13], object.transaction.index);
   writer.writeString(offsets[14], object.uid);
+  writer.writeString(offsets[15], object.voiceAsset);
 }
 
 PropertyRow _propertyRowDeserialize(
@@ -2441,6 +2453,7 @@ PropertyRow _propertyRowDeserialize(
       _PropertyRowtransactionValueEnumMap[reader.readByteOrNull(offsets[13])] ??
       TransactionKind.rent;
   object.uid = reader.readString(offsets[14]);
+  object.voiceAsset = reader.readStringOrNull(offsets[15]);
   return object;
 }
 
@@ -2489,6 +2502,8 @@ P _propertyRowDeserializeProp<P>(
           as P;
     case 14:
       return (reader.readString(offset)) as P;
+    case 15:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -4339,6 +4354,165 @@ extension PropertyRowQueryFilter
       );
     });
   }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'voiceAsset'),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'voiceAsset'),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'voiceAsset',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'voiceAsset',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'voiceAsset',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'voiceAsset',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'voiceAsset',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'voiceAsset',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'voiceAsset',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'voiceAsset',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'voiceAsset', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  voiceAssetIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'voiceAsset', value: ''),
+      );
+    });
+  }
 }
 
 extension PropertyRowQueryObject
@@ -4515,6 +4689,18 @@ extension PropertyRowQuerySortBy
   QueryBuilder<PropertyRow, PropertyRow, QAfterSortBy> sortByUidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterSortBy> sortByVoiceAsset() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voiceAsset', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterSortBy> sortByVoiceAssetDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voiceAsset', Sort.desc);
     });
   }
 }
@@ -4701,6 +4887,18 @@ extension PropertyRowQuerySortThenBy
       return query.addSortBy(r'uid', Sort.desc);
     });
   }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterSortBy> thenByVoiceAsset() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voiceAsset', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterSortBy> thenByVoiceAssetDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voiceAsset', Sort.desc);
+    });
+  }
 }
 
 extension PropertyRowQueryWhereDistinct
@@ -4807,6 +5005,14 @@ extension PropertyRowQueryWhereDistinct
       return query.addDistinctBy(r'uid', caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByVoiceAsset({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'voiceAsset', caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension PropertyRowQueryProperty
@@ -4906,6 +5112,12 @@ extension PropertyRowQueryProperty
   QueryBuilder<PropertyRow, String, QQueryOperations> uidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'uid');
+    });
+  }
+
+  QueryBuilder<PropertyRow, String?, QQueryOperations> voiceAssetProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'voiceAsset');
     });
   }
 }

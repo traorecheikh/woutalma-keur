@@ -94,6 +94,13 @@ class PropertyEditorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  late String? voiceNote = _existing?.voiceAsset;
+
+  void setVoiceNote(String? value) {
+    voiceNote = value;
+    notifyListeners();
+  }
+
   MutationState _submission = const MutationState.idle();
   MutationState get submission => _submission;
 
@@ -216,6 +223,7 @@ class PropertyEditorViewModel extends ChangeNotifier {
       position: area.position,
       neighbourhood: area.name,
       photoAssets: photos,
+      voiceAsset: voiceNote,
       status: status,
       createdAt: _existing?.createdAt ?? _now(),
     );

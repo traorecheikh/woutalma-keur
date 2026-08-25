@@ -72,4 +72,20 @@ abstract final class WkFormat {
   /// Note à une décimale, virgule française. Toujours accompagnée du volume
   /// d'avis : un 5,0 sur un seul avis ne vaut pas un 4,5 sur cinquante.
   static String rating(double value) => NumberFormat('0.0', 'fr').format(value);
+
+  /// « Appartement · 3 pièces · 80 m² · Mermoz · 1,2 km » sur une ligne.
+  static String propertyMeta(
+    AppL10n l10n,
+    Property property,
+    double distanceMeters,
+  ) {
+    return <String>[
+      transaction(l10n, property.transaction),
+      propertyKind(l10n, property.kind),
+      if (property.rooms != null) l10n.roomCount(property.rooms!),
+      if (property.surface != null) l10n.surfaceValue(property.surface!),
+      property.neighbourhood,
+      distance(l10n, distanceMeters),
+    ].join(' · ');
+  }
 }

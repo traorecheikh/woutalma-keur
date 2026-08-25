@@ -106,6 +106,22 @@ describe('CreatePropertyDto — what a broker is allowed to type', () => {
       expect(errorsOn(build({ rooms: 500 }))).toContain('rooms');
     });
   });
+
+  describe('voice note', () => {
+    it('accepts a recording in a format a phone produces', () => {
+      const dto = build({ newVoiceNote: { mimeType: 'audio/mp4', dataBase64: 'AAAA' } });
+      expect(errorsOn(dto)).toEqual([]);
+    });
+
+    it('refuses a format the player cannot be trusted with', () => {
+      const dto = build({ newVoiceNote: { mimeType: 'audio/x-caf', dataBase64: 'AAAA' } });
+      expect(errorsOn(dto)).toContain('newVoiceNote');
+    });
+
+    it('accepts the empty string that means "remove the recording"', () => {
+      expect(errorsOn(build({ voiceAsset: '' }))).toEqual([]);
+    });
+  });
 });
 
 describe('UpdatePropertyDto — the same rules survive PartialType', () => {

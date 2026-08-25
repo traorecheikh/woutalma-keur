@@ -120,7 +120,7 @@ export class SearchService {
     const rows = await this.prisma.$queryRaw<(PropertyRow & { distance: number })[]>(Prisma.sql`
       SELECT
         "id", "brokerId", "kind", "transaction", "title", "description", "price",
-        "surface", "rooms", "neighbourhood", "photoAssets", "status", "createdAt",
+        "surface", "rooms", "neighbourhood", "photoAssets", "voiceAsset", "status", "createdAt",
         ${selectLatLng(Prisma.raw('"position"'))},
         ${distanceMetersSql(Prisma.raw('"position"'), filters.lat, filters.lng)} AS "distance",
         ${propertyRank} AS "searchRank"

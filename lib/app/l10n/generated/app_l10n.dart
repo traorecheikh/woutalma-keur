@@ -2216,6 +2216,222 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'En cours'**
   String get catalogStateLoading;
+
+  /// Titre de C01 quand le GPS répond hors de la zone couverte.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dakar'**
+  String get exploreDefaultArea;
+
+  /// Section de l'accueil : biens triés par distance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Près de chez vous'**
+  String get exploreNearbyProperties;
+
+  /// Section de l'accueil : courtiers les mieux classés.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courtiers de confiance'**
+  String get exploreTrustedBrokers;
+
+  /// Section de l'accueil : derniers biens publiés.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveautés'**
+  String get exploreNewListings;
+
+  /// Ouvre la liste complète d'une section de l'accueil.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir tout'**
+  String get exploreSeeAll;
+
+  /// Catégorie d'accueil sans filtre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout'**
+  String get exploreCategoryAll;
+
+  /// Carte d'accueil quand le GPS n'est pas actif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer ma position'**
+  String get exploreEnableLocationTitle;
+
+  /// Explication sous « Activer ma position ».
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour trier les biens et les courtiers du plus proche au plus loin.'**
+  String get exploreEnableLocationBody;
+
+  /// Ouvre M02 depuis l'accueil.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un quartier'**
+  String get exploreChooseArea;
+
+  /// Titre de l'écran de résultats quand rien n'est tapé.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les résultats'**
+  String get exploreSearchAll;
+
+  /// Curseur de prix au maximum.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans limite'**
+  String get filtersPriceAny;
+
+  /// Curseur de distance au maximum.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toute la ville'**
+  String get filtersRadiusAny;
+
+  /// Section vocal de l'éditeur de bien.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message vocal'**
+  String get voiceNoteLabel;
+
+  /// Aide sous le bouton d'enregistrement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décrivez le bien avec vos mots. 45 secondes au plus.'**
+  String get voiceNoteHint;
+
+  /// Démarre l'enregistrement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un message vocal'**
+  String get voiceNoteRecord;
+
+  /// Termine l'enregistrement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter'**
+  String get voiceNoteStop;
+
+  /// Compteur pendant l'enregistrement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement… {seconds} s'**
+  String voiceNoteRecording(int seconds);
+
+  /// Retire le vocal enregistré.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le vocal'**
+  String get voiceNoteDelete;
+
+  /// Remplace le vocal par un nouveau.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réenregistrer'**
+  String get voiceNoteRedo;
+
+  /// Lance la lecture du vocal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter'**
+  String get voiceNotePlay;
+
+  /// Met la lecture en pause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pause'**
+  String get voiceNotePause;
+
+  /// Titre du lecteur vocal sur C03.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le courtier vous en parle'**
+  String get voiceNoteFromBroker;
+
+  /// Repère sur une carte de bien qui porte un vocal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vocal'**
+  String get voiceNoteBadge;
+
+  /// Le système a refusé le micro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Micro refusé. Autorisez-le dans les réglages du téléphone pour enregistrer.'**
+  String get voiceNotePermissionDenied;
+
+  /// L'enregistreur a échoué.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le message vocal n\'a pas pu être enregistré.'**
+  String get voiceNoteFailed;
+
+  /// Le lecteur a échoué.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le message vocal n\'a pas pu être lu.'**
+  String get voiceNoteUnavailable;
+
+  /// Refus avant envoi : fichier au-dessus de la limite serveur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le message vocal est trop lourd pour être envoyé.'**
+  String get voiceNoteTooLarge;
+
+  /// État après enregistrement, avant publication.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message vocal prêt'**
+  String get voiceNoteReady;
+
+  /// En-tête du profil sans session.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visiteur'**
+  String get profileVisitor;
+
+  /// Sous l'en-tête du profil sans session.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiez-vous pour contacter un courtier et retrouver vos contacts.'**
+  String get profileSignInHint;
+
+  /// Rôle affiché dans l'en-tête du profil.
+  ///
+  /// In fr, this message translates to:
+  /// **'Client'**
+  String get profileRoleClient;
+
+  /// Rôle affiché dans l'en-tête du profil.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courtier'**
+  String get profileRoleBroker;
+
+  /// Phrase sous les canaux de M04.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le contact est noté dans vos contacts pour pouvoir laisser un avis.'**
+  String get contactSheetHint;
+
+  /// Sous-titre du canal Appeler.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appel direct'**
+  String get contactCallHint;
+
+  /// Sous-titre du canal WhatsApp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message ou vocal'**
+  String get contactWhatsappHint;
+
+  /// Sous-titre du canal SMS.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans internet'**
+  String get contactSmsHint;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {
