@@ -162,14 +162,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
             child: FTappable(
               onPress: () => _openPlace(model),
               semanticsLabel: l.exploreChooseArea,
-              excludeSemantics: true,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(place, style: context.text.displayMedium),
-                  ),
-                  Icon(FIcons.chevronDown, color: context.colors.onSurface),
-                ],
+              child: ExcludeSemantics(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(place, style: context.text.displayMedium),
+                    ),
+                    Icon(FIcons.chevronDown, color: context.colors.onSurface),
+                  ],
+                ),
               ),
             ),
           ),

@@ -358,6 +358,22 @@ class _SearchOverlayState extends State<SearchOverlay> {
                         widget.onOpenProperty(results.properties[i].id),
                   ),
           ),
+        if (model.hasMore)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Insets.page,
+              Insets.lg,
+              Insets.page,
+              0,
+            ),
+            child: AppButton(
+              l.exploreLoadMore,
+              icon: FIcons.chevronDown,
+              variant: AppButtonVariant.secondary,
+              loading: model.loadingMore,
+              onPressed: model.loadMore,
+            ),
+          ),
       ],
     );
   }

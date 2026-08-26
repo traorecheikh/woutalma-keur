@@ -58,8 +58,6 @@ const List<LocalizationsDelegate<Object?>> wkLocalizationsDelegates =
       FLocalizations.delegate,
     ];
 
-final _forui = {for (final b in Brightness.values) b: buildForuiTheme(b)};
-
 class WoutalmaKeurApp extends StatefulWidget {
   const WoutalmaKeurApp({required this.deps, super.key});
 
@@ -131,13 +129,16 @@ class _WoutalmaKeurAppState extends State<WoutalmaKeurApp> {
         onGenerateTitle: (BuildContext context) => AppL10n.of(context).appTitle,
         theme: buildTheme(Brightness.light),
         darkTheme: buildTheme(Brightness.dark),
-        themeMode: ThemeMode.light,
+        themeMode: ThemeMode.system,
         localizationsDelegates: wkLocalizationsDelegates,
         supportedLocales: AppL10n.supportedLocales,
         routerConfig: _router,
         debugShowCheckedModeBanner: false,
         builder: (context, child) => FTheme(
-          data: _forui[Theme.of(context).brightness]!,
+          data: buildForuiTheme(
+            Theme.of(context).brightness,
+            reduceMotion: MediaQuery.disableAnimationsOf(context),
+          ),
           child: FToaster(child: child!),
         ),
       ),

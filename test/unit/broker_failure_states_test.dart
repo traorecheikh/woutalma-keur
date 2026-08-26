@@ -112,6 +112,8 @@ class _BrokenContacts implements ContactRepository {
   Future<void> update(ContactLog contact) async => throw error;
   @override
   Future<void> updateAll(List<ContactLog> contacts) async => throw error;
+  @override
+  Future<void> remove(String id) async => throw error;
 
   @override
   Future<List<ContactLog>> receivedBy(String brokerId) async => throw error;

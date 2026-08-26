@@ -1337,6 +1337,9 @@ class AppL10nFr extends AppL10n {
   String get viewMap => 'Carte';
 
   @override
+  String get exploreLoadMore => 'Voir plus';
+
+  @override
   String get exploreShowMap => 'Carte';
 
   @override

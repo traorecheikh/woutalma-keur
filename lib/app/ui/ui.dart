@@ -132,7 +132,9 @@ class _Banner extends StatelessWidget {
     final status = context.watch<CacheStatus?>();
     final warmup = context.watch<BackendWarmup?>();
     final l = context.l10n;
-    final String? text = status != null && status.servedFromCache
+    final String? text = status != null && status.localCacheUnavailable
+        ? l.offlineCacheUnavailable
+        : status != null && status.servedFromCache
         ? l.offlineCached(_age(l, status.fetchedAt))
         : warmup != null && warmup.state == WarmupState.warming
         ? l.backendWakingUp
@@ -158,7 +160,7 @@ class _Banner extends StatelessWidget {
   }
 
   static String _age(AppL10n l, DateTime? at) {
-    if (at == null) return l.offlineJustNow;
+    if (at == null) return l.offlineUnknownDate;
     final ago = DateTime.now().difference(at);
     if (ago.inMinutes < 1) return l.offlineJustNow;
     if (ago.inHours < 1) return l.offlineMinutesAgo(ago.inMinutes);

@@ -61,6 +61,8 @@ class _UnauthorizedContacts implements ContactRepository {
   Future<void> update(ContactLog contact) async {}
   @override
   Future<void> updateAll(List<ContactLog> contacts) async {}
+  @override
+  Future<void> remove(String id) async {}
 }
 
 class _Location implements LocationService {

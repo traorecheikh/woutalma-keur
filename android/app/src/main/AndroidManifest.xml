@@ -60,6 +60,9 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
 
         <!-- Sans ces déclarations, `canLaunchUrl` répond faux sur Android 11+
              et les trois canaux de contact — l'action principale du produit —

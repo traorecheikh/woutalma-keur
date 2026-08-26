@@ -6,6 +6,7 @@ import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/domain/contact_launcher.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
+import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
 
 /// Numéro sénégalais lisible : « +221 77 123 45 67 ».
@@ -43,7 +44,6 @@ class BrokerPhone extends StatelessWidget {
     }
     return FTappable(
       semanticsLabel: '$shown, ${context.l10n.contactPhoneCopyHint}',
-      excludeSemantics: true,
       behavior: HitTestBehavior.opaque,
       onLongPress: () async {
         await Clipboard.setData(ClipboardData(text: phone));
@@ -53,9 +53,11 @@ class BrokerPhone extends StatelessWidget {
         );
         toast(context, context.l10n.contactPhoneCopied);
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: Insets.xs),
-        child: text,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Insets.xs),
+          child: text,
+        ),
       ),
     );
   }
@@ -263,7 +265,7 @@ class _Channels extends StatelessWidget {
                     copiable: true,
                   ),
                   Text(
-                    l.brokerResponseRate((broker.responseRate * 100).round()),
+                    WkFormat.responseRate(l, broker.responseRate),
                     style: context.text.bodySmall!.copyWith(
                       color: t.inkSecondary,
                     ),
@@ -346,7 +348,6 @@ class _Channel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FTappable(
     semanticsLabel: '$label, $hint',
-    excludeSemantics: true,
     behavior: HitTestBehavior.opaque,
     onPress: () {
       context.read<InteractionFeedbackService?>()?.emit(
@@ -354,44 +355,46 @@ class _Channel extends StatelessWidget {
       );
       popSheet(context, channel);
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: Radii.container,
-        border: Border.all(color: context.tones.hairline),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(Insets.md),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: Icon(
-                icon,
-                size: 24,
-                color: onColor ?? context.colors.onPrimary,
+    child: ExcludeSemantics(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: Radii.container,
+          border: Border.all(color: context.tones.hairline),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(Insets.md),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: onColor ?? context.colors.onPrimary,
+                ),
               ),
-            ),
-            const SizedBox(width: Insets.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: context.text.titleMedium),
-                  Text(
-                    hint,
-                    style: context.text.bodySmall!.copyWith(
-                      color: context.tones.inkSecondary,
+              const SizedBox(width: Insets.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: context.text.titleMedium),
+                    Text(
+                      hint,
+                      style: context.text.bodySmall!.copyWith(
+                        color: context.tones.inkSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(FIcons.chevronRight, color: context.tones.inkSecondary),
-          ],
+              Icon(FIcons.chevronRight, color: context.tones.inkSecondary),
+            ],
+          ),
         ),
       ),
     ),

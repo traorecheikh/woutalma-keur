@@ -356,16 +356,13 @@ class CachedContactRepository implements ContactRepository {
   final CacheStatus _status;
   final DateTime Function() _now;
 
-  /// Préfixe des contacts écrits sans le serveur.
-  ///
-  /// Ces lignes n'existent que sur ce téléphone : elles ne portent pas d'avis
-  /// et le serveur ne les connaît pas. Elles restent affichées parce qu'un
-  /// appel passé est un fait, même sans réseau ni session.
+  /// Contacts journalisés sans serveur (hors ligne ou sans session) ; rejoués
+  /// dès que la liste distante répond.
   static const String localPrefix = 'local-';
 
   @override
   Future<List<ContactLog>> all() async {
-    final List<ContactLog> local = await _localOnly();
+    List<ContactLog> local = await _localOnly();
     try {
       final List<ContactLog> synced = await _readThrough<List<ContactLog>>(
         remote: _remote.all,
@@ -375,6 +372,7 @@ class CachedContactRepository implements ContactRepository {
         status: _status,
         now: _now,
       );
+      local = await _replay(local);
       return _merge(synced, local);
     } on Object {
       if (local.isEmpty) {
@@ -392,11 +390,34 @@ class CachedContactRepository implements ContactRepository {
         .toList();
   }
 
+  Future<List<ContactLog>> _replay(List<ContactLog> local) async {
+    final List<ContactLog> shown = <ContactLog>[];
+    for (final ContactLog c in local) {
+      try {
+        ContactLog logged = await _remote.log(
+          brokerId: c.brokerId,
+          propertyId: c.propertyId,
+          channel: c.channel,
+        );
+        if (c.outcome != logged.outcome) {
+          logged = logged.copyWith(outcome: c.outcome);
+          await _remote.update(logged);
+        }
+        await _cache.update(logged);
+        await _cache.remove(c.id);
+        shown.add(logged);
+      } on Object {
+        shown.add(c);
+      }
+    }
+    return shown;
+  }
+
   List<ContactLog> _merge(List<ContactLog> synced, List<ContactLog> local) {
-    final Set<String> seen = synced.map((ContactLog c) => c.id).toSet();
+    final Set<String> seen = local.map((ContactLog c) => c.id).toSet();
     final List<ContactLog> all = <ContactLog>[
-      ...synced,
-      ...local.where((ContactLog c) => !seen.contains(c.id)),
+      ...local,
+      ...synced.where((ContactLog c) => !seen.contains(c.id)),
     ]..sort((ContactLog a, ContactLog b) => b.createdAt.compareTo(a.createdAt));
     return all;
   }
@@ -415,11 +436,6 @@ class CachedContactRepository implements ContactRepository {
     now: _now,
   );
 
-  /// Journalise côté serveur, et à défaut sur le téléphone.
-  ///
-  /// L'appel est déjà parti quand on arrive ici : refuser d'écrire parce que
-  /// le réseau manque ou que personne n'est identifié effacerait de
-  /// l'historique un contact qui a bien eu lieu.
   @override
   Future<ContactLog> log({
     required String brokerId,
@@ -457,7 +473,6 @@ class CachedContactRepository implements ContactRepository {
   @override
   Future<void> update(ContactLog contact) async {
     if (contact.id.startsWith(localPrefix)) {
-      // Le serveur ne connaît pas cette ligne : la lui envoyer rendrait 404.
       await _cache.update(contact);
       return;
     }
@@ -481,6 +496,12 @@ class CachedContactRepository implements ContactRepository {
         status: _status,
         now: _now,
       );
+
+  @override
+  Future<void> remove(String id) async {
+    await _remote.remove(id);
+    await _cache.remove(id);
+  }
 }
 
 /// En mode distant, « purger » veut dire vider la copie hors ligne, pas

@@ -238,6 +238,9 @@ class InMemoryContactRepository implements ContactRepository {
       _store.contacts[contact.id] = contact;
     }
   }
+
+  @override
+  Future<void> remove(String id) async => _store.contacts.remove(id);
 }
 
 class InMemorySeedRepository implements SeedRepository {

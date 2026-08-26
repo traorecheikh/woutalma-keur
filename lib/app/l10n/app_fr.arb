@@ -1393,6 +1393,8 @@
   "@viewList": { "description": "Présentation des résultats en liste." },
   "viewMap": "Carte",
   "@viewMap": { "description": "Présentation des résultats sur une carte." },
+  "exploreLoadMore": "Voir plus",
+  "@exploreLoadMore": { "description": "Charge la page suivante des résultats." },
   "exploreShowMap": "Carte",
   "@exploreShowMap": {
     "description": "Bascule C01 de la liste vers la carte. Nomme la destination, pas le mode."

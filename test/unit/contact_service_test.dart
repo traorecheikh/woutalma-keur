@@ -60,6 +60,8 @@ class _FailingContacts implements ContactRepository {
   @override
   Future<void> updateAll(List<ContactLog> contacts) =>
       _inner.updateAll(contacts);
+  @override
+  Future<void> remove(String id) => _inner.remove(id);
 }
 
 class _HangingLauncher implements ContactLauncher {

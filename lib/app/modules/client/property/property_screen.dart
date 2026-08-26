@@ -393,7 +393,7 @@ class _Body extends StatelessWidget {
               AppRow(
                 leading: AppAvatar(name: b.name, imagePath: b.logoAsset),
                 title: b.name,
-                subtitle: l.brokerResponseRate((b.responseRate * 100).round()),
+                subtitle: WkFormat.responseRate(l, b.responseRate),
                 trailing: b.isVerified
                     ? AppTag(
                         l.badgeVerified,

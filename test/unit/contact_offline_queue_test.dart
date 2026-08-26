@@ -56,6 +56,9 @@ class _ScriptedContacts implements ContactRepository {
 
   @override
   Future<void> updateAll(List<ContactLog> contacts) async {}
+
+  @override
+  Future<void> remove(String id) async {}
 }
 
 DioException _offline() => DioException(
@@ -137,8 +140,26 @@ void main() {
     final List<String> ids = (await contacts.all())
         .map((ContactLog c) => c.id)
         .toList();
-    expect(ids, containsAll(<String>[local.id, synced.id]));
-    expect(ids.toSet().length, ids.length);
+    expect(ids, contains(synced.id));
+    expect(ids, isNot(contains(local.id)));
+    expect(ids.toSet().length, 2);
+    expect(remote.logCalls, 3);
+    expect(await cache.byId(local.id), isNull);
+  });
+
+  test('le résultat noté hors ligne part avec le rejeu', () async {
+    remote.error = _offline();
+    final ContactLog local = await contacts.log(
+      brokerId: 'brk-1',
+      channel: ContactChannel.call,
+    );
+    await contacts.update(local.copyWith(outcome: ContactOutcome.reached));
+
+    remote.error = null;
+    final List<ContactLog> shown = await contacts.all();
+
+    expect(shown.single.id, startsWith('srv-'));
+    expect(shown.single.outcome, ContactOutcome.reached);
   });
 
   test('sans contact local, un refus du serveur remonte', () async {

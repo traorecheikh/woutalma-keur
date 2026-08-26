@@ -286,6 +286,13 @@ class IsarContactRepository implements ContactRepository {
       ),
     );
   }
+
+  @override
+  Future<void> remove(String id) async {
+    await _isar.writeTxn(
+      () => _isar.contactRows.filter().uidEqualTo(id).deleteAll(),
+    );
+  }
 }
 
 class IsarSeedRepository implements SeedRepository {

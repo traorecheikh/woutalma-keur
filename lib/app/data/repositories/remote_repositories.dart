@@ -483,4 +483,7 @@ class RemoteContactRepository implements ContactRepository {
       await update(contact);
     }
   }
+
+  @override
+  Future<void> remove(String id) async {}
 }

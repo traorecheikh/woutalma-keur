@@ -149,7 +149,7 @@ class _Body extends StatelessWidget {
               const SizedBox(height: Insets.sm),
               Text(
                 '${WkFormat.distance(l, detail.distanceMeters)} · '
-                '${l.brokerResponseRate((b.responseRate * 100).round())}',
+                '${WkFormat.responseRate(l, b.responseRate)}',
                 style: dim,
                 textAlign: TextAlign.center,
               ),

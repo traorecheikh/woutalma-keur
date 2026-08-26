@@ -106,6 +106,8 @@ abstract class ContactRepository {
   /// Voir [BrokerRepository.saveAll].
   Future<void> updateAll(List<ContactLog> contacts);
 
+  Future<void> remove(String id);
+
   /// B05 — les mises en relation **reçues** par un courtier.
   ///
   /// [all] rend ce que l'utilisateur a envoyé en tant que client ; ce n'est

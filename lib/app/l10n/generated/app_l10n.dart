@@ -2246,6 +2246,12 @@ abstract class AppL10n {
   /// **'Carte'**
   String get viewMap;
 
+  /// Charge la page suivante des résultats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir plus'**
+  String get exploreLoadMore;
+
   /// Bascule C01 de la liste vers la carte. Nomme la destination, pas le mode.
   ///
   /// In fr, this message translates to:
