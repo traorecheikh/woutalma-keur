@@ -14,15 +14,32 @@ class UrlContactLauncher implements ContactLauncher {
     if (target == null) {
       return false;
     }
-    if (!await canLaunchUrl(target)) {
+    // `canLaunchUrl` répond faux sur Android 11+ dès qu'une requête `<queries>`
+    // manque, et le composeur téléphonique existe sur tous les appareils
+    // visés : on tente l'ouverture et on ne renonce que si elle échoue.
+    if (channel != ContactChannel.call && !await _canOpen(target)) {
       return false;
     }
-    return launchUrl(target, mode: LaunchMode.externalApplication);
+    try {
+      return await launchUrl(target, mode: LaunchMode.externalApplication);
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<bool> _canOpen(Uri target) async {
+    try {
+      return await canLaunchUrl(target);
+    } on Object {
+      return false;
+    }
   }
 
   Uri? _uriFor(ContactChannel channel, Broker broker) {
     return switch (channel) {
       ContactChannel.call => Uri(scheme: 'tel', path: broker.phone),
+      // `sms:` et non `smsto:` : iOS ne connaît que le premier, et Android
+      // ouvre les deux.
       ContactChannel.sms => Uri(scheme: 'sms', path: broker.phone),
       ContactChannel.whatsapp =>
         broker.whatsapp == null

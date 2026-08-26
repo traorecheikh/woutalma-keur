@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/modules/client/broker/contact_sheet.dart';
 import 'package:woutalma_keur/app/modules/client/history/history_view_model.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
 
@@ -9,10 +10,14 @@ class HistoryScreen extends StatelessWidget {
   const HistoryScreen({
     required this.onSearch,
     required this.onReview,
+    required this.onCallAgain,
+    required this.onSignIn,
     super.key,
   });
   final VoidCallback onSearch;
   final void Function(ContactEntry entry) onReview;
+  final void Function(ContactEntry entry) onCallAgain;
+  final VoidCallback onSignIn;
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +38,20 @@ class HistoryScreen extends StatelessWidget {
           actionLabel: l.historySearch,
           onAction: onSearch,
         ),
-        error: (f) => failureState(context, f, onRetry: model.load),
+        error: (f) => model.signedOut
+            ? AppState(
+                kind: AppStateKind.permission,
+                icon: FIcons.history,
+                title: l.historySignedOutTitle,
+                message: l.historyEmptyBody,
+                actionLabel: l.historySignedOutAction,
+                onAction: onSignIn,
+              )
+            : failureState(context, f, onRetry: model.load),
         data: (entries) => _Groups(
           entries: entries,
           onReview: onReview,
+          onCallAgain: onCallAgain,
           onOutcome: model.setOutcome,
         ),
       ),
@@ -48,10 +63,12 @@ class _Groups extends StatelessWidget {
   const _Groups({
     required this.entries,
     required this.onReview,
+    required this.onCallAgain,
     required this.onOutcome,
   });
   final List<ContactEntry> entries;
   final void Function(ContactEntry entry) onReview;
+  final void Function(ContactEntry entry) onCallAgain;
   final void Function(ContactLog contact, ContactOutcome outcome) onOutcome;
 
   @override
@@ -68,6 +85,7 @@ class _Groups extends StatelessWidget {
       itemBuilder: (_, i) => _BrokerGroup(
         entries: groups[keys[i]]!,
         onReview: onReview,
+        onCallAgain: onCallAgain,
         onOutcome: onOutcome,
       ),
     );
@@ -78,10 +96,12 @@ class _BrokerGroup extends StatelessWidget {
   const _BrokerGroup({
     required this.entries,
     required this.onReview,
+    required this.onCallAgain,
     required this.onOutcome,
   });
   final List<ContactEntry> entries;
   final void Function(ContactEntry entry) onReview;
+  final void Function(ContactEntry entry) onCallAgain;
   final void Function(ContactLog contact, ContactOutcome outcome) onOutcome;
 
   @override
@@ -98,15 +118,39 @@ class _BrokerGroup extends StatelessWidget {
               AppAvatar(name: name, imagePath: broker?.logoAsset),
               const SizedBox(width: Insets.md),
               Expanded(
-                child: Text(
-                  name,
-                  style: context.text.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: context.text.titleMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (broker != null)
+                      BrokerPhone(
+                        broker.phone,
+                        copiable: true,
+                        style: AppText.moneyMd,
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
+          if (broker != null) ...[
+            const SizedBox(height: Insets.md),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton(
+                context.l10n.historyCallAgain,
+                icon: FIcons.phone,
+                variant: AppButtonVariant.secondary,
+                size: 44,
+                onPressed: () => onCallAgain(entries.first),
+              ),
+            ),
+          ],
           for (final entry in entries) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: Insets.md),

@@ -66,37 +66,55 @@ class BrokerViewModel extends ChangeNotifier {
   ScreenState<BrokerDetail> _state = const ScreenState<BrokerDetail>.initial();
   MutationState _contactState = const MutationState.idle();
 
-  /// Dernier contact réussi, pour proposer M05 au retour.
-  ContactLog? lastContact;
+  /// Dernier contact ouvert, tant que M05 ne l'a pas repris.
+  ContactLog? _pendingOutcome;
 
   ScreenState<BrokerDetail> get state => _state;
   MutationState get contactState => _contactState;
+
+  /// Rend le contact en attente de résultat, et le retire : M05 ne se pose
+  /// qu'une fois par mise en relation.
+  ContactLog? takePendingOutcome() {
+    final ContactLog? pending = _pendingOutcome;
+    _pendingOutcome = null;
+    return pending;
+  }
 
   Future<void> load() async {
     _state = const ScreenState<BrokerDetail>.loading();
     notifyListeners();
 
-    final Broker? broker = await _brokers.byId(_brokerId);
-    if (broker == null) {
-      // Lien profond vers une fiche disparue : on le dit, on ne redirige pas
-      // en silence.
-      _state = const ScreenState<BrokerDetail>.error(WkFailure.notFound);
+    final Broker? broker;
+    final List<Property> owned;
+    final List<Review> published;
+    try {
+      broker = await _brokers.byId(_brokerId);
+      if (broker == null) {
+        // Lien profond vers une fiche disparue : on le dit, on ne redirige pas
+        // en silence.
+        _state = const ScreenState<BrokerDetail>.error(WkFailure.notFound);
+        notifyListeners();
+        return;
+      }
+      owned = await _properties.byBroker(_brokerId, onlyDiscoverable: true);
+      // `onlyPublic` explicite : C02 est la fiche publique. Un avis en
+      // modération — ou refusé — ne s'y affiche pas et ne pèse pas dans la
+      // moyenne, sans quoi une note publique se fabriquerait avec des avis que
+      // personne n'a validés.
+      published = await _reviews.byBroker(_brokerId, onlyPublic: true);
+    } on DioException catch (error) {
+      // Sans cette garde, une coupure laissait le squelette tourner sans fin.
+      _state = ScreenState<BrokerDetail>.error(
+        error.response == null ? WkFailure.network : WkFailure.unknown,
+      );
+      notifyListeners();
+      return;
+    } on Object {
+      _state = const ScreenState<BrokerDetail>.error(WkFailure.unknown);
       notifyListeners();
       return;
     }
 
-    final List<Property> owned = await _properties.byBroker(
-      _brokerId,
-      onlyDiscoverable: true,
-    );
-    // `onlyPublic` explicite : C02 est la fiche publique. Un avis en
-    // modération — ou refusé — ne s'y affiche pas et ne pèse pas dans la
-    // moyenne, sans quoi une note publique se fabriquerait avec des avis que
-    // personne n'a validés.
-    final List<Review> published = await _reviews.byBroker(
-      _brokerId,
-      onlyPublic: true,
-    );
     final double average = published.isEmpty
         ? 0
         : published
@@ -117,48 +135,48 @@ class BrokerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Journalise puis ouvre le canal. Renvoie `false` si rien n'a pu s'ouvrir.
-  Future<bool> contactVia(ContactChannel channel, {String? propertyId}) async {
+  /// Ouvre le canal puis journalise. L'écran dit ce qui n'a pas pu s'ouvrir.
+  Future<ContactAttempt> contactVia(
+    ContactChannel channel, {
+    String? propertyId,
+  }) async {
     final BrokerDetail? detail = _state.valueOrNull;
     if (detail == null || _contactState.isSubmitting) {
-      return false;
+      return const ContactAttempt(log: null, opened: false);
     }
 
     _contactState = const MutationState.submitting();
     notifyListeners();
 
-    // Le journal part sur le réseau et exige une session. Sans ce catch, un
-    // 401 laissait `_contactState` en `submitting` : le bouton Contacter
-    // tournait indéfiniment et devenait intouchable, sans un mot à l'écran —
-    // sur l'action la plus importante de l'application.
-    late final ContactAttempt attempt;
-    try {
-      attempt = await _contact.contact(
-        broker: detail.broker,
-        channel: channel,
-        propertyId: propertyId,
-      );
-    } on DioException catch (error) {
-      _contactState = MutationState.failure(
-        error.response?.statusCode == 401
-            ? WkFailure.permission
-            : error.response == null
-            ? WkFailure.network
-            : WkFailure.unknown,
-      );
-      notifyListeners();
-      return false;
-    } on Object {
-      _contactState = const MutationState.failure(WkFailure.unknown);
-      notifyListeners();
-      return false;
-    }
+    final ContactAttempt attempt = await _contact.contact(
+      broker: detail.broker,
+      channel: channel,
+      propertyId: propertyId,
+    );
 
-    lastContact = attempt.log;
+    _pendingOutcome = attempt.log;
     _contactState = attempt.opened
         ? const MutationState.success()
         : const MutationState.failure(WkFailure.unknown);
     notifyListeners();
-    return attempt.opened;
+    return attempt;
+  }
+
+  /// L'appel sans compte : rien n'est journalisé, mais le téléphone s'ouvre.
+  Future<bool> callWithoutAccount() async {
+    final BrokerDetail? detail = _state.valueOrNull;
+    if (detail == null) {
+      return false;
+    }
+    return _contact.open(ContactChannel.call, detail.broker);
+  }
+
+  Future<void> recordOutcome(ContactLog log, ContactOutcome outcome) async {
+    try {
+      await _contact.recordOutcome(log, outcome);
+    } on Object {
+      // Déclarer un résultat n'est pas l'action principale de l'écran : son
+      // échec ne doit pas remplacer la fiche par une erreur.
+    }
   }
 }

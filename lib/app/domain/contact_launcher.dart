@@ -12,9 +12,10 @@ abstract class ContactLauncher {
 
 /// Séquence complète d'une mise en relation.
 ///
-/// **L'ordre compte** : on journalise **avant** d'ouvrir le canal externe. Si
-/// l'utilisateur ne revient jamais dans l'application, la trace existe quand
-/// même — et c'est cette trace qui autorisera un avis plus tard.
+/// **L'ordre compte** : on ouvre le canal **avant** de journaliser. Le journal
+/// exige le réseau et une session ; le faire précéder l'appel privait de
+/// téléphone quiconque était hors ligne ou non identifié. La trace suit, et le
+/// dépôt la met en attente localement si elle ne part pas.
 class ContactService {
   const ContactService({
     required this.contacts,
@@ -37,30 +38,44 @@ class ContactService {
     required ContactChannel channel,
     String? propertyId,
   }) async {
-    final ContactLog log = await contacts.log(
-      brokerId: broker.id,
-      propertyId: propertyId,
-      channel: channel,
-    );
-
-    bool opened;
+    if (!await open(channel, broker)) {
+      return const ContactAttempt(log: null, opened: false);
+    }
+    ContactLog? log;
     try {
-      opened = await launcher
+      log = await contacts.log(
+        brokerId: broker.id,
+        propertyId: propertyId,
+        channel: channel,
+      );
+    } on Object {
+      log = null;
+    }
+    return ContactAttempt(log: log, opened: true);
+  }
+
+  /// Ouvre le canal sans rien journaliser : un appel doit partir même sans
+  /// compte, quand l'identification est refusée.
+  Future<bool> open(ContactChannel channel, Broker broker) async {
+    try {
+      return await launcher
           .open(channel, broker)
           .timeout(openTimeout, onTimeout: () => false);
     } on Object {
-      // Un canal absent lève parfois plutôt que de renvoyer faux. Dans les
-      // deux cas, la trace reste et l'écran doit le dire.
-      opened = false;
+      // Un canal absent lève parfois plutôt que de renvoyer faux.
+      return false;
     }
-    return ContactAttempt(log: log, opened: opened);
   }
+
+  Future<void> recordOutcome(ContactLog log, ContactOutcome outcome) =>
+      contacts.update(log.copyWith(outcome: outcome));
 }
 
 class ContactAttempt {
   const ContactAttempt({required this.log, required this.opened});
 
-  final ContactLog log;
+  /// Nul quand rien n'a pu être écrit, même localement.
+  final ContactLog? log;
 
   /// Faux quand aucune application ne pouvait prendre le relais. L'écran doit
   /// le dire : un bouton qui ne fait rien est pire qu'un bouton absent.

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/data/repositories/remote_mappers.dart';
@@ -403,6 +405,8 @@ class RemoteReviewRepository implements ReviewRepository {
 class RemoteContactRepository implements ContactRepository {
   RemoteContactRepository(this._api, this._brokersApi);
 
+  static final Random _random = Random();
+
   final api.ContactsApi _api;
 
   /// Les contacts reçus vivent sur BrokersApi : c'est une lecture du profil
@@ -441,20 +445,23 @@ class RemoteContactRepository implements ContactRepository {
     }
   }
 
-  /// Mirrors ContactRepository.log — logs BEFORE the caller opens the
-  /// external channel (see ContactService.contact in contact_launcher.dart),
-  /// and the row is durably committed server-side by the time this returns.
+  /// `clientRequestId` : une reprise après coupure ne doit pas créer deux
+  /// contacts pour un seul appel. Le serveur déduplique dessus.
   @override
   Future<ContactLog> log({
     required String brokerId,
     String? propertyId,
     required ContactChannel channel,
   }) async {
+    final String requestId =
+        'req-${DateTime.now().microsecondsSinceEpoch}-'
+        '${_random.nextInt(0xFFFFFF).toRadixString(16)}';
     final response = await _api.contactsControllerLog(
       createContactDto: api.CreateContactDto((b) {
         b.brokerId = brokerId;
         b.propertyId = propertyId;
         b.channel = mapContactChannelToApi(channel);
+        b.clientRequestId = requestId;
       }),
     );
     return mapContactLog(response.data!);

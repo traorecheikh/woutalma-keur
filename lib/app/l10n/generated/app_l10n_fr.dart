@@ -415,6 +415,38 @@ class AppL10nFr extends AppL10n {
   String get contactLogged => 'Contact enregistré';
 
   @override
+  String get contactNotLogged => 'Appel lancé, non enregistré';
+
+  @override
+  String get contactWhatsappMissing =>
+      'WhatsApp n\'est pas installé. Appelez plutôt.';
+
+  @override
+  String get contactSmsMissing => 'Aucune application de SMS. Appelez plutôt.';
+
+  @override
+  String get contactCallMissing => 'Impossible d\'ouvrir le téléphone.';
+
+  @override
+  String get contactPhoneCopyHint => 'Appuyez longuement pour copier le numéro';
+
+  @override
+  String get contactPhoneCopied => 'Numéro copié';
+
+  @override
+  String get contactGateTitle => 'Pour contacter, entrez votre numéro';
+
+  @override
+  String get contactGateBody =>
+      'Votre numéro sert à retrouver vos contacts et à laisser un avis.';
+
+  @override
+  String get contactGateSignIn => 'Entrer mon numéro';
+
+  @override
+  String get contactGateCallAnyway => 'Appeler sans compte';
+
+  @override
   String get outcomeTitle => 'Avez-vous pu lui parler ?';
 
   @override
@@ -464,6 +496,12 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get historyCallAgain => 'Rappeler';
+
+  @override
+  String get historySignedOutTitle => 'Identifiez-vous pour voir vos contacts';
+
+  @override
+  String get historySignedOutAction => 'Entrer mon numéro';
 
   @override
   String get reviewTitle => 'Votre avis';
@@ -969,6 +1007,22 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get propertyBrokerLabel => 'Proposé par';
+
+  @override
+  String get propertyBrokerMissing => 'Ce courtier n\'est plus joignable.';
+
+  @override
+  String get propertyShare => 'Envoyer à un proche';
+
+  @override
+  String propertyShareText(
+    String title,
+    String price,
+    String neighbourhood,
+    String phone,
+  ) {
+    return '$title — $price à $neighbourhood. Courtier : $phone';
+  }
 
   @override
   String get propertyStatusTitle => 'Statut du bien';

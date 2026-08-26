@@ -723,11 +723,71 @@ abstract class AppL10n {
   /// **'Écrire sur WhatsApp'**
   String get contactWhatsapp;
 
-  /// Confirme que la mise en relation est tracée avant l'ouverture du canal externe.
+  /// Confirme que la mise en relation est tracée après l'ouverture du canal externe.
   ///
   /// In fr, this message translates to:
   /// **'Contact enregistré'**
   String get contactLogged;
+
+  /// Le canal s'est ouvert mais la trace n'a pu être écrite nulle part.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appel lancé, non enregistré'**
+  String get contactNotLogged;
+
+  /// Échec d'ouverture du canal WhatsApp, faute d'application.
+  ///
+  /// In fr, this message translates to:
+  /// **'WhatsApp n\'est pas installé. Appelez plutôt.'**
+  String get contactWhatsappMissing;
+
+  /// Échec d'ouverture du canal SMS, faute d'application.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune application de SMS. Appelez plutôt.'**
+  String get contactSmsMissing;
+
+  /// Échec d'ouverture du composeur téléphonique.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir le téléphone.'**
+  String get contactCallMissing;
+
+  /// Indication d'accessibilité sur le numéro affiché en C02.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez longuement pour copier le numéro'**
+  String get contactPhoneCopyHint;
+
+  /// Confirme la copie du numéro dans le presse-papiers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro copié'**
+  String get contactPhoneCopied;
+
+  /// Titre de la feuille montrée avant un contact, sans session.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour contacter, entrez votre numéro'**
+  String get contactGateTitle;
+
+  /// Explication de la demande d'identification avant un contact.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre numéro sert à retrouver vos contacts et à laisser un avis.'**
+  String get contactGateBody;
+
+  /// Ouvre G03 depuis la feuille d'identification avant contact.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrer mon numéro'**
+  String get contactGateSignIn;
+
+  /// Lance l'appel sans session ni trace. Un appel ne se refuse pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appeler sans compte'**
+  String get contactGateCallAnyway;
 
   /// Titre de M05, posé au retour d'une application externe.
   ///
@@ -824,6 +884,18 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Rappeler'**
   String get historyCallAgain;
+
+  /// État de C04 quand le serveur refuse la lecture faute de session.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiez-vous pour voir vos contacts'**
+  String get historySignedOutTitle;
+
+  /// Ouvre G03 depuis l'historique sans session.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrer mon numéro'**
+  String get historySignedOutAction;
 
   /// Titre de C05.
   ///
@@ -1622,6 +1694,29 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Proposé par'**
   String get propertyBrokerLabel;
+
+  /// Motif d'indisponibilité du bouton de contact quand le bien n'a plus de courtier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce courtier n\'est plus joignable.'**
+  String get propertyBrokerMissing;
+
+  /// Partage la fiche d'un bien par les applications du téléphone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer à un proche'**
+  String get propertyShare;
+
+  /// Texte partagé pour un bien : tout ce qu'il faut pour rappeler sans l'application.
+  ///
+  /// In fr, this message translates to:
+  /// **'{title} — {price} à {neighbourhood}. Courtier : {phone}'**
+  String propertyShareText(
+    String title,
+    String price,
+    String neighbourhood,
+    String phone,
+  );
 
   /// Titre de la feuille M08.
   ///
