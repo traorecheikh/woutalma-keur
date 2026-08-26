@@ -29,7 +29,7 @@ List<String> parseCoverage(String value) {
   return zones;
 }
 
-class BrokerProfileEditorViewModel extends ChangeNotifier {
+class BrokerProfileEditorViewModel extends ChangeNotifier with BrokerFailures {
   BrokerProfileEditorViewModel({
     required BrokerRepository brokers,
     required String brokerId,
@@ -62,7 +62,7 @@ class BrokerProfileEditorViewModel extends ChangeNotifier {
         _state = ScreenState<Broker>.data(current);
       }
     } on Object catch (error) {
-      _state = ScreenState<Broker>.error(brokerFailure(error));
+      _state = ScreenState<Broker>.error(onLoadError(error));
     }
     notifyListeners();
   }
@@ -88,28 +88,23 @@ class BrokerProfileEditorViewModel extends ChangeNotifier {
 
     final String whatsappDigits = localPhoneDigits(whatsapp);
 
+    final bool hasWhatsapp = whatsappDigits.length == _localDigits;
     try {
+      // Vérification, taux de réponse et mise en avant appartiennent à la
+      // modération : `copyWith` les laisse tels quels sans les nommer.
       await _brokers.save(
-        Broker(
-          id: current.id,
+        current.copyWith(
           kind: kind,
           name: name.trim(),
           phone: '$_dialCode${localPhoneDigits(phone)}',
-          whatsapp: whatsappDigits.length == _localDigits
-              ? '$_dialCode$whatsappDigits'
-              : null,
-          position: current.position,
+          whatsapp: hasWhatsapp ? '$_dialCode$whatsappDigits' : null,
+          clearWhatsapp: !hasWhatsapp,
           coverage: parseCoverage(coverage),
-          logoAsset: current.logoAsset,
-          // Vérification et mise en avant appartiennent à la modération.
-          verification: current.verification,
-          responseRate: current.responseRate,
-          pinned: current.pinned,
         ),
       );
       _submission = const MutationState.success();
     } on Object catch (error) {
-      _submission = MutationState.failure(brokerFailure(error));
+      _submission = MutationState.failure(onWriteError(error));
       notifyListeners();
       return false;
     }
@@ -188,24 +183,36 @@ class _BrokerProfileEditorScreenState extends State<BrokerProfileEditorScreen> {
     final broker = model.broker;
     if (broker != null) _syncFrom(broker);
 
-    return AppScaffold(
-      headerTitle: l.brokerProfileEditorTitle,
-      onBack: () => _leave(context),
-      bottom: broker == null
-          ? null
-          : AppButton(
-              l.brokerProfileEditorSave,
-              icon: FIcons.check,
-              loading: model.submission.isSubmitting,
-              onPressed: () => _save(context, model),
-            ),
-      body: model.state.map(
-        initial: () => const AppSkeleton(),
-        loading: () => const AppSkeleton(),
-        empty: () =>
-            AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
-        data: (_) => _form(context, model),
+    return PopScope(
+      // Le retour système contournait la confirmation : un profil retouché
+      // disparaissait sans qu'on ait rien dit.
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave(context);
+      },
+      child: AppScaffold(
+        headerTitle: l.brokerProfileEditorTitle,
+        onBack: () => _leave(context),
+        bottom: broker == null
+            ? null
+            : AppButton(
+                l.brokerProfileEditorSave,
+                icon: FIcons.check,
+                loading: model.submission.isSubmitting,
+                onPressed: () => _save(context, model),
+              ),
+        body: model.state.map(
+          initial: () => const AppSkeleton(),
+          loading: () => const AppSkeleton(),
+          empty: () =>
+              AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
+          error: (_) => brokerFailureState(
+            context,
+            model.loadFailure,
+            onRetry: model.load,
+          ),
+          data: (_) => _form(context, model),
+        ),
       ),
     );
   }
@@ -336,7 +343,7 @@ class _BrokerProfileEditorScreenState extends State<BrokerProfileEditorScreen> {
     if (!saved) {
       final submission = model.submission;
       final message = submission is MutationFailure
-          ? failureText(context.l10n, submission.failure)
+          ? brokerFailureText(context.l10n, model.writeFailure)
           : context.l10n.validationFixFirst;
       feedback?.emit(FeedbackIntent.error);
       feedback?.announce(message);

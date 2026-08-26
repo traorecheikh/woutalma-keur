@@ -29,6 +29,7 @@ part 'create_property_dto.g.dart';
 /// * [newPhotos]
 /// * [voiceAsset] - Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.
 /// * [newVoiceNote]
+/// * [clientRequestId] - Idempotency key, unique per broker. Replaying it returns the listing already created.
 @BuiltValue()
 abstract class CreatePropertyDto
     implements Built<CreatePropertyDto, CreatePropertyDtoBuilder> {
@@ -86,6 +87,10 @@ abstract class CreatePropertyDto
 
   @BuiltValueField(wireName: r'newVoiceNote')
   UploadVoiceNoteDto? get newVoiceNote;
+
+  /// Idempotency key, unique per broker. Replaying it returns the listing already created.
+  @BuiltValueField(wireName: r'clientRequestId')
+  String? get clientRequestId;
 
   CreatePropertyDto._();
 
@@ -202,6 +207,13 @@ class _$CreatePropertyDtoSerializer
       yield serializers.serialize(
         object.newVoiceNote,
         specifiedType: const FullType(UploadVoiceNoteDto),
+      );
+    }
+    if (object.clientRequestId != null) {
+      yield r'clientRequestId';
+      yield serializers.serialize(
+        object.clientRequestId,
+        specifiedType: const FullType(String),
       );
     }
   }
@@ -343,6 +355,14 @@ class _$CreatePropertyDtoSerializer
           ) as UploadVoiceNoteDto?;
           if (valueDes == null) continue;
           result.newVoiceNote.replace(valueDes);
+          break;
+        case r'clientRequestId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.clientRequestId = valueDes;
           break;
         default:
           unhandled.add(key);

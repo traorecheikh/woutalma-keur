@@ -18,9 +18,12 @@ class RecordVoiceNoteRecorder implements VoiceNoteRecorder {
   @override
   Future<bool> requestPermission() => _recorder.hasPermission();
 
+  /// Le vocal atterrit dans le dossier documents, pas dans le temporaire : le
+  /// système vide celui-ci quand la place manque, et l'enregistrement d'un
+  /// bien pas encore publié disparaissait avec.
   @override
   Future<void> start() async {
-    final Directory dir = await getTemporaryDirectory();
+    final Directory dir = await getApplicationDocumentsDirectory();
     _path = '${dir.path}/wk-voice-${DateTime.now().microsecondsSinceEpoch}.m4a';
     await _recorder.start(
       const RecordConfig(

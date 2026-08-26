@@ -41,7 +41,7 @@ class BrokerActivity {
   }
 }
 
-class BrokerHomeViewModel extends ChangeNotifier {
+class BrokerHomeViewModel extends ChangeNotifier with BrokerFailures {
   BrokerHomeViewModel({
     required BrokerRepository brokers,
     required PropertyRepository properties,
@@ -78,7 +78,9 @@ class BrokerHomeViewModel extends ChangeNotifier {
       final List<Review> published = all
           .where((Review r) => r.isPublic)
           .toList();
-      final List<ContactLog> contacts = await _contacts.all();
+      // `all()` rend ce que ce compte a envoyé **en tant que client** : le
+      // compteur « contacts reçus » y trouvait toujours zéro.
+      final List<ContactLog> received = await _contacts.receivedBy(_brokerId);
 
       _state = ScreenState<BrokerActivity>.data(
         BrokerActivity(
@@ -89,9 +91,7 @@ class BrokerHomeViewModel extends ChangeNotifier {
           closedProperties: owned
               .where((Property p) => !p.isDiscoverable)
               .length,
-          contactsReceived: contacts
-              .where((ContactLog c) => c.brokerId == _brokerId)
-              .length,
+          contactsReceived: received.length,
           publishedReviews: published.length,
           pendingReviews: all.length - published.length,
           averageRating: published.isEmpty
@@ -103,7 +103,7 @@ class BrokerHomeViewModel extends ChangeNotifier {
         ),
       );
     } on Object catch (error) {
-      _state = ScreenState<BrokerActivity>.error(brokerFailure(error));
+      _state = ScreenState<BrokerActivity>.error(onLoadError(error));
     }
     notifyListeners();
   }
@@ -156,7 +156,8 @@ class BrokerHomeScreen extends StatelessWidget {
           actionLabel: l.commonRetry,
           onAction: model.load,
         ),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
+        error: (_) =>
+            brokerFailureState(context, model.loadFailure, onRetry: model.load),
         data: (activity) => _Content(
           activity: activity,
           onAddProperty: onAddProperty,

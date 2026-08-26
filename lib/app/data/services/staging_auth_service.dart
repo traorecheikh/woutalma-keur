@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import 'package:dio/dio.dart';
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/data/services/token_store.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
@@ -81,8 +80,18 @@ class StagingAuthService extends AuthService {
       );
       notifyListeners();
       return OtpResult.verified;
-    } on Object {
-      return OtpResult.wrongCode;
+    } on DioException catch (error) {
+      // Seul le serveur peut dire que le code est faux. Tout traduire en
+      // « Code incorrect » faisait retaper le bon code à quelqu'un qui avait
+      // simplement perdu le réseau.
+      final int? status = error.response?.statusCode;
+      if (status == 400 || status == 401) {
+        return OtpResult.wrongCode;
+      }
+      if (status == 429) {
+        return OtpResult.tooManyAttempts;
+      }
+      rethrow;
     }
   }
 
@@ -166,10 +175,12 @@ class StagingAuthService extends AuthService {
   }
 
   @override
-  void signOut() {
+  Future<void> signOut() async {
+    signUpAsBroker = false;
+    // Les jetons partent **avant** l'annonce : en `unawaited`, l'écran suivant
+    // pouvait repartir avec la session qu'on venait de fermer.
+    await _tokens.clear();
     _current = null;
     notifyListeners();
-    signUpAsBroker = false;
-    unawaited(_tokens.clear());
   }
 }

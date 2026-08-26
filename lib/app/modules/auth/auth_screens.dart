@@ -215,18 +215,19 @@ class _PhoneScreenState extends State<PhoneScreen> {
       widget.onSignedIn();
     }
   }
+}
 
-  /// Les trois causes réelles ne se ressemblent pas : le SMS n'existe pas dans
-  /// ce build, Google n'est pas configuré côté serveur, ou le réseau est coupé.
-  static String _messageFor(BuildContext context, Object error) {
-    if (error is UnimplementedError) return context.l10n.authSmsUnavailable;
-    if (error is DioException) {
-      final status = error.response?.statusCode;
-      if (status == 503) return context.l10n.authGoogleUnavailable;
-      if (status == 401 || status == 404) return context.l10n.authStagingClosed;
-    }
-    return context.l10n.authFailed;
+/// Les causes réelles ne se ressemblent pas : le SMS n'existe pas dans ce
+/// build, Google n'est pas configuré côté serveur, ou le réseau est coupé.
+String _messageFor(BuildContext context, Object error) {
+  if (error is UnimplementedError) return context.l10n.authSmsUnavailable;
+  if (error is DioException) {
+    if (error.response == null) return context.l10n.failureNetwork;
+    final status = error.response?.statusCode;
+    if (status == 503) return context.l10n.authGoogleUnavailable;
+    if (status == 401 || status == 404) return context.l10n.authStagingClosed;
   }
+  return context.l10n.authFailed;
 }
 
 /// Bouton de marque : ses couleurs sont imposées par Google, pas par le thème.
@@ -317,6 +318,10 @@ class _OtpScreenState extends State<OtpScreen> {
   String? _error;
   bool _checking = false;
 
+  /// Le code montré en recette change à chaque renvoi : garder celui de la
+  /// route faisait retaper un code que le serveur avait déjà remplacé.
+  late String? _simulatedCode = widget.simulatedCode;
+
   @override
   void initState() {
     super.initState();
@@ -390,11 +395,11 @@ class _OtpScreenState extends State<OtpScreen> {
             title: Text(l.authOtpSentTo(widget.phone)),
             subtitle: Text(l.authOtpCodeHint),
           ),
-          if (widget.simulatedCode != null) ...[
+          if (_simulatedCode != null) ...[
             const SizedBox(height: Insets.md),
             FAlert(
               icon: const Icon(FIcons.key),
-              title: Text(l.authOtpSimulated(widget.simulatedCode!)),
+              title: Text(l.authOtpSimulated(_simulatedCode!)),
             ),
           ],
           const SizedBox(height: Insets.xxl),
@@ -445,13 +450,17 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _resend() async {
+    final auth = context.read<AuthService>();
+    String? code;
     try {
-      await context.read<AuthService>().requestCode(widget.phone);
+      code = await auth.requestCode(widget.phone);
     } on Object {
       if (mounted) setState(() => _error = context.l10n.authFailed);
       return;
     }
-    if (mounted) _startCountdown();
+    if (!mounted) return;
+    setState(() => _simulatedCode = auth.isSimulated ? code : null);
+    _startCountdown();
   }
 
   void _onChanged(String value) {
@@ -470,13 +479,13 @@ class _OtpScreenState extends State<OtpScreen> {
       final auth = context.read<AuthService>();
       if (auth is StagingAuthService) auth.signUpAsBroker = widget.asBroker;
       result = await auth.verify(widget.phone, entered);
-    } on Object {
+    } on Object catch (error) {
       // Sinon `_checking` restait vrai : la pastille « Vérification… » ne
       // repartait jamais et le champ devenait inerte.
       if (!mounted) return;
       setState(() {
         _checking = false;
-        _error = context.l10n.authFailed;
+        _error = _messageFor(context, error);
       });
       context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
       return;
@@ -493,7 +502,9 @@ class _OtpScreenState extends State<OtpScreen> {
       case OtpResult.tooManyAttempts:
         feedback?.emit(FeedbackIntent.error);
         setState(() {
-          _error = context.l10n.authOtpWrong;
+          _error = result == OtpResult.tooManyAttempts
+              ? context.l10n.authOtpTooManyAttempts
+              : context.l10n.authOtpWrong;
           // Le code reste sélectionnable : on corrige un chiffre, on ne retape
           // pas tout.
           _code.selection = TextSelection(

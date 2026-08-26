@@ -77,6 +77,8 @@ class _$UpdateBrokerDto extends UpdateBrokerDto {
   final BuiltList<String>? coverage;
   @override
   final String? logoAsset;
+  @override
+  final bool? clearWhatsapp;
 
   factory _$UpdateBrokerDto([void Function(UpdateBrokerDtoBuilder)? updates]) =>
       (UpdateBrokerDtoBuilder()..update(updates))._build();
@@ -89,7 +91,8 @@ class _$UpdateBrokerDto extends UpdateBrokerDto {
       this.latitude,
       this.longitude,
       this.coverage,
-      this.logoAsset})
+      this.logoAsset,
+      this.clearWhatsapp})
       : super._();
   @override
   UpdateBrokerDto rebuild(void Function(UpdateBrokerDtoBuilder) updates) =>
@@ -109,7 +112,8 @@ class _$UpdateBrokerDto extends UpdateBrokerDto {
         latitude == other.latitude &&
         longitude == other.longitude &&
         coverage == other.coverage &&
-        logoAsset == other.logoAsset;
+        logoAsset == other.logoAsset &&
+        clearWhatsapp == other.clearWhatsapp;
   }
 
   @override
@@ -123,6 +127,7 @@ class _$UpdateBrokerDto extends UpdateBrokerDto {
     _$hash = $jc(_$hash, longitude.hashCode);
     _$hash = $jc(_$hash, coverage.hashCode);
     _$hash = $jc(_$hash, logoAsset.hashCode);
+    _$hash = $jc(_$hash, clearWhatsapp.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -137,7 +142,8 @@ class _$UpdateBrokerDto extends UpdateBrokerDto {
           ..add('latitude', latitude)
           ..add('longitude', longitude)
           ..add('coverage', coverage)
-          ..add('logoAsset', logoAsset))
+          ..add('logoAsset', logoAsset)
+          ..add('clearWhatsapp', clearWhatsapp))
         .toString();
   }
 }
@@ -179,6 +185,11 @@ class UpdateBrokerDtoBuilder
   String? get logoAsset => _$this._logoAsset;
   set logoAsset(String? logoAsset) => _$this._logoAsset = logoAsset;
 
+  bool? _clearWhatsapp;
+  bool? get clearWhatsapp => _$this._clearWhatsapp;
+  set clearWhatsapp(bool? clearWhatsapp) =>
+      _$this._clearWhatsapp = clearWhatsapp;
+
   UpdateBrokerDtoBuilder() {
     UpdateBrokerDto._defaults(this);
   }
@@ -194,6 +205,7 @@ class UpdateBrokerDtoBuilder
       _longitude = $v.longitude;
       _coverage = $v.coverage?.toBuilder();
       _logoAsset = $v.logoAsset;
+      _clearWhatsapp = $v.clearWhatsapp;
       _$v = null;
     }
     return this;
@@ -225,6 +237,7 @@ class UpdateBrokerDtoBuilder
             longitude: longitude,
             coverage: _coverage?.build(),
             logoAsset: logoAsset,
+            clearWhatsapp: clearWhatsapp,
           );
     } catch (_) {
       late String _$failedField;

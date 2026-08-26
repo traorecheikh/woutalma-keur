@@ -109,6 +109,14 @@
   "@failureUnknown": {
     "description": "Cause d'erreur non identifiée. Dernier recours."
   },
+  "failureSessionExpired": "Votre session a expiré. Identifiez-vous à nouveau.",
+  "@failureSessionExpired": {
+    "description": "Cause d'erreur : le serveur a refusé le jeton (401/403)."
+  },
+  "failureRejected": "Le serveur a refusé ces informations. Vérifiez ce que vous avez saisi.",
+  "@failureRejected": {
+    "description": "Cause d'erreur : le serveur a rejeté la saisie (400/422)."
+  },
 
   "offlineCached": "Hors ligne. Informations enregistrées {when}.",
   "@offlineCached": {
@@ -811,11 +819,39 @@
   "@propertyStatusImpactVisible": {
     "description": "Conséquence publique des statuts disponible et réservé."
   },
+  "propertyMoreActions": "Plus d'actions",
+  "@propertyMoreActions": {
+    "description": "Bouton visible sur chaque bien de B02. Le glissement et l'appui long ne s'annoncent nulle part : sans ce bouton, modifier ou retirer un bien n'a aucune porte visible."
+  },
+  "propertyMarkClosed": "Marquer vendu ou loué",
+  "@propertyMarkClosed": {
+    "description": "Action en un appui : passe le bien en CLOSED depuis M08 ou B04."
+  },
+  "propertyMarkAvailable": "Remettre disponible",
+  "@propertyMarkAvailable": {
+    "description": "Action en un appui : rouvre un bien clos ou réservé."
+  },
 
+  "propertyDraftTitle": "Reprendre le brouillon ?",
+  "@propertyDraftTitle": {
+    "description": "Feuille proposée à l'ouverture de B03 quand une saisie précédente n'a pas été publiée."
+  },
+  "propertyDraftBody": "Vous aviez commencé un bien sans le publier. On repart d'où vous vous étiez arrêté ?",
+  "@propertyDraftBody": {
+    "description": "Explique d'où vient le brouillon : l'application a été fermée avant la publication."
+  },
+  "propertyDraftResume": "Reprendre le brouillon",
+  "@propertyDraftResume": { "description": "Confirme la reprise du brouillon." },
+  "propertyDraftDiscard": "Recommencer à zéro",
+  "@propertyDraftDiscard": { "description": "Abandonne le brouillon et vide le formulaire." },
   "fieldTitle": "Titre",
   "@fieldTitle": { "description": "Champ titre d'un bien." },
-  "fieldPrice": "Prix",
-  "@fieldPrice": { "description": "Champ prix d'un bien, en francs." },
+  "fieldPriceRent": "Prix par mois (F)",
+  "@fieldPriceRent": {
+    "description": "Champ prix en location. L'unité et la périodicité sont dans le libellé : « Prix » seul laissait saisir un loyer annuel."
+  },
+  "fieldPriceSale": "Prix de vente (F)",
+  "@fieldPriceSale": { "description": "Champ prix en vente, unité comprise." },
   "fieldSurface": "Surface en m²",
   "@fieldSurface": { "description": "Champ surface d'un bien." },
   "fieldSurfaceChoice": "Surface",
@@ -879,6 +915,11 @@
   "validationPositiveNumber": "Indiquez un nombre plus grand que zéro",
   "@validationPositiveNumber": {
     "description": "Valeur numérique nulle ou négative. Dit quoi faire."
+  },
+  "validationPriceTooHigh": "Ce prix dépasse {max} F. Vérifiez les zéros.",
+  "@validationPriceTooHigh": {
+    "description": "Plafond de prix, aligné sur MAX_PRICE_CFA du serveur. Un zéro de trop passait le formulaire et se faisait refuser après l'envoi.",
+    "placeholders": { "max": { "type": "int", "format": "decimalPattern" } }
   },
   "validationFixFirst": "Corrigez le premier champ signalé",
   "@validationFixFirst": {
@@ -1158,6 +1199,10 @@
   },
   "authOtpWrong": "Code incorrect, réessayez",
   "@authOtpWrong": { "description": "Code OTP erroné." },
+  "authOtpTooManyAttempts": "Trop d'essais. Attendez un instant, puis demandez un nouveau code.",
+  "@authOtpTooManyAttempts": {
+    "description": "Le serveur limite les tentatives (429). Dire « code incorrect » envoyait retaper le bon code sans fin."
+  },
   "authOtpCodeLabel": "Le code du message",
   "@authOtpCodeLabel": { "description": "Libellé du champ de saisie du code reçu." },
   "authOtpCodeHint": "6 chiffres",
@@ -1388,6 +1433,14 @@
   "@photosFailed": {
     "description": "Échec sur une photo précise, sans perdre les autres."
   },
+  "photoTooLarge": "Une photo est trop lourde pour être envoyée. Reprenez-la ou choisissez-en une autre.",
+  "@photoTooLarge": {
+    "description": "Refus avant ou pendant l'envoi : photo au-dessus de la limite serveur."
+  },
+  "photoUnsupported": "Ce format de photo n'est pas accepté. Prenez la photo avec l'appareil.",
+  "@photoUnsupported": {
+    "description": "Refus : le fichier n'est ni jpeg, ni png, ni webp."
+  },
 
   "viewList": "Liste",
   "@viewList": { "description": "Présentation des résultats en liste." },
@@ -1570,6 +1623,8 @@
   "@voiceNoteUnavailable": { "description": "Le lecteur a échoué." },
   "voiceNoteTooLarge": "Le message vocal est trop lourd pour être envoyé.",
   "@voiceNoteTooLarge": { "description": "Refus avant envoi : fichier au-dessus de la limite serveur." },
+  "voiceNoteUnsupported": "Ce message vocal n'est pas dans un format accepté. Réenregistrez-le.",
+  "@voiceNoteUnsupported": { "description": "Refus avant envoi : format audio hors de la liste serveur." },
   "voiceNoteReady": "Message vocal prêt",
   "@voiceNoteReady": { "description": "État après enregistrement, avant publication." },
 

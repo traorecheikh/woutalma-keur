@@ -29,6 +29,9 @@ part 'update_property_dto.g.dart';
 /// * [newPhotos]
 /// * [voiceAsset] - Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged.
 /// * [newVoiceNote]
+/// * [clientRequestId] - Idempotency key, unique per broker. Replaying it returns the listing already created.
+/// * [clearSurface] - Sets surface back to unstated. Wins over `surface`.
+/// * [clearRooms] - Sets rooms back to unstated. Wins over `rooms`.
 @BuiltValue()
 abstract class UpdatePropertyDto
     implements Built<UpdatePropertyDto, UpdatePropertyDtoBuilder> {
@@ -86,6 +89,18 @@ abstract class UpdatePropertyDto
 
   @BuiltValueField(wireName: r'newVoiceNote')
   UploadVoiceNoteDto? get newVoiceNote;
+
+  /// Idempotency key, unique per broker. Replaying it returns the listing already created.
+  @BuiltValueField(wireName: r'clientRequestId')
+  String? get clientRequestId;
+
+  /// Sets surface back to unstated. Wins over `surface`.
+  @BuiltValueField(wireName: r'clearSurface')
+  bool? get clearSurface;
+
+  /// Sets rooms back to unstated. Wins over `rooms`.
+  @BuiltValueField(wireName: r'clearRooms')
+  bool? get clearRooms;
 
   UpdatePropertyDto._();
 
@@ -216,6 +231,27 @@ class _$UpdatePropertyDtoSerializer
       yield serializers.serialize(
         object.newVoiceNote,
         specifiedType: const FullType(UploadVoiceNoteDto),
+      );
+    }
+    if (object.clientRequestId != null) {
+      yield r'clientRequestId';
+      yield serializers.serialize(
+        object.clientRequestId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.clearSurface != null) {
+      yield r'clearSurface';
+      yield serializers.serialize(
+        object.clearSurface,
+        specifiedType: const FullType(bool),
+      );
+    }
+    if (object.clearRooms != null) {
+      yield r'clearRooms';
+      yield serializers.serialize(
+        object.clearRooms,
+        specifiedType: const FullType(bool),
       );
     }
   }
@@ -365,6 +401,30 @@ class _$UpdatePropertyDtoSerializer
           ) as UploadVoiceNoteDto?;
           if (valueDes == null) continue;
           result.newVoiceNote.replace(valueDes);
+          break;
+        case r'clientRequestId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.clientRequestId = valueDes;
+          break;
+        case r'clearSurface':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.clearSurface = valueDes;
+          break;
+        case r'clearRooms':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.clearRooms = valueDes;
           break;
         default:
           unhandled.add(key);

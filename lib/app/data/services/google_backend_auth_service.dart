@@ -130,12 +130,15 @@ class GoogleBackendAuthService extends AuthService {
   }
 
   @override
-  void signOut() {
+  Future<void> signOut() async {
+    // The local tokens go first and are awaited: announcing the sign-out while
+    // TokenStore.clear() was still in flight let the next screen rebuild with
+    // the session that was supposedly closed.
+    await _tokens.clear();
     _current = null;
     notifyListeners();
-    unawaited(_tokens.clear());
     // Fire-and-forget: nothing downstream depends on Google's own sign-out
     // completing before the local session is considered cleared.
-    _googleSignIn.signOut();
+    unawaited(_googleSignIn.signOut());
   }
 }

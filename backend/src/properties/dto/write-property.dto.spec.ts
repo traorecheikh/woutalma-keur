@@ -122,6 +122,20 @@ describe('CreatePropertyDto — what a broker is allowed to type', () => {
       expect(errorsOn(build({ voiceAsset: '' }))).toEqual([]);
     });
   });
+
+  describe('clientRequestId', () => {
+    it('accepts the key the editor mints before its first attempt', () => {
+      expect(errorsOn(build({ clientRequestId: 'prp-1756200000000000' }))).toEqual([]);
+    });
+
+    it('stays optional — an older client sends none', () => {
+      expect(errorsOn(build({ clientRequestId: undefined }))).toEqual([]);
+    });
+
+    it('refuses a key long enough to be a payload', () => {
+      expect(errorsOn(build({ clientRequestId: 'x'.repeat(65) }))).toContain('clientRequestId');
+    });
+  });
 });
 
 describe('UpdatePropertyDto — the same rules survive PartialType', () => {
@@ -135,5 +149,16 @@ describe('UpdatePropertyDto — the same rules survive PartialType', () => {
     const dto = plainToInstance(UpdatePropertyDto, { title: '  Studio   Yoff  ' });
     expect(dto.title).toBe('Studio Yoff');
     expect(errorsOn(plainToInstance(UpdatePropertyDto, { title: ' ' }))).toContain('title');
+  });
+
+  describe('clearing an optional field, which an omitted key cannot express', () => {
+    it('accepts the flags a listing turned into a terrain needs', () => {
+      const dto = plainToInstance(UpdatePropertyDto, { clearSurface: true, clearRooms: true });
+      expect(errorsOn(dto)).toEqual([]);
+    });
+
+    it('refuses a flag that is not a boolean', () => {
+      expect(errorsOn(plainToInstance(UpdatePropertyDto, { clearRooms: 'yes' }))).toContain('clearRooms');
+    });
   });
 });

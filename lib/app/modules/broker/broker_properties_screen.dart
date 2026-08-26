@@ -7,10 +7,11 @@ import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
+import 'package:woutalma_keur/app/modules/client/property/property_screen.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
 
-class BrokerPropertiesViewModel extends ChangeNotifier {
+class BrokerPropertiesViewModel extends ChangeNotifier with BrokerFailures {
   BrokerPropertiesViewModel({
     required PropertyRepository properties,
     required String brokerId,
@@ -57,7 +58,7 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
           ? const ScreenState<List<Property>>.empty()
           : ScreenState<List<Property>>.data(owned);
     } on Object catch (error) {
-      _state = ScreenState<List<Property>>.error(brokerFailure(error));
+      _state = ScreenState<List<Property>>.error(onLoadError(error));
     }
     notifyListeners();
   }
@@ -69,7 +70,7 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
       await _properties.delete(id);
       _mutation = const MutationState.success();
     } on Object catch (error) {
-      _mutation = MutationState.failure(brokerFailure(error));
+      _mutation = MutationState.failure(onWriteError(error));
       notifyListeners();
       return;
     }
@@ -85,27 +86,13 @@ class BrokerPropertiesViewModel extends ChangeNotifier {
     _mutation = const MutationState.submitting();
     notifyListeners();
     try {
-      await _properties.save(
-        Property(
-          id: property.id,
-          brokerId: property.brokerId,
-          kind: property.kind,
-          transaction: property.transaction,
-          title: property.title,
-          description: property.description,
-          price: property.price,
-          surface: property.surface,
-          rooms: property.rooms,
-          position: property.position,
-          neighbourhood: property.neighbourhood,
-          photoAssets: property.photoAssets,
-          status: status,
-          createdAt: property.createdAt,
-        ),
-      );
+      // `copyWith` et non un `Property(...)` recomposé : l'ancienne version
+      // oubliait `voiceAsset`, et le dépôt distant lisait cet oubli comme un
+      // retrait — le message vocal disparaissait à chaque « Marquer loué ».
+      await _properties.save(property.copyWith(status: status));
       _mutation = const MutationState.success();
     } on Object catch (error) {
-      _mutation = MutationState.failure(brokerFailure(error));
+      _mutation = MutationState.failure(onWriteError(error));
       notifyListeners();
       return;
     }
@@ -158,7 +145,8 @@ class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
           actionLabel: l.propertyAdd,
           onAction: widget.onAdd,
         ),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
+        error: (_) =>
+            brokerFailureState(context, model.loadFailure, onRetry: model.load),
         data: (owned) => _list(context, model, owned),
       ),
     );
@@ -185,7 +173,7 @@ class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
               : WkFormat.propertyStatus(l, value),
           icon: (value) => value == null ? null : statusIcon(value),
         ),
-        if (model.mutation case final MutationFailure failed)
+        if (model.mutation is MutationFailure)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               Insets.page,
@@ -197,7 +185,7 @@ class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
               liveRegion: true,
               child: FAlert(
                 variant: .destructive,
-                title: Text(failureText(l, failed.failure)),
+                title: Text(brokerFailureText(l, model.writeFailure)),
               ),
             ),
           ),
@@ -239,6 +227,9 @@ class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
     Property property,
   ) async {
     final l = context.l10n;
+    final toggle = property.status == PropertyStatus.closed
+        ? PropertyStatus.available
+        : PropertyStatus.closed;
     await showAppSheet<void>(
       context,
       title: property.title,
@@ -257,6 +248,18 @@ class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
           onTap: () {
             popSheet(context);
             widget.onEdit(property);
+          },
+        ),
+        // Le changement le plus fréquent en un appui : passer par la liste des
+        // trois statuts pour dire « c'est loué » demandait trois écrans.
+        AppRow(
+          title: toggle == PropertyStatus.closed
+              ? l.propertyMarkClosed
+              : l.propertyMarkAvailable,
+          leading: Icon(statusIcon(toggle)),
+          onTap: () {
+            popSheet(context);
+            _applyStatus(context, model, property, toggle);
           },
         ),
         AppRow(
@@ -295,57 +298,88 @@ class _BrokerPropertiesScreenState extends State<BrokerPropertiesScreen> {
       icon: statusIcon,
     );
     if (target == null || !context.mounted) return;
-
-    if (target == PropertyStatus.closed) {
-      final confirmed = await confirm(
-        context,
-        title: WkFormat.propertyStatus(l, target),
-        message: l.propertyStatusImpactClosed,
-        action: l.propertyStatusChange,
-      );
-      if (!confirmed || !context.mounted) return;
-    }
-
-    await model.changeStatus(property, target);
-    if (!context.mounted || _announceFailure(context, model)) return;
-    context.read<InteractionFeedbackService?>()?.emit(
-      FeedbackIntent.success,
-      eventId: 'B02:success:status-${property.id}-${target.name}',
-    );
-    toast(context, l.propertyStatusChanged);
+    await _applyStatus(context, model, property, target);
   }
+
+  Future<void> _applyStatus(
+    BuildContext context,
+    BrokerPropertiesViewModel model,
+    Property property,
+    PropertyStatus target,
+  ) => applyPropertyStatus(context, model, property, target);
 
   Future<void> _delete(
     BuildContext context,
     BrokerPropertiesViewModel model,
     Property property,
-  ) async {
-    final l = context.l10n;
+  ) => deleteProperty(context, model, property);
+}
+
+/// Change le statut, en disant d'abord ce que ça retire aux clients.
+///
+/// Partagée avec B04 : l'aperçu public et la liste doivent poser la même
+/// question et écrire la même chose. Rend vrai quand l'écriture a eu lieu —
+/// `mutation` ne le dit pas, elle garde le résultat de l'action précédente
+/// quand celle-ci est annulée.
+Future<bool> applyPropertyStatus(
+  BuildContext context,
+  BrokerPropertiesViewModel model,
+  Property property,
+  PropertyStatus target,
+) async {
+  final l = context.l10n;
+  if (target == PropertyStatus.closed) {
     final confirmed = await confirm(
       context,
-      title: l.propertyDeleteTitle(property.title),
-      message: l.propertyDeleteBody,
-      action: l.propertyDelete,
-      danger: true,
+      title: WkFormat.propertyStatus(l, target),
+      message: l.propertyStatusImpactClosed,
+      action: l.propertyStatusChange,
     );
-    if (!confirmed || !context.mounted) return;
-
-    await model.delete(property.id);
-    if (!context.mounted || _announceFailure(context, model)) return;
-    context.read<InteractionFeedbackService?>()?.emit(
-      FeedbackIntent.success,
-      eventId: 'B02:success:delete-${property.id}',
-    );
-    toast(context, l.propertyDeleted);
+    if (!confirmed || !context.mounted) return false;
   }
 
-  bool _announceFailure(BuildContext context, BrokerPropertiesViewModel model) {
-    final mutation = model.mutation;
-    if (mutation is! MutationFailure) return false;
-    context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
-    toast(context, failureText(context.l10n, mutation.failure));
-    return true;
-  }
+  await model.changeStatus(property, target);
+  if (!context.mounted) return false;
+  if (_announceFailure(context, model)) return false;
+  context.read<InteractionFeedbackService?>()?.emit(
+    FeedbackIntent.success,
+    eventId: 'B02:success:status-${property.id}-${target.name}',
+  );
+  toast(context, l.propertyStatusChanged);
+  return true;
+}
+
+Future<bool> deleteProperty(
+  BuildContext context,
+  BrokerPropertiesViewModel model,
+  Property property,
+) async {
+  final l = context.l10n;
+  final confirmed = await confirm(
+    context,
+    title: l.propertyDeleteTitle(property.title),
+    message: l.propertyDeleteBody,
+    action: l.propertyDelete,
+    danger: true,
+  );
+  if (!confirmed || !context.mounted) return false;
+
+  await model.delete(property.id);
+  if (!context.mounted) return false;
+  if (_announceFailure(context, model)) return false;
+  context.read<InteractionFeedbackService?>()?.emit(
+    FeedbackIntent.success,
+    eventId: 'B02:success:delete-${property.id}',
+  );
+  toast(context, l.propertyDeleted);
+  return true;
+}
+
+bool _announceFailure(BuildContext context, BrokerPropertiesViewModel model) {
+  if (model.mutation is! MutationFailure) return false;
+  context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
+  toast(context, brokerFailureText(context.l10n, model.writeFailure));
+  return true;
 }
 
 IconData statusIcon(PropertyStatus status) => switch (status) {
@@ -353,6 +387,125 @@ IconData statusIcon(PropertyStatus status) => switch (status) {
   PropertyStatus.reserved => FIcons.clock,
   PropertyStatus.closed => FIcons.ban,
 };
+
+/// B04 — l'aperçu public, plus ce que le courtier peut en faire.
+///
+/// L'aperçu ne montrait aucune action : constater qu'un bien est mal
+/// renseigné ou déjà loué obligeait à revenir à B02 pour agir dessus.
+class BrokerPropertyPreviewScreen extends StatelessWidget {
+  const BrokerPropertyPreviewScreen({
+    required this.onBack,
+    required this.onEdit,
+    super.key,
+  });
+
+  final VoidCallback onBack;
+  final void Function(Property property) onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = context.watch<PropertyViewModel>();
+    final property = preview.state.valueOrNull?.property;
+    return Column(
+      children: [
+        Expanded(
+          child: PropertyScreen(
+            onBack: onBack,
+            // Le bouton de contact n'a pas de sens pour le courtier qui
+            // regarde son propre bien.
+            onOpenBroker: (String _) {},
+            publicPreview: true,
+          ),
+        ),
+        if (property != null)
+          BrokerPropertyActions(
+            property: property,
+            onEdit: () => onEdit(property),
+            onChanged: preview.load,
+            onDeleted: onBack,
+          ),
+      ],
+    );
+  }
+}
+
+class BrokerPropertyActions extends StatelessWidget {
+  const BrokerPropertyActions({
+    required this.property,
+    required this.onEdit,
+    required this.onChanged,
+    required this.onDeleted,
+    super.key,
+  });
+
+  final Property property;
+  final VoidCallback onEdit;
+  final VoidCallback onChanged;
+  final VoidCallback onDeleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final model = context.watch<BrokerPropertiesViewModel>();
+    final toggle = property.status == PropertyStatus.closed
+        ? PropertyStatus.available
+        : PropertyStatus.closed;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          Insets.page,
+          Insets.sm,
+          Insets.page,
+          Insets.sm,
+        ),
+        child: Row(
+          spacing: Insets.sm,
+          children: [
+            Expanded(
+              child: AppButton(
+                l.commonEdit,
+                icon: FIcons.pencil,
+                variant: AppButtonVariant.secondary,
+                onPressed: onEdit,
+              ),
+            ),
+            Expanded(
+              child: AppButton(
+                toggle == PropertyStatus.closed
+                    ? l.propertyMarkClosed
+                    : l.propertyMarkAvailable,
+                icon: statusIcon(toggle),
+                variant: AppButtonVariant.secondary,
+                loading: model.mutation.isSubmitting,
+                onPressed: () async {
+                  if (await applyPropertyStatus(
+                    context,
+                    model,
+                    property,
+                    toggle,
+                  )) {
+                    onChanged();
+                  }
+                },
+              ),
+            ),
+            AppIconButton(
+              icon: FIcons.trash2,
+              label: l.propertyDelete,
+              color: context.tones.danger,
+              onTap: () async {
+                if (await deleteProperty(context, model, property)) {
+                  onDeleted();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 AppTag statusTag(BuildContext context, PropertyStatus status) => AppTag(
   WkFormat.propertyStatus(context.l10n, status),
@@ -461,6 +614,14 @@ class _Listing extends StatelessWidget {
                         ),
                       ),
                       statusTag(context, property.status),
+                      // Glisser et appuyer longuement ne s'annoncent nulle
+                      // part : sans ce bouton, modifier ou retirer un bien
+                      // n'avait aucune porte visible.
+                      AppIconButton(
+                        icon: FIcons.ellipsis,
+                        label: l.propertyMoreActions,
+                        onTap: onMore,
+                      ),
                     ],
                   ),
                   const SizedBox(height: Insets.xs),

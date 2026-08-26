@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/app_dependencies.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
+import 'package:woutalma_keur/app/data/services/image_picker_photo_service.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
+import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_screen.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
 import 'package:woutalma_keur/app/modules/auth/auth_screens.dart';
@@ -113,6 +115,35 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
     }
     return build(brokerId);
   }
+
+  /// B03, en création comme en modification : ce sont les mêmes champs et les
+  /// mêmes règles, seul `existing` change.
+  Widget editor(BuildContext context, Property? existing) => requireBroker(
+    context,
+    (String brokerId) => ChangeNotifierProvider<PropertyEditorViewModel>(
+      create: (_) => PropertyEditorViewModel(
+        properties: deps.properties,
+        brokerId: brokerId,
+        fallbackPosition: deps.clientPosition.position,
+        now: DateTime.now,
+        existing: existing,
+      ),
+      child: PropertyEditorScreen(
+        photos: deps.photos,
+        voiceNotes: deps.voiceNotes,
+        // Photo restée chez le système après une fermeture forcée : seule
+        // l'implémentation réelle sait la réclamer.
+        recoverLostPhoto: switch (deps.photos) {
+          final ImagePickerPhotoService picker => picker.recoverLost,
+          _ => null,
+        },
+        onBack: () => context.pop(),
+        // Retour à la liste, qui se recharge : le bien publié doit
+        // apparaître immédiatement, sinon on doute d'avoir réussi.
+        onSaved: (String _) => context.go(AppRoutes.brokerProperties),
+      ),
+    ),
+  );
 
   /// Après un changement de rôle en S01.
   ///
@@ -426,7 +457,7 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
                                   model.load(),
                               child: BrokerHomeScreen(
                                 onAddProperty: () =>
-                                    context.push(AppRoutes.propertyEditor),
+                                    context.push(AppRoutes.propertyEditorNew),
                                 onOpenSettings: () =>
                                     context.push(AppRoutes.settings),
                                 onOpenReviews: () =>
@@ -451,36 +482,36 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
                 builder: (BuildContext context, GoRouterState state) =>
                     requireBroker(
                       context,
-                      (String brokerId) =>
-                          ChangeNotifierProvider<BrokerPropertiesViewModel>(
-                            create: (_) => BrokerPropertiesViewModel(
-                              properties: deps.properties,
-                              brokerId: brokerId,
-                            )..load(),
-                            // Le défaut signalé : un bien publié n'apparaissait
-                            // pas au retour de l'éditeur, la branche étant
-                            // construite une fois pour toutes.
-                            child: ReloadOnReturn<BrokerPropertiesViewModel>(
-                              reload: (BrokerPropertiesViewModel model) =>
-                                  model.load(),
-                              child: Builder(
-                                builder: (BuildContext inner) =>
-                                    BrokerPropertiesScreen(
-                                      onAdd: () =>
-                                          inner.push(AppRoutes.propertyEditor),
-                                      onEdit: (Property property) => inner.push(
-                                        AppRoutes.propertyEditor,
-                                        extra: property,
-                                      ),
-                                      onPreview: (Property property) =>
-                                          inner.push(
-                                            AppRoutes.propertyPreview,
-                                            extra: property,
-                                          ),
-                                    ),
-                              ),
-                            ),
+                      (
+                        String brokerId,
+                      ) => ChangeNotifierProvider<BrokerPropertiesViewModel>(
+                        create: (_) => BrokerPropertiesViewModel(
+                          properties: deps.properties,
+                          brokerId: brokerId,
+                        )..load(),
+                        // Le défaut signalé : un bien publié n'apparaissait
+                        // pas au retour de l'éditeur, la branche étant
+                        // construite une fois pour toutes.
+                        child: ReloadOnReturn<BrokerPropertiesViewModel>(
+                          reload: (BrokerPropertiesViewModel model) =>
+                              model.load(),
+                          child: Builder(
+                            builder: (BuildContext inner) =>
+                                BrokerPropertiesScreen(
+                                  onAdd: () =>
+                                      inner.push(AppRoutes.propertyEditorNew),
+                                  onEdit: (Property property) => inner.push(
+                                    AppRoutes.propertyEditPath(property.id),
+                                    extra: property,
+                                  ),
+                                  onPreview: (Property property) => inner.push(
+                                    AppRoutes.propertyPreviewPath(property.id),
+                                    extra: property,
+                                  ),
+                                ),
                           ),
+                        ),
+                      ),
                     ),
               ),
             ],
@@ -518,67 +549,87 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
                 builder: (BuildContext context, GoRouterState state) =>
                     requireBroker(
                       context,
-                      (String brokerId) =>
-                          ChangeNotifierProvider<BrokerViewModel>(
-                            create: (_) => BrokerViewModel(
-                              brokerId: brokerId,
-                              brokers: deps.brokers,
-                              properties: deps.properties,
-                              reviews: deps.reviews,
-                              contact: deps.contact,
-                              from: deps.clientPosition.position,
-                            )..load(),
-                            // B08 revient par un `pop` : sans relecture, le
-                            // profil modifié affichait encore l'ancien numéro
-                            // et on doutait d'avoir enregistré.
-                            child: ReloadOnReturn<BrokerViewModel>(
-                              reload: (BrokerViewModel model) => model.load(),
-                              child: BrokerProfileScreen(
-                                onEditProfile: () => context.push<void>(
-                                  AppRoutes.brokerProfileEdit,
-                                ),
-                                onOpenSettings: () =>
-                                    context.push(AppRoutes.settings),
-                                onOpenVerification: () =>
-                                    context.push(AppRoutes.brokerVerification),
-                                onOpenRanking: () =>
-                                    context.push(AppRoutes.brokerRanking),
-                                onOpenProperty: (Property property) =>
-                                    context.push(
-                                      AppRoutes.propertyPreview,
-                                      extra: property,
-                                    ),
-                              ),
+                      (
+                        String brokerId,
+                      ) => ChangeNotifierProvider<BrokerViewModel>(
+                        create: (_) => BrokerViewModel(
+                          brokerId: brokerId,
+                          brokers: deps.brokers,
+                          properties: deps.properties,
+                          reviews: deps.reviews,
+                          contact: deps.contact,
+                          from: deps.clientPosition.position,
+                        )..load(),
+                        // B08 revient par un `pop` : sans relecture, le
+                        // profil modifié affichait encore l'ancien numéro
+                        // et on doutait d'avoir enregistré.
+                        child: ReloadOnReturn<BrokerViewModel>(
+                          reload: (BrokerViewModel model) => model.load(),
+                          child: BrokerProfileScreen(
+                            onEditProfile: () =>
+                                context.push<void>(AppRoutes.brokerProfileEdit),
+                            onOpenSettings: () =>
+                                context.push(AppRoutes.settings),
+                            onOpenVerification: () =>
+                                context.push(AppRoutes.brokerVerification),
+                            onOpenRanking: () =>
+                                context.push(AppRoutes.brokerRanking),
+                            onOpenProperty: (Property property) => context.push(
+                              AppRoutes.propertyPreviewPath(property.id),
+                              extra: property,
                             ),
                           ),
+                        ),
+                      ),
                     ),
               ),
             ],
           ),
         ],
       ),
+      // Déclarée avant `:id`, sinon « nouveau bien » est lu comme
+      // l'identifiant d'un bien et ouvre l'aperçu d'une fiche inexistante.
       GoRoute(
         parentNavigatorKey: rootKey,
-        path: AppRoutes.propertyPreview,
+        path: AppRoutes.propertyEditorNew,
+        builder: (BuildContext context, GoRouterState state) =>
+            editor(context, null),
+      ),
+      // L'aperçu se rouvre depuis son chemin seul : `extra` ne survit ni à un
+      // lien profond ni à la restauration d'un état sauvegardé, et l'écran
+      // affichait alors « cette fiche n'existe plus ».
+      GoRoute(
+        parentNavigatorKey: rootKey,
+        path: AppRoutes.propertyPreviewPath(':id'),
         builder: (BuildContext context, GoRouterState state) {
-          final Property? property = state.extra as Property?;
-          if (property == null) {
-            return AppScaffold(body: failureState(context, WkFailure.notFound));
-          }
-          return ChangeNotifierProvider<PropertyViewModel>(
-            create: (_) => PropertyViewModel(
-              propertyId: property.id,
-              properties: deps.properties,
-              brokers: deps.brokers,
-              contact: deps.contact,
-              from: deps.clientPosition.position,
-            )..load(),
-            child: PropertyScreen(
-              onBack: () => context.pop(),
-              // Aperçu public : le bouton de contact n'a pas de sens pour le
-              // courtier qui regarde son propre bien.
-              onOpenBroker: (String _) {},
-              publicPreview: true,
+          final String id = state.pathParameters['id']!;
+          return requireBroker(
+            context,
+            (String brokerId) => MultiProvider(
+              providers: [
+                ChangeNotifierProvider<PropertyViewModel>(
+                  create: (_) => PropertyViewModel(
+                    propertyId: id,
+                    properties: deps.properties,
+                    brokers: deps.brokers,
+                    contact: deps.contact,
+                    from: deps.clientPosition.position,
+                  )..load(),
+                ),
+                ChangeNotifierProvider<BrokerPropertiesViewModel>(
+                  create: (_) => BrokerPropertiesViewModel(
+                    properties: deps.properties,
+                    brokerId: brokerId,
+                  ),
+                ),
+              ],
+              child: BrokerPropertyPreviewScreen(
+                onBack: () => context.pop(),
+                onEdit: (Property property) => context.pushReplacement(
+                  AppRoutes.propertyEditPath(property.id),
+                  extra: property,
+                ),
+              ),
             ),
           );
         },
@@ -649,27 +700,14 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
       ),
       GoRoute(
         parentNavigatorKey: rootKey,
-        path: AppRoutes.propertyEditor,
-        builder: (BuildContext context, GoRouterState state) => requireBroker(
-          context,
-          (String brokerId) => ChangeNotifierProvider<PropertyEditorViewModel>(
-            create: (_) => PropertyEditorViewModel(
+        path: AppRoutes.propertyEditPath(':id'),
+        builder: (BuildContext context, GoRouterState state) =>
+            _EditorByProperty(
+              id: state.pathParameters['id']!,
+              known: state.extra as Property?,
               properties: deps.properties,
-              brokerId: brokerId,
-              fallbackPosition: deps.clientPosition.position,
-              now: DateTime.now,
-              existing: state.extra as Property?,
+              builder: editor,
             ),
-            child: PropertyEditorScreen(
-              photos: deps.photos,
-              voiceNotes: deps.voiceNotes,
-              onBack: () => context.pop(),
-              // Retour à la liste, qui se recharge : le bien publié doit
-              // apparaître immédiatement, sinon on doute d'avoir réussi.
-              onSaved: (String _) => context.go(AppRoutes.brokerProperties),
-            ),
-          ),
-        ),
       ),
     ],
   );
@@ -718,6 +756,57 @@ String _postAuthRoute(AppDependencies deps) =>
     deps.syncRoleWithSession() == UserRole.broker
     ? AppRoutes.brokerHome
     : AppRoutes.explore;
+
+/// Résout le bien avant d'ouvrir B03 en modification.
+///
+/// `extra` porte déjà le bien quand on vient de « Mes biens » ; il est nul
+/// après un lien profond ou une restauration d'état, et l'éditeur s'ouvrait
+/// alors en création sous une adresse qui disait « modifier ».
+class _EditorByProperty extends StatefulWidget {
+  const _EditorByProperty({
+    required this.id,
+    required this.known,
+    required this.properties,
+    required this.builder,
+  });
+
+  final String id;
+  final Property? known;
+  final PropertyRepository properties;
+  final Widget Function(BuildContext context, Property? existing) builder;
+
+  @override
+  State<_EditorByProperty> createState() => _EditorByPropertyState();
+}
+
+class _EditorByPropertyState extends State<_EditorByProperty> {
+  late Future<Property?> _property = widget.known != null
+      ? Future<Property?>.value(widget.known)
+      : widget.properties.byId(widget.id);
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Property?>(
+    future: _property,
+    builder: (BuildContext context, AsyncSnapshot<Property?> snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const AppScaffold(body: AppSkeleton());
+      }
+      final Property? property = snapshot.data;
+      if (property == null) {
+        return AppScaffold(
+          onBack: () => context.pop(),
+          body: failureState(
+            context,
+            snapshot.hasError ? WkFailure.network : WkFailure.notFound,
+            onRetry: () =>
+                setState(() => _property = widget.properties.byId(widget.id)),
+          ),
+        );
+      }
+      return widget.builder(context, property);
+    },
+  );
+}
 
 class _Shell extends StatelessWidget {
   const _Shell(this.shell, this.items);

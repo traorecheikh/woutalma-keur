@@ -20,6 +20,7 @@ part 'update_broker_dto.g.dart';
 /// * [longitude]
 /// * [coverage]
 /// * [logoAsset]
+/// * [clearWhatsapp] - Removes the WhatsApp number. Wins over `whatsapp`.
 @BuiltValue()
 abstract class UpdateBrokerDto
     implements Built<UpdateBrokerDto, UpdateBrokerDtoBuilder> {
@@ -47,6 +48,10 @@ abstract class UpdateBrokerDto
 
   @BuiltValueField(wireName: r'logoAsset')
   String? get logoAsset;
+
+  /// Removes the WhatsApp number. Wins over `whatsapp`.
+  @BuiltValueField(wireName: r'clearWhatsapp')
+  bool? get clearWhatsapp;
 
   UpdateBrokerDto._();
 
@@ -128,6 +133,13 @@ class _$UpdateBrokerDtoSerializer
       yield serializers.serialize(
         object.logoAsset,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clearWhatsapp != null) {
+      yield r'clearWhatsapp';
+      yield serializers.serialize(
+        object.clearWhatsapp,
+        specifiedType: const FullType(bool),
       );
     }
   }
@@ -219,6 +231,14 @@ class _$UpdateBrokerDtoSerializer
           ) as String?;
           if (valueDes == null) continue;
           result.logoAsset = valueDes;
+          break;
+        case r'clearWhatsapp':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.clearWhatsapp = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -18,7 +18,7 @@ class ReceivedContact {
   final Property? property;
 }
 
-class BrokerActivityViewModel extends ChangeNotifier {
+class BrokerActivityViewModel extends ChangeNotifier with BrokerFailures {
   BrokerActivityViewModel({
     required ContactRepository contacts,
     required PropertyRepository properties,
@@ -42,24 +42,24 @@ class BrokerActivityViewModel extends ChangeNotifier {
 
     try {
       final List<ContactLog> received = await _contacts.receivedBy(_brokerId);
-      final List<ReceivedContact> mine = <ReceivedContact>[];
-
-      for (final ContactLog contact in received) {
-        mine.add(
+      // Les biens du courtier en une lecture, indexés : une requête par
+      // contact faisait trente allers-retours pour trente appels reçus.
+      final Map<String, Property> owned = <String, Property>{
+        for (final Property p in await _properties.byBroker(_brokerId)) p.id: p,
+      };
+      final List<ReceivedContact> mine = <ReceivedContact>[
+        for (final ContactLog contact in received)
           ReceivedContact(
             contact: contact,
-            property: contact.propertyId == null
-                ? null
-                : await _properties.byId(contact.propertyId!),
+            property: owned[contact.propertyId],
           ),
-        );
-      }
+      ];
 
       _state = mine.isEmpty
           ? const ScreenState<List<ReceivedContact>>.empty()
           : ScreenState<List<ReceivedContact>>.data(mine);
     } on Object catch (error) {
-      _state = ScreenState<List<ReceivedContact>>.error(brokerFailure(error));
+      _state = ScreenState<List<ReceivedContact>>.error(onLoadError(error));
     }
     notifyListeners();
   }
@@ -88,7 +88,8 @@ class BrokerActivityScreen extends StatelessWidget {
           title: l.brokerActivityEmptyTitle,
           message: l.brokerActivityEmptyBody,
         ),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
+        error: (_) =>
+            brokerFailureState(context, model.loadFailure, onRetry: model.load),
         data: (received) => _Days(received: received),
       ),
     );

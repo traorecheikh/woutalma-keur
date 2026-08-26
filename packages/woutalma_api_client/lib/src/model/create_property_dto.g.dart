@@ -231,6 +231,8 @@ class _$CreatePropertyDto extends CreatePropertyDto {
   final String? voiceAsset;
   @override
   final UploadVoiceNoteDto? newVoiceNote;
+  @override
+  final String? clientRequestId;
 
   factory _$CreatePropertyDto(
           [void Function(CreatePropertyDtoBuilder)? updates]) =>
@@ -251,7 +253,8 @@ class _$CreatePropertyDto extends CreatePropertyDto {
       this.photoAssets,
       this.newPhotos,
       this.voiceAsset,
-      this.newVoiceNote})
+      this.newVoiceNote,
+      this.clientRequestId})
       : super._();
   @override
   CreatePropertyDto rebuild(void Function(CreatePropertyDtoBuilder) updates) =>
@@ -279,7 +282,8 @@ class _$CreatePropertyDto extends CreatePropertyDto {
         photoAssets == other.photoAssets &&
         newPhotos == other.newPhotos &&
         voiceAsset == other.voiceAsset &&
-        newVoiceNote == other.newVoiceNote;
+        newVoiceNote == other.newVoiceNote &&
+        clientRequestId == other.clientRequestId;
   }
 
   @override
@@ -300,6 +304,7 @@ class _$CreatePropertyDto extends CreatePropertyDto {
     _$hash = $jc(_$hash, newPhotos.hashCode);
     _$hash = $jc(_$hash, voiceAsset.hashCode);
     _$hash = $jc(_$hash, newVoiceNote.hashCode);
+    _$hash = $jc(_$hash, clientRequestId.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -321,7 +326,8 @@ class _$CreatePropertyDto extends CreatePropertyDto {
           ..add('photoAssets', photoAssets)
           ..add('newPhotos', newPhotos)
           ..add('voiceAsset', voiceAsset)
-          ..add('newVoiceNote', newVoiceNote))
+          ..add('newVoiceNote', newVoiceNote)
+          ..add('clientRequestId', clientRequestId))
         .toString();
   }
 }
@@ -398,6 +404,11 @@ class CreatePropertyDtoBuilder
   set newVoiceNote(UploadVoiceNoteDtoBuilder? newVoiceNote) =>
       _$this._newVoiceNote = newVoiceNote;
 
+  String? _clientRequestId;
+  String? get clientRequestId => _$this._clientRequestId;
+  set clientRequestId(String? clientRequestId) =>
+      _$this._clientRequestId = clientRequestId;
+
   CreatePropertyDtoBuilder() {
     CreatePropertyDto._defaults(this);
   }
@@ -420,6 +431,7 @@ class CreatePropertyDtoBuilder
       _newPhotos = $v.newPhotos?.toBuilder();
       _voiceAsset = $v.voiceAsset;
       _newVoiceNote = $v.newVoiceNote?.toBuilder();
+      _clientRequestId = $v.clientRequestId;
       _$v = null;
     }
     return this;
@@ -465,6 +477,7 @@ class CreatePropertyDtoBuilder
             newPhotos: _newPhotos?.build(),
             voiceAsset: voiceAsset,
             newVoiceNote: _newVoiceNote?.build(),
+            clientRequestId: clientRequestId,
           );
     } catch (_) {
       late String _$failedField;

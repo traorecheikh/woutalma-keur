@@ -11,7 +11,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**propertiesControllerClose**](PropertiesApi.md#propertiescontrollerclose) | **DELETE** /properties/{id} | Withdraw a listing. Soft delete to CLOSED so client contact history keeps resolving it.
 [**propertiesControllerCreate**](PropertiesApi.md#propertiescontrollercreate) | **POST** /properties | Publish a listing under the caller’s own broker profile (B03 save).
-[**propertiesControllerFindAll**](PropertiesApi.md#propertiescontrollerfindall) | **GET** /properties | Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly&#x3D;true for the latter.
+[**propertiesControllerFindAll**](PropertiesApi.md#propertiescontrollerfindall) | **GET** /properties | Mirrors PropertyRepository.all()/.discoverable(). discoverableOnly&#x3D;false additionally returns the CALLER’S OWN withdrawn listings; another broker’s never leave their account.
 [**propertiesControllerFindById**](PropertiesApi.md#propertiescontrollerfindbyid) | **GET** /properties/{id} | Mirrors PropertyRepository.byId.
 [**propertiesControllerFindPhoto**](PropertiesApi.md#propertiescontrollerfindphoto) | **GET** /properties/photos/{photoId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; photoAssets entry. Public, like the listing itself.
 [**propertiesControllerFindVoiceNote**](PropertiesApi.md#propertiescontrollerfindvoicenote) | **GET** /properties/voice-notes/{noteId} | Bytes behind an &#x60;api:&lt;id&gt;&#x60; voiceAsset key. Public, like the listing itself.
@@ -103,7 +103,7 @@ Name | Type | Description  | Notes
 # **propertiesControllerFindAll**
 > BuiltList<PropertyDto> propertiesControllerFindAll(discoverableOnly)
 
-Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly=true for the latter.
+Mirrors PropertyRepository.all()/.discoverable(). discoverableOnly=false additionally returns the CALLER’S OWN withdrawn listings; another broker’s never leave their account.
 
 ### Example
 ```dart

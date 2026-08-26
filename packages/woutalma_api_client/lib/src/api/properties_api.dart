@@ -208,7 +208,7 @@ class PropertiesApi {
     );
   }
 
-  /// Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly&#x3D;true for the latter.
+  /// Mirrors PropertyRepository.all()/.discoverable(). discoverableOnly&#x3D;false additionally returns the CALLER’S OWN withdrawn listings; another broker’s never leave their account.
   ///
   ///
   /// Parameters:

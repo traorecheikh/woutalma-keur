@@ -32,10 +32,19 @@ export class PropertiesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /// Mirrors PropertyRepository.all()/.discoverable().
-  async findAll(discoverableOnly: boolean): Promise<PropertyDto[]> {
+  ///
+  /// A withdrawn listing is only ever visible to the broker who withdrew it:
+  /// `discoverableOnly=false` used to hand every CLOSED listing in the country
+  /// to any anonymous caller, which is a leak, not a filter. Without a viewer
+  /// the route answers exactly what discovery may show.
+  async findAll(discoverableOnly: boolean, viewerBrokerId?: string): Promise<PropertyDto[]> {
+    const visible =
+      discoverableOnly || !viewerBrokerId
+        ? Prisma.sql`WHERE "status" != ${PropertyStatus.CLOSED}::"PropertyStatus"`
+        : Prisma.sql`WHERE "status" != ${PropertyStatus.CLOSED}::"PropertyStatus" OR "brokerId" = ${viewerBrokerId}`;
     const rows = await this.prisma.$queryRaw<PropertyRow[]>(Prisma.sql`
       SELECT ${SELECT_COLUMNS} FROM "properties"
-      ${discoverableOnly ? Prisma.sql`WHERE "status" != ${PropertyStatus.CLOSED}::"PropertyStatus"` : Prisma.empty}
+      ${visible}
       ORDER BY "createdAt" DESC
     `);
     return rows.map(mapPropertyRow);
@@ -94,18 +103,29 @@ export class PropertiesService {
   /// Unsupported() column, so the insert is raw — and must supply updatedAt
   /// itself, since Prisma's @updatedAt is client-side only and the column has
   /// no SQL default.
+  ///
+  /// Idempotent on `clientRequestId`, like ContactsService.log: a publish
+  /// retried after a timeout must not leave the broker with the same listing
+  /// twice. The pre-check answers the common case; the unique index answers
+  /// two attempts racing.
   async create(brokerId: string, dto: CreatePropertyDto): Promise<PropertyDto> {
+    const replayed = await this.findByClientRequestId(brokerId, dto.clientRequestId);
+    if (replayed) {
+      return replayed;
+    }
+
     const id = cuidLike();
     const retained = dto.photoAssets ?? [];
     const uploads = dto.newPhotos ?? [];
     assertPhotoBudget(retained, uploads);
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw(Prisma.sql`
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw(Prisma.sql`
         INSERT INTO "properties" (
           "id", "brokerId", "kind", "transaction", "title", "description", "price",
           "surface", "rooms", "position", "neighbourhood", "photoAssets", "status",
-          "createdAt", "updatedAt"
+          "clientRequestId", "createdAt", "updatedAt"
         ) VALUES (
           ${id}, ${brokerId}, ${dto.kind}::"PropertyKind", ${dto.transaction}::"TransactionKind",
           ${dto.title}, ${dto.description ?? ''}, ${dto.price},
@@ -113,25 +133,49 @@ export class PropertiesService {
           ${geographyPoint(dto.latitude, dto.longitude)},
           ${dto.neighbourhood}, ${textArray(retained)},
           ${dto.status ?? PropertyStatus.AVAILABLE}::"PropertyStatus",
+          ${dto.clientRequestId ?? null},
           now(), now()
         )
       `);
-      const appended = await this.storePhotos(tx, id, uploads, retained.length);
-      if (appended.length > 0) {
-        await tx.$executeRaw(Prisma.sql`
+        const appended = await this.storePhotos(tx, id, uploads, retained.length);
+        if (appended.length > 0) {
+          await tx.$executeRaw(Prisma.sql`
           UPDATE "properties" SET "photoAssets" = ${textArray([...retained, ...appended])}
           WHERE "id" = ${id}
         `);
-      }
-      if (dto.newVoiceNote) {
-        const key = await this.storeVoiceNote(tx, id, dto.newVoiceNote);
-        await tx.$executeRaw(Prisma.sql`
+        }
+        if (dto.newVoiceNote) {
+          const key = await this.storeVoiceNote(tx, id, dto.newVoiceNote);
+          await tx.$executeRaw(Prisma.sql`
           UPDATE "properties" SET "voiceAsset" = ${key} WHERE "id" = ${id}
         `);
+        }
+      });
+    } catch (error) {
+      const replay = isUniqueViolation(error)
+        ? await this.findByClientRequestId(brokerId, dto.clientRequestId)
+        : null;
+      if (replay) {
+        return replay;
       }
-    });
+      throw error;
+    }
 
     return this.findById(id);
+  }
+
+  private async findByClientRequestId(
+    brokerId: string,
+    clientRequestId?: string,
+  ): Promise<PropertyDto | null> {
+    if (!clientRequestId) {
+      return null;
+    }
+    const existing = await this.prisma.property.findFirst({
+      where: { brokerId, clientRequestId },
+      select: { id: true },
+    });
+    return existing ? this.findById(existing.id) : null;
   }
 
   /// Partial update. Only the keys present in the body are touched, so the
@@ -154,8 +198,16 @@ export class PropertiesService {
       if (dto.title !== undefined) assignments.push(Prisma.sql`"title" = ${dto.title}`);
       if (dto.description !== undefined) assignments.push(Prisma.sql`"description" = ${dto.description}`);
       if (dto.price !== undefined) assignments.push(Prisma.sql`"price" = ${dto.price}`);
-      if (dto.surface !== undefined) assignments.push(Prisma.sql`"surface" = ${dto.surface}`);
-      if (dto.rooms !== undefined) assignments.push(Prisma.sql`"rooms" = ${dto.rooms}`);
+      if (dto.clearSurface) {
+        assignments.push(Prisma.sql`"surface" = NULL`);
+      } else if (dto.surface !== undefined) {
+        assignments.push(Prisma.sql`"surface" = ${dto.surface}`);
+      }
+      if (dto.clearRooms) {
+        assignments.push(Prisma.sql`"rooms" = NULL`);
+      } else if (dto.rooms !== undefined) {
+        assignments.push(Prisma.sql`"rooms" = ${dto.rooms}`);
+      }
       if (dto.neighbourhood !== undefined) {
         assignments.push(Prisma.sql`"neighbourhood" = ${dto.neighbourhood}`);
       }
@@ -293,6 +345,17 @@ function textArray(values: string[]): Prisma.Sql {
   return Prisma.sql`ARRAY[${Prisma.join(values.map((value) => Prisma.sql`${value}`))}]::text[]`;
 }
 
+/// True for a duplicate-key rejection, whichever shape Prisma gives it.
+/// The insert is raw SQL, so the unique index surfaces as P2010 carrying
+/// Postgres' own 23505 rather than as the P2002 a typed `create` would raise.
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+  const meta = (error.meta ?? {}) as { code?: string };
+  return error.code === 'P2002' || meta.code === '23505';
+}
+
 function assertPhotoBudget(retained: string[], uploads: UploadPhotoDto[]): void {
   if (retained.length + uploads.length > MAX_PHOTOS_PER_PROPERTY) {
     throw new BadRequestException(`A property carries at most ${MAX_PHOTOS_PER_PROPERTY} photos`);
@@ -308,7 +371,9 @@ function decodePhoto(upload: UploadPhotoDto): Buffer {
     throw new BadRequestException('Photo payload is empty or not valid base64');
   }
   if (bytes.length > MAX_PHOTO_BYTES) {
-    throw new BadRequestException(`Photo exceeds ${MAX_PHOTO_BYTES} bytes after decoding — compress it first`);
+    throw new BadRequestException(
+      `Photo exceeds ${MAX_PHOTO_BYTES} bytes after decoding — compress it first`,
+    );
   }
   return bytes;
 }

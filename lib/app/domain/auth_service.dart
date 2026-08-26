@@ -64,7 +64,11 @@ abstract class AuthService extends ChangeNotifier {
   /// Compte identifié, ou `null`.
   Account? get current;
 
-  void signOut();
+  /// Ferme la session, jetons compris.
+  ///
+  /// Attend l'effacement du stock de jetons : en `unawaited`, l'écran suivant
+  /// se reconstruisait pendant que le jeton était encore lisible.
+  Future<void> signOut();
 
   /// Vrai quand aucun SMS n'est réellement envoyé.
   bool get isSimulated;
@@ -178,7 +182,7 @@ class SimulatedAuthService extends AuthService {
   }
 
   @override
-  void signOut() {
+  Future<void> signOut() async {
     _current = null;
     notifyListeners();
     _attempts = 0;

@@ -23,6 +23,9 @@ Name | Type | Description | Notes
 **newPhotos** | [**BuiltList&lt;UploadPhotoDto&gt;**](UploadPhotoDto.md) |  | [optional] 
 **voiceAsset** | **String** | Existing `api:<id>` key to keep. Send an empty string to remove the voice note. Omit to leave it unchanged. | [optional] 
 **newVoiceNote** | [**UploadVoiceNoteDto**](UploadVoiceNoteDto.md) |  | [optional] 
+**clientRequestId** | **String** | Idempotency key, unique per broker. Replaying it returns the listing already created. | [optional] 
+**clearSurface** | **bool** | Sets surface back to unstated. Wins over `surface`. | [optional] 
+**clearRooms** | **bool** | Sets rooms back to unstated. Wins over `rooms`. | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

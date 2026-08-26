@@ -12,7 +12,7 @@ import 'package:woutalma_keur/app/ui/ui.dart';
 
 const _pad = EdgeInsets.symmetric(horizontal: Insets.page);
 
-class BrokerTrustViewModel extends ChangeNotifier {
+class BrokerTrustViewModel extends ChangeNotifier with BrokerFailures {
   BrokerTrustViewModel({
     required BrokerRepository brokers,
     required ReviewRepository reviews,
@@ -60,7 +60,7 @@ class BrokerTrustViewModel extends ChangeNotifier {
           ? const ScreenState<Broker>.error(WkFailure.notFound)
           : ScreenState<Broker>.data(current);
     } on Object catch (error) {
-      _state = ScreenState<Broker>.error(brokerFailure(error));
+      _state = ScreenState<Broker>.error(onLoadError(error));
     }
     notifyListeners();
   }
@@ -81,7 +81,7 @@ class BrokerTrustViewModel extends ChangeNotifier {
     try {
       await _brokers.requestVerification(current.id);
     } on Object catch (error) {
-      _request = MutationState.failure(brokerFailure(error));
+      _request = MutationState.failure(onWriteError(error));
       notifyListeners();
       return;
     }
@@ -170,7 +170,8 @@ class BrokerVerificationScreen extends StatelessWidget {
         loading: () => const AppSkeleton(rows: 2, height: 120),
         empty: () =>
             AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
+        error: (_) =>
+            brokerFailureState(context, model.loadFailure, onRetry: model.load),
         data: (broker) => ListView(
           padding: const EdgeInsets.only(bottom: Insets.xxl),
           children: [
@@ -258,7 +259,8 @@ class BrokerRankingScreen extends StatelessWidget {
         loading: () => const AppSkeleton(rows: 4, height: 88),
         empty: () =>
             AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
+        error: (_) =>
+            brokerFailureState(context, model.loadFailure, onRetry: model.load),
         data: (_) => _Ranking(parts: model.contributions()),
       ),
     );

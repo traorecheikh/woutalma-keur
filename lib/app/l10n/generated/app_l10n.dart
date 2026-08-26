@@ -249,6 +249,18 @@ abstract class AppL10n {
   /// **'Ça n\'a pas marché.'**
   String get failureUnknown;
 
+  /// Cause d'erreur : le serveur a refusé le jeton (401/403).
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre session a expiré. Identifiez-vous à nouveau.'**
+  String get failureSessionExpired;
+
+  /// Cause d'erreur : le serveur a rejeté la saisie (400/422).
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur a refusé ces informations. Vérifiez ce que vous avez saisi.'**
+  String get failureRejected;
+
   /// Bandeau : le contenu affiché vient de la dernière copie reçue du serveur.
   ///
   /// In fr, this message translates to:
@@ -1275,17 +1287,65 @@ abstract class AppL10n {
   /// **'Ce bien restera visible dans les recherches.'**
   String get propertyStatusImpactVisible;
 
+  /// Bouton visible sur chaque bien de B02. Le glissement et l'appui long ne s'annoncent nulle part : sans ce bouton, modifier ou retirer un bien n'a aucune porte visible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus d\'actions'**
+  String get propertyMoreActions;
+
+  /// Action en un appui : passe le bien en CLOSED depuis M08 ou B04.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer vendu ou loué'**
+  String get propertyMarkClosed;
+
+  /// Action en un appui : rouvre un bien clos ou réservé.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remettre disponible'**
+  String get propertyMarkAvailable;
+
+  /// Feuille proposée à l'ouverture de B03 quand une saisie précédente n'a pas été publiée.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre le brouillon ?'**
+  String get propertyDraftTitle;
+
+  /// Explique d'où vient le brouillon : l'application a été fermée avant la publication.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous aviez commencé un bien sans le publier. On repart d\'où vous vous étiez arrêté ?'**
+  String get propertyDraftBody;
+
+  /// Confirme la reprise du brouillon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre le brouillon'**
+  String get propertyDraftResume;
+
+  /// Abandonne le brouillon et vide le formulaire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recommencer à zéro'**
+  String get propertyDraftDiscard;
+
   /// Champ titre d'un bien.
   ///
   /// In fr, this message translates to:
   /// **'Titre'**
   String get fieldTitle;
 
-  /// Champ prix d'un bien, en francs.
+  /// Champ prix en location. L'unité et la périodicité sont dans le libellé : « Prix » seul laissait saisir un loyer annuel.
   ///
   /// In fr, this message translates to:
-  /// **'Prix'**
-  String get fieldPrice;
+  /// **'Prix par mois (F)'**
+  String get fieldPriceRent;
+
+  /// Champ prix en vente, unité comprise.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix de vente (F)'**
+  String get fieldPriceSale;
 
   /// Champ surface d'un bien.
   ///
@@ -1412,6 +1472,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Indiquez un nombre plus grand que zéro'**
   String get validationPositiveNumber;
+
+  /// Plafond de prix, aligné sur MAX_PRICE_CFA du serveur. Un zéro de trop passait le formulaire et se faisait refuser après l'envoi.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce prix dépasse {max} F. Vérifiez les zéros.'**
+  String validationPriceTooHigh(int max);
 
   /// Résumé annoncé à la soumission d'un formulaire incomplet.
   ///
@@ -1850,6 +1916,12 @@ abstract class AppL10n {
   /// **'Code incorrect, réessayez'**
   String get authOtpWrong;
 
+  /// Le serveur limite les tentatives (429). Dire « code incorrect » envoyait retaper le bon code sans fin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop d\'essais. Attendez un instant, puis demandez un nouveau code.'**
+  String get authOtpTooManyAttempts;
+
   /// Libellé du champ de saisie du code reçu.
   ///
   /// In fr, this message translates to:
@@ -2234,6 +2306,18 @@ abstract class AppL10n {
   /// **'Cette photo n\'a pas pu être ajoutée.'**
   String get photosFailed;
 
+  /// Refus avant ou pendant l'envoi : photo au-dessus de la limite serveur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une photo est trop lourde pour être envoyée. Reprenez-la ou choisissez-en une autre.'**
+  String get photoTooLarge;
+
+  /// Refus : le fichier n'est ni jpeg, ni png, ni webp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce format de photo n\'est pas accepté. Prenez la photo avec l\'appareil.'**
+  String get photoUnsupported;
+
   /// Présentation des résultats en liste.
   ///
   /// In fr, this message translates to:
@@ -2587,6 +2671,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Le message vocal est trop lourd pour être envoyé.'**
   String get voiceNoteTooLarge;
+
+  /// Refus avant envoi : format audio hors de la liste serveur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce message vocal n\'est pas dans un format accepté. Réenregistrez-le.'**
+  String get voiceNoteUnsupported;
 
   /// État après enregistrement, avant publication.
   ///

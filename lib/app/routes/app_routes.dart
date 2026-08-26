@@ -19,8 +19,8 @@ abstract final class AppRoutes {
   /// B02 — Mes biens.
   static const String brokerProperties = '/broker/properties';
 
-  /// B04 — Aperçu public d'un bien.
-  static const String propertyPreview = '/broker/properties/preview';
+  /// B03 — Éditeur de bien, en création.
+  static const String propertyEditorNew = '/broker/properties/new';
 
   /// B05 — Consultations et contacts.
   static const String brokerActivity = '/broker/activity';
@@ -40,8 +40,12 @@ abstract final class AppRoutes {
   /// B06 — Avis reçus.
   static const String brokerReviews = '/broker/reviews';
 
-  /// B03 — Éditeur de bien.
-  static const String propertyEditor = '/broker/properties/edit';
+  /// B04 — Aperçu d'un bien du courtier. Porte l'identifiant : `extra` ne
+  /// survit ni à un lien profond ni à la reconstruction d'un état sauvegardé.
+  static String propertyPreviewPath(String id) => '$brokerProperties/$id';
+
+  /// B03 — Éditeur de bien, en modification.
+  static String propertyEditPath(String id) => '$brokerProperties/$id/edit';
 
   /// G03 — Téléphone.
   static const String authPhone = '/auth/phone';

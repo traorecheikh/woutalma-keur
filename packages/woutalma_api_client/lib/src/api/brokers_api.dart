@@ -364,7 +364,7 @@ class BrokersApi {
     );
   }
 
-  /// Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).
+  /// Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}). onlyDiscoverable&#x3D;false is owner-only — B02 needs its own withdrawn listings, a visitor has no business reading them.
   ///
   ///
   /// Parameters:
