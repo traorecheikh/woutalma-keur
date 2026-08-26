@@ -15,11 +15,19 @@ abstract class CacheMetaStore {
   /// démonstration. Les servir comme s'il s'agissait d'une copie hors ligne de
   /// l'API serait exactement la fabrication de données que le mode distant
   /// interdit — d'où ce marqueur, vérifié au premier démarrage distant.
+  ///
+  /// La version suit le format des lignes : `remote-v2` stocke les énumérations
+  /// par nom et non plus par rang, si bien qu'une base plus ancienne est vidée
+  /// plutôt que relue de travers.
   static const String storeKindKey = 'store';
-  static const String remoteStoreKind = 'remote-v1';
+  static const String remoteStoreKind = 'remote-v2';
 
   /// L'explication de la permission de position a déjà été présentée.
   static const String locationPrimedKey = 'location-primed';
+
+  /// Date du dernier succès réseau, pour que le bandeau hors ligne survive au
+  /// redémarrage du processus.
+  static const String fetchedAtKey = 'cache-fetched-at';
 }
 
 class IsarCacheMetaStore implements CacheMetaStore {

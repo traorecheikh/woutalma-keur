@@ -33,6 +33,7 @@ class ClientPositionController extends ChangeNotifier {
   String? _placeName;
   bool _isFromGps = false;
   bool _isOutsideServiceArea = false;
+  bool _gpsFailed = false;
   bool _hasBeenPrimed;
 
   /// Au-delà, le téléphone n'est pas à Dakar : classer six courtiers à
@@ -52,6 +53,12 @@ class ClientPositionController extends ChangeNotifier {
   /// Le GPS a répondu, mais loin de la zone couverte. La recherche part de
   /// Dakar et la barre le dit, au lieu d'annoncer « près de vous ».
   bool get isOutsideServiceArea => _isOutsideServiceArea;
+
+  /// Le GPS n'a rien rendu — refus, service coupé, ou dix secondes sans
+  /// point. La position est celle du repli, et la barre doit le dire : elle
+  /// affichait « Près de vous » au-dessus de résultats classés depuis le
+  /// centre de Dakar.
+  bool get gpsFailed => _gpsFailed && !_isFromGps && _placeName == null;
 
   /// L'explication de la permission a déjà été montrée une fois.
   ///
@@ -74,18 +81,38 @@ class ClientPositionController extends ChangeNotifier {
   }
 
   /// Demande la position au système. L'appelant a déjà expliqué pourquoi.
+  ///
+  /// Ne prévient que si quelque chose a bougé : chaque notification relance
+  /// deux recherches sur l'écran d'accueil, et relire la même position à
+  /// chaque lancement les payait pour rien.
   Future<LocationResult> locate() async {
     final LocationResult result = await _location.current();
-    if (result is LocationFound) {
-      final bool outside =
-          distanceMeters(DemoSeed.clientPosition, result.position) >
-          serviceAreaRadiusMeters;
-      _position = outside ? DemoSeed.clientPosition : result.position;
-      _isFromGps = !outside;
-      _isOutsideServiceArea = outside;
-      // Le nom retombe à null : on est « près de vous », pas dans un quartier
-      // nommé, et afficher l'ancien quartier serait faux.
-      _placeName = null;
+    if (result is! LocationFound) {
+      if (_gpsFailed) {
+        return result;
+      }
+      _gpsFailed = true;
+      notifyListeners();
+      return result;
+    }
+    final bool outside =
+        distanceMeters(DemoSeed.clientPosition, result.position) >
+        serviceAreaRadiusMeters;
+    final GeoPoint next = outside ? DemoSeed.clientPosition : result.position;
+    final bool unchanged =
+        next == _position &&
+        _isFromGps == !outside &&
+        _isOutsideServiceArea == outside &&
+        _placeName == null &&
+        !_gpsFailed;
+    _position = next;
+    _isFromGps = !outside;
+    _isOutsideServiceArea = outside;
+    _gpsFailed = false;
+    // Le nom retombe à null : on est « près de vous », pas dans un quartier
+    // nommé, et afficher l'ancien quartier serait faux.
+    _placeName = null;
+    if (!unchanged) {
       notifyListeners();
     }
     return result;

@@ -25,7 +25,7 @@ const BrokerRowSchema = CollectionSchema(
     r'kind': PropertySchema(
       id: 1,
       name: r'kind',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _BrokerRowkindEnumValueMap,
     ),
     r'latitude': PropertySchema(
@@ -55,7 +55,7 @@ const BrokerRowSchema = CollectionSchema(
     r'verification': PropertySchema(
       id: 10,
       name: r'verification',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _BrokerRowverificationEnumValueMap,
     ),
     r'whatsapp': PropertySchema(
@@ -107,6 +107,7 @@ int _brokerRowEstimateSize(
       bytesCount += value.length * 3;
     }
   }
+  bytesCount += 3 + object.kind.name.length * 3;
   {
     final value = object.logoAsset;
     if (value != null) {
@@ -116,6 +117,7 @@ int _brokerRowEstimateSize(
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.phone.length * 3;
   bytesCount += 3 + object.uid.length * 3;
+  bytesCount += 3 + object.verification.name.length * 3;
   {
     final value = object.whatsapp;
     if (value != null) {
@@ -132,7 +134,7 @@ void _brokerRowSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeStringList(offsets[0], object.coverage);
-  writer.writeByte(offsets[1], object.kind.index);
+  writer.writeString(offsets[1], object.kind.name);
   writer.writeDouble(offsets[2], object.latitude);
   writer.writeString(offsets[3], object.logoAsset);
   writer.writeDouble(offsets[4], object.longitude);
@@ -141,7 +143,7 @@ void _brokerRowSerialize(
   writer.writeBool(offsets[7], object.pinned);
   writer.writeDouble(offsets[8], object.responseRate);
   writer.writeString(offsets[9], object.uid);
-  writer.writeByte(offsets[10], object.verification.index);
+  writer.writeString(offsets[10], object.verification.name);
   writer.writeString(offsets[11], object.whatsapp);
 }
 
@@ -155,7 +157,7 @@ BrokerRow _brokerRowDeserialize(
   object.coverage = reader.readStringList(offsets[0]) ?? [];
   object.id = id;
   object.kind =
-      _BrokerRowkindValueEnumMap[reader.readByteOrNull(offsets[1])] ??
+      _BrokerRowkindValueEnumMap[reader.readStringOrNull(offsets[1])] ??
       BrokerKind.individual;
   object.latitude = reader.readDouble(offsets[2]);
   object.logoAsset = reader.readStringOrNull(offsets[3]);
@@ -166,7 +168,9 @@ BrokerRow _brokerRowDeserialize(
   object.responseRate = reader.readDouble(offsets[8]);
   object.uid = reader.readString(offsets[9]);
   object.verification =
-      _BrokerRowverificationValueEnumMap[reader.readByteOrNull(offsets[10])] ??
+      _BrokerRowverificationValueEnumMap[reader.readStringOrNull(
+        offsets[10],
+      )] ??
       VerificationStatus.none;
   object.whatsapp = reader.readStringOrNull(offsets[11]);
   return object;
@@ -182,7 +186,7 @@ P _brokerRowDeserializeProp<P>(
     case 0:
       return (reader.readStringList(offset) ?? []) as P;
     case 1:
-      return (_BrokerRowkindValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_BrokerRowkindValueEnumMap[reader.readStringOrNull(offset)] ??
               BrokerKind.individual)
           as P;
     case 2:
@@ -202,7 +206,7 @@ P _brokerRowDeserializeProp<P>(
     case 9:
       return (reader.readString(offset)) as P;
     case 10:
-      return (_BrokerRowverificationValueEnumMap[reader.readByteOrNull(
+      return (_BrokerRowverificationValueEnumMap[reader.readStringOrNull(
                 offset,
               )] ??
               VerificationStatus.none)
@@ -214,22 +218,25 @@ P _brokerRowDeserializeProp<P>(
   }
 }
 
-const _BrokerRowkindEnumValueMap = {'individual': 0, 'agency': 1};
+const _BrokerRowkindEnumValueMap = {
+  r'individual': r'individual',
+  r'agency': r'agency',
+};
 const _BrokerRowkindValueEnumMap = {
-  0: BrokerKind.individual,
-  1: BrokerKind.agency,
+  r'individual': BrokerKind.individual,
+  r'agency': BrokerKind.agency,
 };
 const _BrokerRowverificationEnumValueMap = {
-  'none': 0,
-  'pending': 1,
-  'verified': 2,
-  'rejected': 3,
+  r'none': r'none',
+  r'pending': r'pending',
+  r'verified': r'verified',
+  r'rejected': r'rejected',
 };
 const _BrokerRowverificationValueEnumMap = {
-  0: VerificationStatus.none,
-  1: VerificationStatus.pending,
-  2: VerificationStatus.verified,
-  3: VerificationStatus.rejected,
+  r'none': VerificationStatus.none,
+  r'pending': VerificationStatus.pending,
+  r'verified': VerificationStatus.verified,
+  r'rejected': VerificationStatus.rejected,
 };
 
 Id _brokerRowGetId(BrokerRow object) {
@@ -685,11 +692,16 @@ extension BrokerRowQueryFilter
   }
 
   QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindEqualTo(
-    BrokerKind value,
-  ) {
+    BrokerKind value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'kind', value: value),
+        FilterCondition.equalTo(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
@@ -697,6 +709,7 @@ extension BrokerRowQueryFilter
   QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindGreaterThan(
     BrokerKind value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -704,6 +717,7 @@ extension BrokerRowQueryFilter
           include: include,
           property: r'kind',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -712,6 +726,7 @@ extension BrokerRowQueryFilter
   QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindLessThan(
     BrokerKind value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -719,6 +734,7 @@ extension BrokerRowQueryFilter
           include: include,
           property: r'kind',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -729,6 +745,7 @@ extension BrokerRowQueryFilter
     BrokerKind upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -738,7 +755,84 @@ extension BrokerRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'kind',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'kind', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> kindIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'kind', value: ''),
       );
     });
   }
@@ -1582,36 +1676,51 @@ extension BrokerRowQueryFilter
   }
 
   QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> verificationEqualTo(
-    VerificationStatus value,
-  ) {
+    VerificationStatus value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'verification', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
-  verificationGreaterThan(VerificationStatus value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
+        FilterCondition.equalTo(
           property: r'verification',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
   }
 
   QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
-  verificationLessThan(VerificationStatus value, {bool include = false}) {
+  verificationGreaterThan(
+    VerificationStatus value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'verification',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
+  verificationLessThan(
+    VerificationStatus value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.lessThan(
           include: include,
           property: r'verification',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -1622,6 +1731,7 @@ extension BrokerRowQueryFilter
     VerificationStatus upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1631,7 +1741,80 @@ extension BrokerRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
+  verificationStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'verification',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
+  verificationEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'verification',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
+  verificationContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'verification',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition> verificationMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'verification',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
+  verificationIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'verification', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<BrokerRow, BrokerRow, QAfterFilterCondition>
+  verificationIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'verification', value: ''),
       );
     });
   }
@@ -2096,9 +2279,11 @@ extension BrokerRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<BrokerRow, BrokerRow, QDistinct> distinctByKind() {
+  QueryBuilder<BrokerRow, BrokerRow, QDistinct> distinctByKind({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'kind');
+      return query.addDistinctBy(r'kind', caseSensitive: caseSensitive);
     });
   }
 
@@ -2158,9 +2343,11 @@ extension BrokerRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<BrokerRow, BrokerRow, QDistinct> distinctByVerification() {
+  QueryBuilder<BrokerRow, BrokerRow, QDistinct> distinctByVerification({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'verification');
+      return query.addDistinctBy(r'verification', caseSensitive: caseSensitive);
     });
   }
 
@@ -2284,7 +2471,7 @@ const PropertyRowSchema = CollectionSchema(
     r'kind': PropertySchema(
       id: 3,
       name: r'kind',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _PropertyRowkindEnumValueMap,
     ),
     r'latitude': PropertySchema(
@@ -2312,7 +2499,7 @@ const PropertyRowSchema = CollectionSchema(
     r'status': PropertySchema(
       id: 10,
       name: r'status',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _PropertyRowstatusEnumValueMap,
     ),
     r'surface': PropertySchema(id: 11, name: r'surface', type: IsarType.long),
@@ -2320,7 +2507,7 @@ const PropertyRowSchema = CollectionSchema(
     r'transaction': PropertySchema(
       id: 13,
       name: r'transaction',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _PropertyRowtransactionEnumValueMap,
     ),
     r'uid': PropertySchema(id: 14, name: r'uid', type: IsarType.string),
@@ -2381,6 +2568,7 @@ int _propertyRowEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.brokerUid.length * 3;
   bytesCount += 3 + object.description.length * 3;
+  bytesCount += 3 + object.kind.name.length * 3;
   bytesCount += 3 + object.neighbourhood.length * 3;
   bytesCount += 3 + object.photoAssets.length * 3;
   {
@@ -2389,7 +2577,9 @@ int _propertyRowEstimateSize(
       bytesCount += value.length * 3;
     }
   }
+  bytesCount += 3 + object.status.name.length * 3;
   bytesCount += 3 + object.title.length * 3;
+  bytesCount += 3 + object.transaction.name.length * 3;
   bytesCount += 3 + object.uid.length * 3;
   {
     final value = object.voiceAsset;
@@ -2409,17 +2599,17 @@ void _propertyRowSerialize(
   writer.writeString(offsets[0], object.brokerUid);
   writer.writeDateTime(offsets[1], object.createdAt);
   writer.writeString(offsets[2], object.description);
-  writer.writeByte(offsets[3], object.kind.index);
+  writer.writeString(offsets[3], object.kind.name);
   writer.writeDouble(offsets[4], object.latitude);
   writer.writeDouble(offsets[5], object.longitude);
   writer.writeString(offsets[6], object.neighbourhood);
   writer.writeStringList(offsets[7], object.photoAssets);
   writer.writeLong(offsets[8], object.price);
   writer.writeLong(offsets[9], object.rooms);
-  writer.writeByte(offsets[10], object.status.index);
+  writer.writeString(offsets[10], object.status.name);
   writer.writeLong(offsets[11], object.surface);
   writer.writeString(offsets[12], object.title);
-  writer.writeByte(offsets[13], object.transaction.index);
+  writer.writeString(offsets[13], object.transaction.name);
   writer.writeString(offsets[14], object.uid);
   writer.writeString(offsets[15], object.voiceAsset);
 }
@@ -2436,7 +2626,7 @@ PropertyRow _propertyRowDeserialize(
   object.description = reader.readString(offsets[2]);
   object.id = id;
   object.kind =
-      _PropertyRowkindValueEnumMap[reader.readByteOrNull(offsets[3])] ??
+      _PropertyRowkindValueEnumMap[reader.readStringOrNull(offsets[3])] ??
       PropertyKind.apartment;
   object.latitude = reader.readDouble(offsets[4]);
   object.longitude = reader.readDouble(offsets[5]);
@@ -2445,12 +2635,14 @@ PropertyRow _propertyRowDeserialize(
   object.price = reader.readLong(offsets[8]);
   object.rooms = reader.readLongOrNull(offsets[9]);
   object.status =
-      _PropertyRowstatusValueEnumMap[reader.readByteOrNull(offsets[10])] ??
+      _PropertyRowstatusValueEnumMap[reader.readStringOrNull(offsets[10])] ??
       PropertyStatus.available;
   object.surface = reader.readLongOrNull(offsets[11]);
   object.title = reader.readString(offsets[12]);
   object.transaction =
-      _PropertyRowtransactionValueEnumMap[reader.readByteOrNull(offsets[13])] ??
+      _PropertyRowtransactionValueEnumMap[reader.readStringOrNull(
+        offsets[13],
+      )] ??
       TransactionKind.rent;
   object.uid = reader.readString(offsets[14]);
   object.voiceAsset = reader.readStringOrNull(offsets[15]);
@@ -2471,7 +2663,7 @@ P _propertyRowDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (_PropertyRowkindValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_PropertyRowkindValueEnumMap[reader.readStringOrNull(offset)] ??
               PropertyKind.apartment)
           as P;
     case 4:
@@ -2487,7 +2679,7 @@ P _propertyRowDeserializeProp<P>(
     case 9:
       return (reader.readLongOrNull(offset)) as P;
     case 10:
-      return (_PropertyRowstatusValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_PropertyRowstatusValueEnumMap[reader.readStringOrNull(offset)] ??
               PropertyStatus.available)
           as P;
     case 11:
@@ -2495,7 +2687,7 @@ P _propertyRowDeserializeProp<P>(
     case 12:
       return (reader.readString(offset)) as P;
     case 13:
-      return (_PropertyRowtransactionValueEnumMap[reader.readByteOrNull(
+      return (_PropertyRowtransactionValueEnumMap[reader.readStringOrNull(
                 offset,
               )] ??
               TransactionKind.rent)
@@ -2510,33 +2702,36 @@ P _propertyRowDeserializeProp<P>(
 }
 
 const _PropertyRowkindEnumValueMap = {
-  'apartment': 0,
-  'house': 1,
-  'land': 2,
-  'studio': 3,
-  'room': 4,
+  r'apartment': r'apartment',
+  r'house': r'house',
+  r'land': r'land',
+  r'studio': r'studio',
+  r'room': r'room',
 };
 const _PropertyRowkindValueEnumMap = {
-  0: PropertyKind.apartment,
-  1: PropertyKind.house,
-  2: PropertyKind.land,
-  3: PropertyKind.studio,
-  4: PropertyKind.room,
+  r'apartment': PropertyKind.apartment,
+  r'house': PropertyKind.house,
+  r'land': PropertyKind.land,
+  r'studio': PropertyKind.studio,
+  r'room': PropertyKind.room,
 };
 const _PropertyRowstatusEnumValueMap = {
-  'available': 0,
-  'reserved': 1,
-  'closed': 2,
+  r'available': r'available',
+  r'reserved': r'reserved',
+  r'closed': r'closed',
 };
 const _PropertyRowstatusValueEnumMap = {
-  0: PropertyStatus.available,
-  1: PropertyStatus.reserved,
-  2: PropertyStatus.closed,
+  r'available': PropertyStatus.available,
+  r'reserved': PropertyStatus.reserved,
+  r'closed': PropertyStatus.closed,
 };
-const _PropertyRowtransactionEnumValueMap = {'rent': 0, 'sale': 1};
+const _PropertyRowtransactionEnumValueMap = {
+  r'rent': r'rent',
+  r'sale': r'sale',
+};
 const _PropertyRowtransactionValueEnumMap = {
-  0: TransactionKind.rent,
-  1: TransactionKind.sale,
+  r'rent': TransactionKind.rent,
+  r'sale': TransactionKind.sale,
 };
 
 Id _propertyRowGetId(PropertyRow object) {
@@ -3198,11 +3393,16 @@ extension PropertyRowQueryFilter
   }
 
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindEqualTo(
-    PropertyKind value,
-  ) {
+    PropertyKind value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'kind', value: value),
+        FilterCondition.equalTo(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
@@ -3210,6 +3410,7 @@ extension PropertyRowQueryFilter
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindGreaterThan(
     PropertyKind value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -3217,6 +3418,7 @@ extension PropertyRowQueryFilter
           include: include,
           property: r'kind',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -3225,6 +3427,7 @@ extension PropertyRowQueryFilter
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindLessThan(
     PropertyKind value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -3232,6 +3435,7 @@ extension PropertyRowQueryFilter
           include: include,
           property: r'kind',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -3242,6 +3446,7 @@ extension PropertyRowQueryFilter
     PropertyKind upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -3251,7 +3456,85 @@ extension PropertyRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'kind',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'kind',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> kindIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'kind', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  kindIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'kind', value: ''),
       );
     });
   }
@@ -3874,23 +4157,33 @@ extension PropertyRowQueryFilter
   }
 
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> statusEqualTo(
-    PropertyStatus value,
-  ) {
+    PropertyStatus value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'status', value: value),
+        FilterCondition.equalTo(
+          property: r'status',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
-  statusGreaterThan(PropertyStatus value, {bool include = false}) {
+  statusGreaterThan(
+    PropertyStatus value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(
           include: include,
           property: r'status',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -3899,6 +4192,7 @@ extension PropertyRowQueryFilter
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> statusLessThan(
     PropertyStatus value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -3906,6 +4200,7 @@ extension PropertyRowQueryFilter
           include: include,
           property: r'status',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -3916,6 +4211,7 @@ extension PropertyRowQueryFilter
     PropertyStatus upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -3925,7 +4221,84 @@ extension PropertyRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  statusStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'status',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> statusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'status',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> statusContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'status',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition> statusMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'status',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  statusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'status', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  statusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'status', value: ''),
       );
     });
   }
@@ -4154,35 +4527,49 @@ extension PropertyRowQueryFilter
   }
 
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
-  transactionEqualTo(TransactionKind value) {
+  transactionEqualTo(TransactionKind value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'transaction', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
-  transactionGreaterThan(TransactionKind value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
+        FilterCondition.equalTo(
           property: r'transaction',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
   }
 
   QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
-  transactionLessThan(TransactionKind value, {bool include = false}) {
+  transactionGreaterThan(
+    TransactionKind value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'transaction',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionLessThan(
+    TransactionKind value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.lessThan(
           include: include,
           property: r'transaction',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -4194,6 +4581,7 @@ extension PropertyRowQueryFilter
     TransactionKind upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -4203,7 +4591,78 @@ extension PropertyRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'transaction',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'transaction',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'transaction',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'transaction',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'transaction', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<PropertyRow, PropertyRow, QAfterFilterCondition>
+  transactionIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'transaction', value: ''),
       );
     });
   }
@@ -4925,9 +5384,11 @@ extension PropertyRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByKind() {
+  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByKind({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'kind');
+      return query.addDistinctBy(r'kind', caseSensitive: caseSensitive);
     });
   }
 
@@ -4972,9 +5433,11 @@ extension PropertyRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByStatus() {
+  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByStatus({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'status');
+      return query.addDistinctBy(r'status', caseSensitive: caseSensitive);
     });
   }
 
@@ -4992,9 +5455,11 @@ extension PropertyRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByTransaction() {
+  QueryBuilder<PropertyRow, PropertyRow, QDistinct> distinctByTransaction({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'transaction');
+      return query.addDistinctBy(r'transaction', caseSensitive: caseSensitive);
     });
   }
 
@@ -5159,7 +5624,7 @@ const ReviewRowSchema = CollectionSchema(
     r'moderation': PropertySchema(
       id: 7,
       name: r'moderation',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _ReviewRowmoderationEnumValueMap,
     ),
     r'rating': PropertySchema(id: 8, name: r'rating', type: IsarType.long),
@@ -5233,6 +5698,7 @@ int _reviewRowEstimateSize(
     }
   }
   bytesCount += 3 + object.contactUid.length * 3;
+  bytesCount += 3 + object.moderation.name.length * 3;
   bytesCount += 3 + object.uid.length * 3;
   return bytesCount;
 }
@@ -5250,7 +5716,7 @@ void _reviewRowSerialize(
   writer.writeString(offsets[4], object.contactUid);
   writer.writeLong(offsets[5], object.courtesy);
   writer.writeDateTime(offsets[6], object.createdAt);
-  writer.writeByte(offsets[7], object.moderation.index);
+  writer.writeString(offsets[7], object.moderation.name);
   writer.writeLong(offsets[8], object.rating);
   writer.writeLong(offsets[9], object.responsiveness);
   writer.writeString(offsets[10], object.uid);
@@ -5272,7 +5738,7 @@ ReviewRow _reviewRowDeserialize(
   object.createdAt = reader.readDateTime(offsets[6]);
   object.id = id;
   object.moderation =
-      _ReviewRowmoderationValueEnumMap[reader.readByteOrNull(offsets[7])] ??
+      _ReviewRowmoderationValueEnumMap[reader.readStringOrNull(offsets[7])] ??
       ModerationStatus.pending;
   object.rating = reader.readLong(offsets[8]);
   object.responsiveness = reader.readLongOrNull(offsets[9]);
@@ -5302,7 +5768,9 @@ P _reviewRowDeserializeProp<P>(
     case 6:
       return (reader.readDateTime(offset)) as P;
     case 7:
-      return (_ReviewRowmoderationValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_ReviewRowmoderationValueEnumMap[reader.readStringOrNull(
+                offset,
+              )] ??
               ModerationStatus.pending)
           as P;
     case 8:
@@ -5317,14 +5785,14 @@ P _reviewRowDeserializeProp<P>(
 }
 
 const _ReviewRowmoderationEnumValueMap = {
-  'pending': 0,
-  'published': 1,
-  'rejected': 2,
+  r'pending': r'pending',
+  r'published': r'published',
+  r'rejected': r'rejected',
 };
 const _ReviewRowmoderationValueEnumMap = {
-  0: ModerationStatus.pending,
-  1: ModerationStatus.published,
-  2: ModerationStatus.rejected,
+  r'pending': ModerationStatus.pending,
+  r'published': ModerationStatus.published,
+  r'rejected': ModerationStatus.rejected,
 };
 
 Id _reviewRowGetId(ReviewRow object) {
@@ -6473,23 +6941,33 @@ extension ReviewRowQueryFilter
   }
 
   QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition> moderationEqualTo(
-    ModerationStatus value,
-  ) {
+    ModerationStatus value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'moderation', value: value),
+        FilterCondition.equalTo(
+          property: r'moderation',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
   QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition>
-  moderationGreaterThan(ModerationStatus value, {bool include = false}) {
+  moderationGreaterThan(
+    ModerationStatus value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(
           include: include,
           property: r'moderation',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -6498,6 +6976,7 @@ extension ReviewRowQueryFilter
   QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition> moderationLessThan(
     ModerationStatus value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -6505,6 +6984,7 @@ extension ReviewRowQueryFilter
           include: include,
           property: r'moderation',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -6515,6 +6995,7 @@ extension ReviewRowQueryFilter
     ModerationStatus upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -6524,7 +7005,84 @@ extension ReviewRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition>
+  moderationStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'moderation',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition> moderationEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'moderation',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition> moderationContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'moderation',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition> moderationMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'moderation',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition>
+  moderationIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'moderation', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ReviewRow, ReviewRow, QAfterFilterCondition>
+  moderationIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'moderation', value: ''),
       );
     });
   }
@@ -7147,9 +7705,11 @@ extension ReviewRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<ReviewRow, ReviewRow, QDistinct> distinctByModeration() {
+  QueryBuilder<ReviewRow, ReviewRow, QDistinct> distinctByModeration({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'moderation');
+      return query.addDistinctBy(r'moderation', caseSensitive: caseSensitive);
     });
   }
 
@@ -7269,7 +7829,7 @@ const ContactRowSchema = CollectionSchema(
     r'channel': PropertySchema(
       id: 1,
       name: r'channel',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _ContactRowchannelEnumValueMap,
     ),
     r'createdAt': PropertySchema(
@@ -7280,7 +7840,7 @@ const ContactRowSchema = CollectionSchema(
     r'outcome': PropertySchema(
       id: 3,
       name: r'outcome',
-      type: IsarType.byte,
+      type: IsarType.string,
       enumMap: _ContactRowoutcomeEnumValueMap,
     ),
     r'propertyUid': PropertySchema(
@@ -7345,6 +7905,8 @@ int _contactRowEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.brokerUid.length * 3;
+  bytesCount += 3 + object.channel.name.length * 3;
+  bytesCount += 3 + object.outcome.name.length * 3;
   {
     final value = object.propertyUid;
     if (value != null) {
@@ -7368,9 +7930,9 @@ void _contactRowSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.brokerUid);
-  writer.writeByte(offsets[1], object.channel.index);
+  writer.writeString(offsets[1], object.channel.name);
   writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeByte(offsets[3], object.outcome.index);
+  writer.writeString(offsets[3], object.outcome.name);
   writer.writeString(offsets[4], object.propertyUid);
   writer.writeString(offsets[5], object.reviewUid);
   writer.writeString(offsets[6], object.uid);
@@ -7385,12 +7947,12 @@ ContactRow _contactRowDeserialize(
   final object = ContactRow();
   object.brokerUid = reader.readString(offsets[0]);
   object.channel =
-      _ContactRowchannelValueEnumMap[reader.readByteOrNull(offsets[1])] ??
+      _ContactRowchannelValueEnumMap[reader.readStringOrNull(offsets[1])] ??
       ContactChannel.call;
   object.createdAt = reader.readDateTime(offsets[2]);
   object.id = id;
   object.outcome =
-      _ContactRowoutcomeValueEnumMap[reader.readByteOrNull(offsets[3])] ??
+      _ContactRowoutcomeValueEnumMap[reader.readStringOrNull(offsets[3])] ??
       ContactOutcome.attempted;
   object.propertyUid = reader.readStringOrNull(offsets[4]);
   object.reviewUid = reader.readStringOrNull(offsets[5]);
@@ -7408,13 +7970,13 @@ P _contactRowDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (_ContactRowchannelValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_ContactRowchannelValueEnumMap[reader.readStringOrNull(offset)] ??
               ContactChannel.call)
           as P;
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (_ContactRowoutcomeValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_ContactRowoutcomeValueEnumMap[reader.readStringOrNull(offset)] ??
               ContactOutcome.attempted)
           as P;
     case 4:
@@ -7429,26 +7991,26 @@ P _contactRowDeserializeProp<P>(
 }
 
 const _ContactRowchannelEnumValueMap = {
-  'call': 0,
-  'sms': 1,
-  'whatsapp': 2,
-  'voiceMessage': 3,
+  r'call': r'call',
+  r'sms': r'sms',
+  r'whatsapp': r'whatsapp',
+  r'voiceMessage': r'voiceMessage',
 };
 const _ContactRowchannelValueEnumMap = {
-  0: ContactChannel.call,
-  1: ContactChannel.sms,
-  2: ContactChannel.whatsapp,
-  3: ContactChannel.voiceMessage,
+  r'call': ContactChannel.call,
+  r'sms': ContactChannel.sms,
+  r'whatsapp': ContactChannel.whatsapp,
+  r'voiceMessage': ContactChannel.voiceMessage,
 };
 const _ContactRowoutcomeEnumValueMap = {
-  'attempted': 0,
-  'reached': 1,
-  'noAnswer': 2,
+  r'attempted': r'attempted',
+  r'reached': r'reached',
+  r'noAnswer': r'noAnswer',
 };
 const _ContactRowoutcomeValueEnumMap = {
-  0: ContactOutcome.attempted,
-  1: ContactOutcome.reached,
-  2: ContactOutcome.noAnswer,
+  r'attempted': ContactOutcome.attempted,
+  r'reached': ContactOutcome.reached,
+  r'noAnswer': ContactOutcome.noAnswer,
 };
 
 Id _contactRowGetId(ContactRow object) {
@@ -7855,23 +8417,33 @@ extension ContactRowQueryFilter
   }
 
   QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelEqualTo(
-    ContactChannel value,
-  ) {
+    ContactChannel value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'channel', value: value),
+        FilterCondition.equalTo(
+          property: r'channel',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
   QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition>
-  channelGreaterThan(ContactChannel value, {bool include = false}) {
+  channelGreaterThan(
+    ContactChannel value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(
           include: include,
           property: r'channel',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -7880,6 +8452,7 @@ extension ContactRowQueryFilter
   QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelLessThan(
     ContactChannel value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -7887,6 +8460,7 @@ extension ContactRowQueryFilter
           include: include,
           property: r'channel',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -7897,6 +8471,7 @@ extension ContactRowQueryFilter
     ContactChannel upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -7906,7 +8481,85 @@ extension ContactRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'channel',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'channel',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'channel',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'channel',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> channelIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'channel', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition>
+  channelIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'channel', value: ''),
       );
     });
   }
@@ -8028,23 +8681,33 @@ extension ContactRowQueryFilter
   }
 
   QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeEqualTo(
-    ContactOutcome value,
-  ) {
+    ContactOutcome value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'outcome', value: value),
+        FilterCondition.equalTo(
+          property: r'outcome',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
   QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition>
-  outcomeGreaterThan(ContactOutcome value, {bool include = false}) {
+  outcomeGreaterThan(
+    ContactOutcome value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(
           include: include,
           property: r'outcome',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -8053,6 +8716,7 @@ extension ContactRowQueryFilter
   QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeLessThan(
     ContactOutcome value, {
     bool include = false,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -8060,6 +8724,7 @@ extension ContactRowQueryFilter
           include: include,
           property: r'outcome',
           value: value,
+          caseSensitive: caseSensitive,
         ),
       );
     });
@@ -8070,6 +8735,7 @@ extension ContactRowQueryFilter
     ContactOutcome upper, {
     bool includeLower = true,
     bool includeUpper = true,
+    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -8079,7 +8745,85 @@ extension ContactRowQueryFilter
           includeLower: includeLower,
           upper: upper,
           includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'outcome',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'outcome',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'outcome',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'outcome',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition> outcomeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'outcome', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<ContactRow, ContactRow, QAfterFilterCondition>
+  outcomeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'outcome', value: ''),
       );
     });
   }
@@ -8757,9 +9501,11 @@ extension ContactRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<ContactRow, ContactRow, QDistinct> distinctByChannel() {
+  QueryBuilder<ContactRow, ContactRow, QDistinct> distinctByChannel({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'channel');
+      return query.addDistinctBy(r'channel', caseSensitive: caseSensitive);
     });
   }
 
@@ -8769,9 +9515,11 @@ extension ContactRowQueryWhereDistinct
     });
   }
 
-  QueryBuilder<ContactRow, ContactRow, QDistinct> distinctByOutcome() {
+  QueryBuilder<ContactRow, ContactRow, QDistinct> distinctByOutcome({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'outcome');
+      return query.addDistinctBy(r'outcome', caseSensitive: caseSensitive);
     });
   }
 

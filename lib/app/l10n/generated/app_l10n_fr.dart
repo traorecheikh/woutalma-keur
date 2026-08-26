@@ -90,6 +90,16 @@ class AppL10nFr extends AppL10n {
   String get offlineJustNow => 'à l\'instant';
 
   @override
+  String get offlineUnknownDate => 'à une date inconnue';
+
+  @override
+  String get offlineCacheUnavailable =>
+      'Pas de copie hors ligne sur ce téléphone : il faut du réseau.';
+
+  @override
+  String get sessionExpired => 'Session terminée, reconnectez-vous.';
+
+  @override
   String offlineMinutesAgo(int count) {
     return 'il y a $count min';
   }
@@ -1319,6 +1329,9 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get exploreDefaultArea => 'Dakar';
+
+  @override
+  String get exploreUnknownPosition => 'Dakar · position inconnue';
 
   @override
   String get exploreNearbyProperties => 'Près de chez vous';

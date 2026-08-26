@@ -24,10 +24,26 @@ class DioLogInterceptor extends Interceptor {
     'x-dev-auth-secret',
   };
 
+  /// La position exacte du téléphone part dans chaque recherche. Un journal
+  /// collé dans un ticket ne doit pas dire où la personne se trouvait.
+  static const Set<String> _privateParams = <String>{'lat', 'lng'};
+
+  static Uri _safe(Uri uri) {
+    if (!_privateParams.any(uri.queryParameters.containsKey)) {
+      return uri;
+    }
+    return uri.replace(
+      queryParameters: <String, String>{
+        for (final MapEntry<String, String> p in uri.queryParameters.entries)
+          p.key: _privateParams.contains(p.key) ? '…' : p.value,
+      },
+    );
+  }
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (kDebugMode) {
-      debugPrint('$_tag → ${options.method} ${options.uri}');
+      debugPrint('$_tag → ${options.method} ${_safe(options.uri)}');
       final Iterable<String> sent = options.headers.keys
           .map((String key) => key.toLowerCase())
           .where(_secretHeaders.contains);
@@ -46,7 +62,8 @@ class DioLogInterceptor extends Interceptor {
     if (kDebugMode) {
       debugPrint(
         '$_tag ← ${response.statusCode} '
-        '${response.requestOptions.method} ${response.requestOptions.uri}',
+        '${response.requestOptions.method} '
+        '${_safe(response.requestOptions.uri)}',
       );
     }
     handler.next(response);
@@ -58,7 +75,7 @@ class DioLogInterceptor extends Interceptor {
       final int? status = err.response?.statusCode;
       debugPrint(
         '$_tag ✗ ${status ?? err.type.name} '
-        '${err.requestOptions.method} ${err.requestOptions.uri}',
+        '${err.requestOptions.method} ${_safe(err.requestOptions.uri)}',
       );
       final Object? body = err.response?.data;
       if (body != null) {

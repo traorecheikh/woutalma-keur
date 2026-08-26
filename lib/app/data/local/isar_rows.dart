@@ -9,6 +9,11 @@ part 'isar_rows.g.dart';
 /// immuable, sans identifiant technique et sans annotation ; la base garde ses
 /// contraintes. Le jour où un serveur remplace Isar, seul ce fichier et les
 /// dépôts changent.
+///
+/// Les énumérations sont stockées **par nom** : le rang aurait fait relire
+/// « vendu » là où « loué » avait été écrit dès qu'une valeur serait insérée
+/// au milieu d'une énumération. Le format des lignes est versionné par
+/// `CacheMetaStore.remoteStoreKind`.
 @collection
 class BrokerRow {
   Id id = Isar.autoIncrement;
@@ -18,7 +23,7 @@ class BrokerRow {
   @Index(unique: true, replace: true)
   late String uid;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late BrokerKind kind;
 
   late String name;
@@ -29,7 +34,7 @@ class BrokerRow {
   late List<String> coverage;
   String? logoAsset;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late VerificationStatus verification;
 
   late double responseRate;
@@ -74,10 +79,10 @@ class PropertyRow {
   @Index()
   late String brokerUid;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late PropertyKind kind;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late TransactionKind transaction;
 
   late String title;
@@ -91,7 +96,7 @@ class PropertyRow {
   late List<String> photoAssets;
   String? voiceAsset;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late PropertyStatus status;
 
   late DateTime createdAt;
@@ -150,7 +155,7 @@ class ReviewRow {
   int? courtesy;
   String? comment;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late ModerationStatus moderation;
 
   String? brokerReply;
@@ -196,10 +201,10 @@ class ContactRow {
 
   String? propertyUid;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late ContactChannel channel;
 
-  @enumerated
+  @Enumerated(EnumType.name)
   late ContactOutcome outcome;
 
   String? reviewUid;

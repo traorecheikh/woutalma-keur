@@ -39,6 +39,39 @@ void main() {
 
     expect(positions.position, DemoSeed.clientPosition);
     expect(positions.isFromGps, isFalse);
+    // La barre doit dire « Dakar · position inconnue » : « Près de vous »
+    // au-dessus de résultats classés depuis le Plateau est faux.
+    expect(positions.gpsFailed, isTrue);
+  });
+
+  test('un choix manuel efface l\'échec du GPS', () async {
+    final ClientPositionController positions = fakePositions(
+      location: FakeLocationService(
+        result: const LocationRefused(LocationRefusal.unavailable),
+      ),
+    );
+    await positions.locate();
+
+    positions.moveTo(
+      const Neighbourhood(name: 'Plateau', position: DemoSeed.clientPosition),
+    );
+
+    expect(positions.gpsFailed, isFalse);
+  });
+
+  test('relire la même position ne prévient personne', () async {
+    final ClientPositionController positions = fakePositions(
+      location: FakeLocationService(result: const LocationFound(ngor)),
+    );
+    await positions.locate();
+    var notified = 0;
+    positions.addListener(() => notified++);
+
+    // Chaque notification relance deux recherches sur l'accueil : relire une
+    // position inchangée les payait pour rien.
+    await positions.locate();
+
+    expect(notified, 0);
   });
 
   test(

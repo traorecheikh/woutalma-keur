@@ -156,6 +156,14 @@ class AppDependencies {
     syncRoleWithSession();
   }
 
+  /// Nouvelle tentative de reprise, au retour au premier plan.
+  ///
+  /// Le démarrage à froid d'une instance endormie fait échouer la reprise
+  /// lancée au lancement : sans cette seconde chance, un courtier restait
+  /// visiteur jusqu'à ce qu'il tue l'application.
+  Future<void> refreshSession() =>
+      auth.current == null ? _restoreSession() : Future<void>.value();
+
   String? get currentBrokerId => auth.current?.brokerId;
 
   /// Le rôle courtier n'est atteignable que si un profil existe vraiment.
@@ -172,7 +180,10 @@ class AppDependencies {
       return inMemory();
     }
 
-    final PersistentRepositories repos = await openPersistentRepositories();
+    // Une base corrompue ou un disque plein ne rendent pas forcément la main :
+    // sans délai, l'application restait sur un écran noir pour toujours.
+    final PersistentRepositories repos = await openPersistentRepositories()
+        .timeout(_storageTimeout);
 
     if (!AppConfig.isRemote) {
       // Le seed n'est chargé qu'à la **première** ouverture. Le recharger à
@@ -194,6 +205,7 @@ class AppDependencies {
           reviews: repos.reviews,
         ),
       );
+      await local.clientPosition.restore();
       local.mapTiles = await _openTileCache();
       return local;
     }
@@ -214,12 +226,19 @@ class AppDependencies {
     // et sans elle un jeton d'accès de quinze minutes ferait mourir toute
     // session au premier redémarrage du processus.
     final TokenStore tokens = TokenStore();
-    await tokens.restore();
+    // Le trousseau Android peut rester bloqué sur un KeyStore abîmé : mieux
+    // vaut repartir en visiteur que ne jamais peindre le premier écran.
+    await tokens.restore().timeout(_storageTimeout);
 
     final AppDependencies deps = remote(
       baseUrl: AppConfig.apiBaseUrl,
       cache: repos,
       tokens: tokens,
+    );
+    deps.cacheStatus.restoreFetchedAt(
+      DateTime.tryParse(
+        await repos.meta.read(CacheMetaStore.fetchedAtKey) ?? '',
+      ),
     );
     await deps.clientPosition.restore();
     deps.mapTiles = await _openTileCache();
@@ -232,6 +251,38 @@ class AppDependencies {
     // ouvre. Le rôle suit dans `_restoreSession`, pas ici : c'est la même
     // règle que celle du routeur après une identification.
     deps.sessionRestore = deps._restoreSession();
+    return deps;
+  }
+
+  /// Au-delà, on considère que le stockage local ne répondra pas.
+  static const Duration _storageTimeout = Duration(seconds: 15);
+
+  /// Démarrage de secours, quand la base locale ou le trousseau refusent de
+  /// s'ouvrir : disque plein, base abîmée, KeyStore cassé.
+  ///
+  /// L'application reste utilisable — en ligne seulement — au lieu de rester
+  /// sur un écran noir. La session dormante est perdue pour ce lancement :
+  /// sans trousseau il n'y a pas de jeton à relire.
+  static Future<AppDependencies> withoutLocalStore() async {
+    if (!AppConfig.isRemote) {
+      final AppDependencies local = await inMemory(loadDemoSeed: false);
+      local.cacheStatus.markCacheUnavailable();
+      return local;
+    }
+    final InMemoryStore store = InMemoryStore();
+    final AppDependencies deps = remote(
+      baseUrl: AppConfig.apiBaseUrl,
+      cache: PersistentRepositories(
+        brokers: InMemoryBrokerRepository(store),
+        properties: InMemoryPropertyRepository(store),
+        reviews: InMemoryReviewRepository(store),
+        contacts: InMemoryContactRepository(store, now: DateTime.now),
+        seed: InMemorySeedRepository(store),
+        meta: InMemoryCacheMetaStore(),
+      ),
+      tokens: TokenStore(InMemoryTokenStorage()),
+    );
+    deps.cacheStatus.markCacheUnavailable();
     return deps;
   }
 
@@ -269,7 +320,7 @@ class AppDependencies {
     final PropertyRepository properties = InMemoryPropertyRepository(store);
     final ReviewRepository reviews = InMemoryReviewRepository(store);
 
-    return _assemble(
+    final AppDependencies deps = _assemble(
       brokers: brokers,
       properties: properties,
       reviews: reviews,
@@ -284,6 +335,8 @@ class AppDependencies {
       ),
       location: location,
     );
+    await deps.clientPosition.restore();
+    return deps;
   }
 
   /// Démarrage distant : l'API est la source de vérité, Isar sert de copie
@@ -294,7 +347,10 @@ class AppDependencies {
     required TokenStore tokens,
   }) {
     final SessionExpiry sessionExpiry = SessionExpiry();
-    final CacheStatus cacheStatus = CacheStatus();
+    final CacheStatus cacheStatus = CacheStatus(
+      persist: (DateTime at) =>
+          cache.meta.write(CacheMetaStore.fetchedAtKey, at.toIso8601String()),
+    );
 
     // Le démarrage à froid d'une instance gratuite prend une cinquantaine de
     // secondes. Les délais par défaut de Dio garantiraient un échec au premier
@@ -308,6 +364,8 @@ class AppDependencies {
       basePathOverride: baseUrl,
       dio: Dio(options..baseUrl = baseUrl),
     );
+    final BackendWarmup warmup = BackendWarmup(health: client.getHealthApi());
+
     client.dio.interceptors.addAll(<Interceptor>[
       DioAuthInterceptor(
         tokens: tokens,
@@ -318,7 +376,18 @@ class AppDependencies {
       // Après l'authentification, pour que la trace montre la requête telle
       // qu'elle part réellement. Silencieux en release.
       const DioLogInterceptor(),
+      // Une coupure veut souvent dire « l'instance s'est rendormie ». On
+      // relance le réveil ici plutôt que dans chaque dépôt.
+      InterceptorsWrapper(
+        onError: (DioException error, ErrorInterceptorHandler handler) {
+          if (isOfflineFailure(error)) {
+            warmup.retry();
+          }
+          handler.next(error);
+        },
+      ),
     ]);
+    warmup.start();
 
     if (kDebugMode) {
       // La panne la plus coûteuse à diagnostiquer est un build lancé sans ses
@@ -359,9 +428,6 @@ class AppDependencies {
       cache: cache.contacts,
       status: cacheStatus,
     );
-
-    final BackendWarmup warmup = BackendWarmup(health: client.getHealthApi())
-      ..start();
 
     return _assemble(
       brokers: brokers,

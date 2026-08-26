@@ -25,7 +25,7 @@ import 'package:woutalma_keur/app/domain/repositories.dart';
 /// On ne classe que ce qui a déjà été vu. Une base locale vide relance
 /// l'erreur, comme partout ailleurs — jamais une liste vide qui ressemblerait
 /// à « aucun courtier près de vous ».
-class CachedDiscoveryService implements DiscoveryService {
+class CachedDiscoveryService extends DiscoveryService {
   CachedDiscoveryService({
     required DiscoveryService remote,
     required BrokerRepository brokerCache,
@@ -52,27 +52,37 @@ class CachedDiscoveryService implements DiscoveryService {
   final DateTime Function() _now;
 
   @override
-  Future<List<BrokerListing>> findBrokers({
+  Future<DiscoveryPage<BrokerListing>> searchBrokers({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     try {
-      final List<BrokerListing> fresh = await _remote.findBrokers(
+      final DiscoveryPage<BrokerListing> fresh = await _remote.searchBrokers(
         from: from,
         filters: filters,
+        limit: limit,
+        offset: offset,
       );
-      await _brokers.saveAll(fresh.map((BrokerListing l) => l.broker).toList());
+      await copyToCache(
+        () => _brokers.saveAll(
+          fresh.items.map((BrokerListing l) => l.broker).toList(),
+        ),
+      );
       _status.markFresh(_now());
       return fresh;
     } catch (error) {
       if (!isOfflineFailure(error)) {
         rethrow;
       }
-      final List<BrokerListing> cached = await _local.findBrokers(
+      final DiscoveryPage<BrokerListing> cached = await _local.searchBrokers(
         from: from,
         filters: filters,
+        limit: limit,
+        offset: offset,
       );
-      if (cached.isEmpty) {
+      if (cached.items.isEmpty) {
         rethrow;
       }
       _status.markStale(_status.fetchedAt);
@@ -81,27 +91,33 @@ class CachedDiscoveryService implements DiscoveryService {
   }
 
   @override
-  Future<List<Property>> findProperties({
+  Future<DiscoveryPage<Property>> searchProperties({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     try {
-      final List<Property> fresh = await _remote.findProperties(
+      final DiscoveryPage<Property> fresh = await _remote.searchProperties(
         from: from,
         filters: filters,
+        limit: limit,
+        offset: offset,
       );
-      await _properties.saveAll(fresh);
+      await copyToCache(() => _properties.saveAll(fresh.items));
       _status.markFresh(_now());
       return fresh;
     } catch (error) {
       if (!isOfflineFailure(error)) {
         rethrow;
       }
-      final List<Property> cached = await _local.findProperties(
+      final DiscoveryPage<Property> cached = await _local.searchProperties(
         from: from,
         filters: filters,
+        limit: limit,
+        offset: offset,
       );
-      if (cached.isEmpty) {
+      if (cached.items.isEmpty) {
         rethrow;
       }
       _status.markStale(_status.fetchedAt);

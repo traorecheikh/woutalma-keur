@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -67,8 +69,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }) async {
     if (segment != null) model.selectSegment(segment);
     if (view != null) model.selectView(view);
-    if (filters != null) await model.applyFilters(filters);
-    if (!mounted) return;
+    // La recherche part **après** l'ouverture : attendre la réponse ici rendait
+    // la vignette sourde pendant plusieurs secondes sur réseau faible, alors
+    // que l'écran de résultats sait afficher son chargement.
+    if (filters != null) unawaited(model.applyFilters(filters));
     await SearchOverlay.show(
       context,
       model: model,
@@ -129,7 +133,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
     ];
     final place =
         model.placeName ??
-        (model.isOutsideServiceArea ? l.exploreDefaultArea : l.exploreNearYou);
+        (model.isOutsideServiceArea
+            ? l.exploreDefaultArea
+            : model.gpsFailed
+            ? l.exploreUnknownPosition
+            : l.exploreNearYou);
 
     return AppScaffold(
       showBack: false,
@@ -218,6 +226,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 onOpenBroker: (_) {},
                 onOpenProperty: (_) {},
                 onSeeAll: (_) {},
+                onSeeNewest: () {},
                 onMap: () {},
               ),
             ),
@@ -237,6 +246,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
               onOpenProperty: widget.onOpenProperty,
               onSeeAll: (s) =>
                   _open(model, filters: const DiscoveryFilters(), segment: s),
+              onSeeNewest: () => _open(
+                model,
+                filters: const DiscoveryFilters(sort: DiscoverySort.newest),
+                segment: ExploreSegment.properties,
+              ),
               onMap: () => _open(
                 model,
                 filters: const DiscoveryFilters(),
@@ -258,19 +272,26 @@ class _Sections extends StatelessWidget {
     required this.onOpenBroker,
     required this.onOpenProperty,
     required this.onSeeAll,
+    required this.onSeeNewest,
     required this.onMap,
   });
   final ExploreResults results;
   final ExploreViewModel model;
   final void Function(String) onOpenBroker, onOpenProperty;
   final void Function(ExploreSegment) onSeeAll;
-  final VoidCallback onMap;
+  final VoidCallback onSeeNewest, onMap;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final nearby = results.properties.take(8).toList();
-    final newest = results.newest.take(8).toList();
+    final shown = nearby.map((p) => p.id).toSet();
+    // Une rangée « Nouveautés » qui répète les vignettes du dessus fait croire
+    // à un catalogue deux fois plus grand qu'il n'est.
+    final newest = results.newest
+        .where((p) => !shown.contains(p.id))
+        .take(8)
+        .toList();
     final brokers = results.brokers.take(8).toList();
     final scale = MediaQuery.textScalerOf(context);
     Widget props(List<Property> list) => AppStrip(
@@ -314,11 +335,11 @@ class _Sections extends StatelessWidget {
             ],
           ),
         ],
-        if (newest.length > 1) ...[
+        if (newest.isNotEmpty) ...[
           AppSection(
             l.exploreNewListings,
             action: l.exploreSeeAll,
-            onAction: () => onSeeAll(ExploreSegment.properties),
+            onAction: onSeeNewest,
           ),
           props(newest),
         ],

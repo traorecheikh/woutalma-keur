@@ -14,15 +14,19 @@ import 'package:woutalma_keur/app/domain/entities.dart';
 /// est le portage SQL de `ranking.dart`, et les tests des deux côtés comparent
 /// les mêmes scores), avec les distances calculées par PostGIS et la recherche
 /// plein texte adossée à un index GIN.
-class RemoteDiscoveryService implements DiscoveryService {
+/// Le tri par date n'existe pas côté serveur : il est appliqué à la page
+/// reçue, ce qui suffit tant qu'on n'en demande qu'une.
+class RemoteDiscoveryService extends DiscoveryService {
   const RemoteDiscoveryService(this._api);
 
   final api.SearchApi _api;
 
   @override
-  Future<List<Property>> findProperties({
+  Future<DiscoveryPage<Property>> searchProperties({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     final response = await _api.searchControllerFindProperties(
       lat: from.latitude,
@@ -32,15 +36,23 @@ class RemoteDiscoveryService implements DiscoveryService {
       maxPrice: filters.maxPrice,
       radiusMeters: filters.radiusMeters,
       query: _query(filters),
+      limit: limit,
+      offset: offset,
     );
     final items = response.data?.items ?? const <api.PropertyDto>[];
-    return items.map(mapProperty).toList();
+    final List<Property> mapped = items.map(mapProperty).toList();
+    return DiscoveryPage<Property>(
+      items: sortedBy(filters.sort, mapped),
+      total: response.data?.totalCount.toInt() ?? mapped.length,
+    );
   }
 
   @override
-  Future<List<BrokerListing>> findBrokers({
+  Future<DiscoveryPage<BrokerListing>> searchBrokers({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     final response = await _api.searchControllerFindBrokers(
       lat: from.latitude,
@@ -50,9 +62,15 @@ class RemoteDiscoveryService implements DiscoveryService {
       maxPrice: filters.maxPrice,
       radiusMeters: filters.radiusMeters,
       query: _query(filters),
+      limit: limit,
+      offset: offset,
     );
     final items = response.data?.items ?? const <api.BrokerListingDto>[];
-    return items.map(mapBrokerListing).toList();
+    final List<BrokerListing> mapped = items.map(mapBrokerListing).toList();
+    return DiscoveryPage<BrokerListing>(
+      items: mapped,
+      total: response.data?.totalCount.toInt() ?? mapped.length,
+    );
   }
 
   @override

@@ -243,6 +243,24 @@ abstract class AppL10n {
   /// **'à l\'instant'**
   String get offlineJustNow;
 
+  /// Ancienneté d'une copie hors ligne dont la date n'a pas été retrouvée.
+  ///
+  /// In fr, this message translates to:
+  /// **'à une date inconnue'**
+  String get offlineUnknownDate;
+
+  /// Bandeau : la base locale n'a pas pu s'ouvrir (disque plein, base abîmée).
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de copie hors ligne sur ce téléphone : il faut du réseau.'**
+  String get offlineCacheUnavailable;
+
+  /// Message après l'expiration d'une session qui n'a pas pu être renouvelée.
+  ///
+  /// In fr, this message translates to:
+  /// **'Session terminée, reconnectez-vous.'**
+  String get sessionExpired;
+
   /// Ancienneté d'une copie hors ligne, en minutes.
   ///
   /// In fr, this message translates to:
@@ -2240,6 +2258,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Dakar'**
   String get exploreDefaultArea;
+
+  /// Titre de C01 quand le GPS n'a rien rendu : les résultats partent du centre de Dakar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dakar · position inconnue'**
+  String get exploreUnknownPosition;
 
   /// Section de l'accueil : biens triés par distance.
   ///

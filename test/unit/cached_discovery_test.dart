@@ -8,32 +8,46 @@ import 'package:woutalma_keur/app/domain/discovery.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 
 /// Découverte distante scriptable : rend le seed, ou tombe.
-class _ScriptedRemote implements DiscoveryService {
+class _ScriptedRemote extends DiscoveryService {
   _ScriptedRemote(this._source);
 
   final DiscoveryService _source;
   Object? error;
 
   @override
-  Future<List<BrokerListing>> findBrokers({
+  Future<DiscoveryPage<BrokerListing>> searchBrokers({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     if (error != null) {
       throw error!;
     }
-    return _source.findBrokers(from: from, filters: filters);
+    return _source.searchBrokers(
+      from: from,
+      filters: filters,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override
-  Future<List<Property>> findProperties({
+  Future<DiscoveryPage<Property>> searchProperties({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     if (error != null) {
       throw error!;
     }
-    return _source.findProperties(from: from, filters: filters);
+    return _source.searchProperties(
+      from: from,
+      filters: filters,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override

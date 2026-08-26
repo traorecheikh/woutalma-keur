@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:woutalma_keur/app/data/local/cache_status.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
@@ -52,6 +53,18 @@ bool _isOffline(Object error) {
   }
 }
 
+/// Recopie locale, dont l'échec ne doit jamais casser une lecture réussie.
+///
+/// Disque plein — le cas courant sur les téléphones visés — la donnée est déjà
+/// là, en mémoire : la rendre vaut mieux qu'un écran d'erreur inexplicable.
+Future<void> copyToCache(Future<void> Function() write) async {
+  try {
+    await write();
+  } on Object catch (error) {
+    debugPrint('[wk] copie hors ligne impossible : $error');
+  }
+}
+
 /// Exécute la lecture distante, recopie, et se rabat si le réseau lâche.
 Future<T> _readThrough<T>({
   required Future<T> Function() remote,
@@ -63,7 +76,7 @@ Future<T> _readThrough<T>({
 }) async {
   try {
     final T fresh = await remote();
-    await writeThrough(fresh);
+    await copyToCache(() => writeThrough(fresh));
     status.markFresh(now());
     return fresh;
   } catch (error) {
@@ -187,12 +200,34 @@ class CachedPropertyRepository implements PropertyRepository {
   }) => _readThrough<List<Property>>(
     remote: () =>
         _remote.byBroker(brokerId, onlyDiscoverable: onlyDiscoverable),
-    writeThrough: _writeAll,
+    writeThrough: (List<Property> fresh) =>
+        _syncBroker(brokerId, fresh, partial: onlyDiscoverable),
     cached: () => _cache.byBroker(brokerId, onlyDiscoverable: onlyDiscoverable),
     isEmpty: (List<Property> p) => p.isEmpty,
     status: _status,
     now: _now,
   );
+
+  /// La liste d'un courtier est complète : ce qui n'y est plus a été supprimé
+  /// sur le serveur et n'a rien à faire dans la copie hors ligne, où il
+  /// remontait indéfiniment dans « Mes biens ». Une liste filtrée, elle, ne
+  /// dit rien des biens qu'elle a écartés.
+  Future<void> _syncBroker(
+    String brokerId,
+    List<Property> fresh, {
+    required bool partial,
+  }) async {
+    await _cache.saveAll(fresh);
+    if (partial) {
+      return;
+    }
+    final Set<String> kept = fresh.map((Property p) => p.id).toSet();
+    for (final Property stale in await _cache.byBroker(brokerId)) {
+      if (!kept.contains(stale.id)) {
+        await _cache.delete(stale.id);
+      }
+    }
+  }
 
   @override
   Future<Property?> byId(String id) => _readThrough<Property?>(

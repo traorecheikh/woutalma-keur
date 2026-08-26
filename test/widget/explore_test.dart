@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -153,4 +155,73 @@ void main() {
     await pumpHome(tester, textScale: 1.3);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('« Nouveautés » ne répète pas les vignettes du dessus', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    final nearby = tester
+        .widgetList<PropertyCard>(find.byType(PropertyCard))
+        .map((c) => c.property.id)
+        .toList();
+
+    // Deux rangées de biens, aucun bien dans les deux : la page paraissait
+    // deux fois plus fournie qu'elle ne l'est.
+    expect(nearby.toSet(), hasLength(nearby.length));
+    expect(find.text('Nouveautés'), findsOneWidget);
+  });
+
+  testWidgets('une catégorie ouvre les résultats sans attendre le réseau', (
+    tester,
+  ) async {
+    final model = ExploreViewModel(
+      discovery: _NeverAnswers(),
+      position: fakePositions(),
+    );
+    addTearDown(model.dispose);
+    await pumpWk(
+      tester,
+      ChangeNotifierProvider<ExploreViewModel>.value(
+        value: model,
+        child: ExploreScreen(
+          onOpenBroker: (_) {},
+          onOpenProperty: (_) {},
+          onOpenSettings: () {},
+          location: _Location(),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(AppSearchPill));
+    await tester.pumpAndSettle();
+
+    // L'écran s'ouvre sur son chargement : attendre la réponse ici rendait la
+    // vignette sourde pendant plusieurs secondes.
+    expect(find.byType(SearchOverlay), findsOneWidget);
+  });
+}
+
+/// Serveur qui ne répond jamais : le pire réseau possible.
+class _NeverAnswers extends DiscoveryService {
+  @override
+  Future<DiscoveryPage<Property>> searchProperties({
+    required GeoPoint from,
+    DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
+  }) => Completer<DiscoveryPage<Property>>().future;
+
+  @override
+  Future<DiscoveryPage<BrokerListing>> searchBrokers({
+    required GeoPoint from,
+    DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
+  }) => Completer<DiscoveryPage<BrokerListing>>().future;
+
+  @override
+  Future<List<String>> suggestions({
+    required GeoPoint from,
+    DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = 5,
+  }) => Completer<List<String>>().future;
 }

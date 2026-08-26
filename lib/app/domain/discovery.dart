@@ -5,6 +5,9 @@ import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 
+/// Dans quel ordre le résultat est rendu.
+enum DiscoverySort { relevance, newest }
+
 /// Ce que le client a demandé. Tout est facultatif : chercher sans filtre est
 /// le cas le plus fréquent.
 @immutable
@@ -15,12 +18,14 @@ class DiscoveryFilters {
     this.maxPrice,
     this.radiusMeters,
     this.query = '',
+    this.sort = DiscoverySort.relevance,
   });
 
   final TransactionKind? transaction;
   final PropertyKind? kind;
   final int? maxPrice;
   final double? radiusMeters;
+  final DiscoverySort sort;
 
   /// Texte libre : nom de courtier, quartier ou titre de bien.
   final String query;
@@ -46,6 +51,7 @@ class DiscoveryFilters {
     int? maxPrice,
     double? radiusMeters,
     String? query,
+    DiscoverySort? sort,
     bool clearTransaction = false,
     bool clearKind = false,
     bool clearMaxPrice = false,
@@ -57,8 +63,31 @@ class DiscoveryFilters {
       maxPrice: clearMaxPrice ? null : maxPrice ?? this.maxPrice,
       radiusMeters: clearRadius ? null : radiusMeters ?? this.radiusMeters,
       query: query ?? this.query,
+      sort: sort ?? this.sort,
     );
   }
+}
+
+/// Une tranche de résultats et le total que le serveur dit avoir.
+///
+/// [total] vient de `totalCount` : sans lui, « 20 résultats » s'affichait dès
+/// que le serveur en avait mille, la taille de page devenant le compte.
+@immutable
+class DiscoveryPage<T> {
+  const DiscoveryPage({required this.items, required this.total});
+
+  /// Un classement local n'est pas paginé : on découpe ce qu'on a.
+  factory DiscoveryPage.slice(
+    List<T> all, {
+    required int limit,
+    int offset = 0,
+  }) => DiscoveryPage<T>(
+    items: all.skip(offset).take(limit).toList(),
+    total: all.length,
+  );
+
+  final List<T> items;
+  final int total;
 }
 
 /// Ce que l'écran Explorer demande.
@@ -68,14 +97,23 @@ class DiscoveryFilters {
 /// laquelle est branchée — même raison d'être que les contrats de
 /// `repositories.dart`.
 abstract class DiscoveryService {
-  Future<List<Property>> findProperties({
+  const DiscoveryService();
+
+  /// Le maximum accepté par `GET /search/*`.
+  static const int pageSize = 50;
+
+  Future<DiscoveryPage<Property>> searchProperties({
     required GeoPoint from,
     DiscoveryFilters filters,
+    int limit,
+    int offset,
   });
 
-  Future<List<BrokerListing>> findBrokers({
+  Future<DiscoveryPage<BrokerListing>> searchBrokers({
     required GeoPoint from,
     DiscoveryFilters filters,
+    int limit,
+    int offset,
   });
 
   Future<List<String>> suggestions({
@@ -83,6 +121,26 @@ abstract class DiscoveryService {
     DiscoveryFilters filters,
     int limit,
   });
+
+  Future<List<Property>> findProperties({
+    required GeoPoint from,
+    DiscoveryFilters filters = const DiscoveryFilters(),
+  }) async => (await searchProperties(from: from, filters: filters)).items;
+
+  Future<List<BrokerListing>> findBrokers({
+    required GeoPoint from,
+    DiscoveryFilters filters = const DiscoveryFilters(),
+  }) async => (await searchBrokers(from: from, filters: filters)).items;
+}
+
+/// Derniers publiés d'abord. Le serveur ne sait pas trier, donc l'ordre est
+/// posé ici, des deux côtés, sur ce qui a été rendu.
+List<Property> sortedBy(DiscoverySort sort, List<Property> properties) {
+  if (sort != DiscoverySort.newest) {
+    return properties;
+  }
+  return List<Property>.of(properties)
+    ..sort((Property a, Property b) => b.createdAt.compareTo(a.createdAt));
 }
 
 /// Assemble ce que l'écran Explorer affiche, en local.
@@ -90,7 +148,7 @@ abstract class DiscoveryService {
 /// Toute la logique vit ici, en Dart pur : un widget ne trie ni ne filtre.
 /// C'est aussi la référence dont `backend/src/search` est le portage — les
 /// tests des deux côtés comparent les mêmes scores.
-class LocalDiscoveryService implements DiscoveryService {
+class LocalDiscoveryService extends DiscoveryService {
   const LocalDiscoveryService({
     required this.brokers,
     required this.properties,
@@ -105,9 +163,11 @@ class LocalDiscoveryService implements DiscoveryService {
 
   /// Biens visibles par un client, filtrés et triés par distance.
   @override
-  Future<List<Property>> findProperties({
+  Future<DiscoveryPage<Property>> searchProperties({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     final _SearchQuery search = _SearchQuery.parse(filters.query);
     final List<Property> all = await properties.discoverable();
@@ -133,14 +193,20 @@ class LocalDiscoveryService implements DiscoveryService {
         a.position,
       ).compareTo(distanceMeters(from, b.position));
     });
-    return kept;
+    return DiscoveryPage<Property>.slice(
+      sortedBy(filters.sort, kept),
+      limit: limit,
+      offset: offset,
+    );
   }
 
   /// Courtiers classés, avec tout ce que la carte de résultat doit montrer.
   @override
-  Future<List<BrokerListing>> findBrokers({
+  Future<DiscoveryPage<BrokerListing>> searchBrokers({
     required GeoPoint from,
     DiscoveryFilters filters = const DiscoveryFilters(),
+    int limit = DiscoveryService.pageSize,
+    int offset = 0,
   }) async {
     final _SearchQuery search = _SearchQuery.parse(filters.query);
     final List<Broker> allBrokers = await brokers.all();
@@ -217,7 +283,11 @@ class LocalDiscoveryService implements DiscoveryService {
       );
     }
 
-    return ranking.sort(listings);
+    return DiscoveryPage<BrokerListing>.slice(
+      ranking.sort(listings),
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override

@@ -111,6 +111,18 @@
   "@offlineJustNow": {
     "description": "Ancienneté d'une copie hors ligne datant de moins d'une minute."
   },
+  "offlineUnknownDate": "à une date inconnue",
+  "@offlineUnknownDate": {
+    "description": "Ancienneté d'une copie hors ligne dont la date n'a pas été retrouvée."
+  },
+  "offlineCacheUnavailable": "Pas de copie hors ligne sur ce téléphone : il faut du réseau.",
+  "@offlineCacheUnavailable": {
+    "description": "Bandeau : la base locale n'a pas pu s'ouvrir (disque plein, base abîmée)."
+  },
+  "sessionExpired": "Session terminée, reconnectez-vous.",
+  "@sessionExpired": {
+    "description": "Message après l'expiration d'une session qui n'a pas pu être renouvelée."
+  },
   "offlineMinutesAgo": "il y a {count} min",
   "@offlineMinutesAgo": {
     "description": "Ancienneté d'une copie hors ligne, en minutes.",
@@ -1386,6 +1398,8 @@
 
   "exploreDefaultArea": "Dakar",
   "@exploreDefaultArea": { "description": "Titre de C01 quand le GPS répond hors de la zone couverte." },
+  "exploreUnknownPosition": "Dakar · position inconnue",
+  "@exploreUnknownPosition": { "description": "Titre de C01 quand le GPS n'a rien rendu : les résultats partent du centre de Dakar." },
   "exploreNearbyProperties": "Près de chez vous",
   "@exploreNearbyProperties": { "description": "Section de l'accueil : biens triés par distance." },
   "exploreTrustedBrokers": "Courtiers de confiance",
