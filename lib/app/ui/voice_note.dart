@@ -228,6 +228,7 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
   bool _recording = false;
   int _seconds = 0;
   Timer? _ticker;
+  Stream<double>? _levels;
   String? _error;
 
   @override
@@ -257,6 +258,7 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
     setState(() {
       _recording = true;
       _seconds = 0;
+      _levels = widget.recorder.levels();
       _error = null;
     });
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -271,6 +273,7 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
     _ticker?.cancel();
     if (!_recording) return;
     _recording = false;
+    _levels = null;
     final l = context.l10n;
     final feedback = context.read<InteractionFeedbackService?>();
     String? path;
@@ -301,6 +304,7 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final asset = widget.asset;
+    final left = widget.constraints.maxDuration.inSeconds - _seconds;
     final Widget body;
     if (_recording) {
       body = AppCard(
@@ -329,13 +333,19 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
                     const SizedBox(width: Insets.lg),
                     Expanded(
                       child: Text(
-                        l.voiceNoteRecording(_seconds),
+                        left <= 10
+                            ? l.voiceNoteRecordingEnding(left)
+                            : l.voiceNoteRecording(_seconds),
                         style: context.text.titleMedium,
                       ),
                     ),
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: Insets.md),
+            ExcludeSemantics(
+              child: _Waveform(levels: _levels ?? const Stream.empty()),
             ),
             const SizedBox(height: Insets.md),
             _Bar(
@@ -377,7 +387,9 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
         children: [
           AppVoiceNotePlayer(asset: asset, title: l.voiceNoteReady),
           const SizedBox(height: Insets.sm),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: Insets.sm,
             children: [
               AppButton(
                 l.voiceNoteRedo,
@@ -385,7 +397,6 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
                 variant: AppButtonVariant.ghost,
                 onPressed: _start,
               ),
-              const Spacer(),
               AppButton(
                 l.voiceNoteDelete,
                 icon: FIcons.trash2,
@@ -407,7 +418,13 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
           ),
         ),
         const SizedBox(height: Insets.sm),
-        body,
+        AnimatedSwitcher(
+          duration: Motion.of(context, Motion.base),
+          child: KeyedSubtree(
+            key: ValueKey(_recording ? 'recording' : asset ?? ''),
+            child: body,
+          ),
+        ),
         if (_error != null) ...[
           const SizedBox(height: Insets.sm),
           Text(
@@ -420,6 +437,106 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
       ],
     );
   }
+}
+
+/// Forme d'onde nourrie par le micro à 20 Hz : elle ne bouge que quand un
+/// niveau arrive, donc jamais en mouvement réduit (le flux n'est pas écouté).
+class _Waveform extends StatefulWidget {
+  const _Waveform({required this.levels});
+  final Stream<double> levels;
+  @override
+  State<_Waveform> createState() => _WaveformState();
+}
+
+class _WaveformState extends State<_Waveform> {
+  static const int bars = 36;
+  final List<double> _samples = List.filled(bars, 0);
+  StreamSubscription<double>? _sub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sub?.cancel();
+    _sub = null;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return;
+    }
+    _sub = widget.levels.listen((level) {
+      if (!mounted) return;
+      setState(() {
+        _samples.removeAt(0);
+        _samples.add(level);
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(_Waveform old) {
+    super.didUpdateWidget(old);
+    if (old.levels != widget.levels) didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: SizedBox(
+      height: 40,
+      width: double.infinity,
+      child: CustomPaint(
+        painter: _WaveformPainter(
+          samples: _samples,
+          color: context.tones.danger,
+          idle: context.tones.sunken,
+        ),
+      ),
+    ),
+  );
+}
+
+class _WaveformPainter extends CustomPainter {
+  const _WaveformPainter({
+    required this.samples,
+    required this.color,
+    required this.idle,
+  });
+  final List<double> samples;
+  final Color color;
+  final Color idle;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final step = size.width / samples.length;
+    final width = step * 0.55;
+    final paint = Paint()..strokeCap = StrokeCap.round;
+    for (var i = 0; i < samples.length; i++) {
+      final level = samples[i];
+      final height = (size.height * (0.12 + 0.88 * level)).clamp(
+        width,
+        size.height,
+      );
+      paint.color = level == 0 ? idle : color;
+      final x = i * step + step / 2;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(x, size.height / 2),
+            width: width,
+            height: height,
+          ),
+          Radius.circular(width / 2),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WaveformPainter old) => true;
 }
 
 class _Bar extends StatelessWidget {

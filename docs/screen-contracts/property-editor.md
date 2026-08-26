@@ -49,7 +49,7 @@ remplacer une phrase que le courtier a écrite lui-même.
 | Pièces | choix, 1 à 6 | facultatif ; **absent pour un terrain** |
 | Description | texte composé | facultatif, corrigeable ; jamais écrasée si le courtier l'a écrite |
 | Photos | galerie/appareil | facultatif, 3 au plus |
-| Message vocal | micro, 45 s au plus | facultatif ; un seul, réécoutable, remplaçable, supprimable ; 512 Ko au plus après encodage (AAC mono 32 kbit/s) |
+| Message vocal | micro, 60 s au plus, arrêt automatique | facultatif ; un seul, réécoutable, remplaçable, supprimable ; forme d'onde à 20 Hz pendant la capture ; 512 Ko au plus après encodage (AAC mono 32 kbit/s) |
 | Statut | choix, 3 options | **modification seulement** |
 
 Paliers de surface : chambre et studio de trois en trois jusqu'à 30 m² ; appartement et maison de

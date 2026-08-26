@@ -214,9 +214,7 @@ class RemotePropertyRepository implements PropertyRepository {
         ? null
         : api.UploadVoiceNoteDto(
             (b) => b
-              ..mimeType = api.UploadVoiceNoteDtoMimeTypeEnum.valueOf(
-                voice.upload!.mimeType,
-              )
+              ..mimeType = _voiceMimeEnum(voice.upload!.mimeType)
               ..dataBase64 = voice.upload!.dataBase64,
           );
 
@@ -303,6 +301,16 @@ class RemotePropertyRepository implements PropertyRepository {
         'image/png' => api.UploadPhotoDtoMimeTypeEnum.imageSlashPng,
         'image/webp' => api.UploadPhotoDtoMimeTypeEnum.imageSlashWebp,
         _ => api.UploadPhotoDtoMimeTypeEnum.imageSlashJpeg,
+      };
+
+  /// Même renommage ; `valueOf` attend l'identifiant Dart, pas `audio/mp4`.
+  static api.UploadVoiceNoteDtoMimeTypeEnum _voiceMimeEnum(String mimeType) =>
+      switch (mimeType) {
+        'audio/aac' => api.UploadVoiceNoteDtoMimeTypeEnum.audioSlashAac,
+        'audio/mpeg' => api.UploadVoiceNoteDtoMimeTypeEnum.audioSlashMpeg,
+        'audio/ogg' => api.UploadVoiceNoteDtoMimeTypeEnum.audioSlashOgg,
+        'audio/webm' => api.UploadVoiceNoteDtoMimeTypeEnum.audioSlashWebm,
+        _ => api.UploadVoiceNoteDtoMimeTypeEnum.audioSlashMp4,
       };
 
   /// Retrait doux : le serveur passe le bien en `CLOSED` au lieu de le

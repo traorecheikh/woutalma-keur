@@ -1518,7 +1518,7 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get voiceNoteHint =>
-      'Décrivez le bien avec vos mots. 45 secondes au plus.';
+      'Décrivez le bien avec vos mots. 60 secondes au plus, l\'enregistrement s\'arrête seul.';
 
   @override
   String get voiceNoteRecord => 'Enregistrer un message vocal';
@@ -1538,6 +1538,11 @@ class AppL10nFr extends AppL10n {
   @override
   String voiceNoteRecording(int seconds) {
     return 'Enregistrement… $seconds s';
+  }
+
+  @override
+  String voiceNoteRecordingEnding(int seconds) {
+    return 'Fin dans $seconds s';
   }
 
   @override

@@ -2573,7 +2573,7 @@ abstract class AppL10n {
   /// Aide sous le bouton d'enregistrement.
   ///
   /// In fr, this message translates to:
-  /// **'Décrivez le bien avec vos mots. 45 secondes au plus.'**
+  /// **'Décrivez le bien avec vos mots. 60 secondes au plus, l\'enregistrement s\'arrête seul.'**
   String get voiceNoteHint;
 
   /// Démarre l'enregistrement.
@@ -2611,6 +2611,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Enregistrement… {seconds} s'**
   String voiceNoteRecording(int seconds);
+
+  /// Compte à rebours des dix dernières secondes d'enregistrement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin dans {seconds} s'**
+  String voiceNoteRecordingEnding(int seconds);
 
   /// Retire le vocal enregistré.
   ///

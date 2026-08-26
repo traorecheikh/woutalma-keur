@@ -6,7 +6,7 @@ import 'package:woutalma_keur/app/domain/voice_note_service.dart';
 
 /// Enregistreur réel, sur le paquet `record`.
 ///
-/// AAC mono à 32 kbit/s : 45 secondes pèsent environ 180 Ko, sous la limite
+/// AAC mono à 32 kbit/s : 60 secondes pèsent environ 240 Ko, sous la limite
 /// du serveur, et la voix reste nette — c'est le réglage des messages vocaux
 /// WhatsApp, que la cible connaît.
 class RecordVoiceNoteRecorder implements VoiceNoteRecorder {
@@ -55,6 +55,13 @@ class RecordVoiceNoteRecorder implements VoiceNoteRecorder {
     await _recorder.cancel();
     _path = null;
   }
+
+  /// `current` est en dBFS : -160 dans le silence, 0 à saturation. La voix
+  /// parlée vit entre -50 et 0, d'où la fenêtre.
+  @override
+  Stream<double> levels() => _recorder
+      .onAmplitudeChanged(const Duration(milliseconds: 50))
+      .map((Amplitude a) => ((a.current + 50) / 50).clamp(0.0, 1.0));
 
   @override
   Future<void> dispose() => _recorder.dispose();

@@ -25,5 +25,8 @@ class FakeVoiceNoteRecorder implements VoiceNoteRecorder {
   Future<void> cancel() async {}
 
   @override
+  Stream<double> levels() => const Stream<double>.empty();
+
+  @override
   Future<void> dispose() async {}
 }

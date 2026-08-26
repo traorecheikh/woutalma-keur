@@ -1580,7 +1580,7 @@
 
   "voiceNoteLabel": "Message vocal",
   "@voiceNoteLabel": { "description": "Section vocal de l'éditeur de bien." },
-  "voiceNoteHint": "Décrivez le bien avec vos mots. 45 secondes au plus.",
+  "voiceNoteHint": "Décrivez le bien avec vos mots. 60 secondes au plus, l'enregistrement s'arrête seul.",
   "@voiceNoteHint": { "description": "Aide sous le bouton d'enregistrement." },
   "voiceNoteRecord": "Enregistrer un message vocal",
   "@voiceNoteRecord": { "description": "Démarre l'enregistrement." },
@@ -1601,6 +1601,11 @@
   "voiceNoteRecording": "Enregistrement… {seconds} s",
   "@voiceNoteRecording": {
     "description": "Compteur pendant l'enregistrement.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "voiceNoteRecordingEnding": "Fin dans {seconds} s",
+  "@voiceNoteRecordingEnding": {
+    "description": "Compte à rebours des dix dernières secondes d'enregistrement.",
     "placeholders": { "seconds": { "type": "int" } }
   },
   "voiceNoteDelete": "Supprimer le vocal",

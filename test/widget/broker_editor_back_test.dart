@@ -34,6 +34,9 @@ class _NoMic implements VoiceNoteRecorder {
 
   @override
   Future<String?> stop() async => null;
+
+  @override
+  Stream<double> levels() => const Stream<double>.empty();
 }
 
 class _NoDrafts implements PropertyDraftStore {

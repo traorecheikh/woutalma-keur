@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:woutalma_api_client/woutalma_api_client.dart' as api;
 import 'package:woutalma_keur/app/data/repositories/remote_repositories.dart';
+import 'package:woutalma_keur/app/data/services/property_photo_uploader.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 
 /// Ce qui part réellement sur le fil quand le courtier publie ou modifie.
@@ -216,6 +217,61 @@ void main() {
       );
 
       expect(recorder.sent['PATCH /brokers/brk-1']!['clearWhatsapp'], isTrue);
+    });
+  });
+
+  group('vocal', () {
+    test('un fichier local part en base64 avec son type réseau', () async {
+      final Dio dio = Dio(BaseOptions(baseUrl: 'http://test.local'));
+      final _Recorder recorder = _Recorder(
+        <String, ({int status, Object? body})>{
+          'POST /properties': (status: 201, body: _propertyJson()),
+        },
+      );
+      dio.httpClientAdapter = recorder;
+      final Uint8List m4a = Uint8List.fromList(<int>[
+        0,
+        0,
+        0,
+        24,
+        0x66,
+        0x74,
+        0x79,
+        0x70,
+        0x6D,
+        0x70,
+        0x34,
+        0x32,
+        1,
+        2,
+        3,
+      ]);
+      final RemotePropertyRepository repo = RemotePropertyRepository(
+        api.PropertiesApi(dio, api.standardSerializers),
+        api.BrokersApi(dio, api.standardSerializers),
+        voiceNotes: PropertyVoiceNoteUploader(readBytes: (_) async => m4a),
+      );
+
+      await repo.save(
+        Property(
+          id: 'prp-1756200000000000',
+          brokerId: 'brk-1',
+          kind: PropertyKind.land,
+          transaction: TransactionKind.sale,
+          title: 'Terrain Diamniadio',
+          price: 9000000,
+          position: const GeoPoint(14.7, -17.47),
+          neighbourhood: 'Diamniadio',
+          voiceAsset: '/tmp/v.m4a',
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      );
+
+      final Map<String, Object?> body = recorder.sent['POST /properties']!;
+      final Map<String, Object?> note =
+          body['newVoiceNote']! as Map<String, Object?>;
+      expect(note['mimeType'], 'audio/mp4');
+      expect(note['dataBase64'], base64Encode(m4a));
     });
   });
 }

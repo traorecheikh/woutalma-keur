@@ -17,6 +17,10 @@ abstract class VoiceNoteRecorder {
   /// Abandonne l'enregistrement en cours et supprime le fichier.
   Future<void> cancel();
 
+  /// Niveau du micro entre 0 et 1, échantillonné à 20 Hz pendant
+  /// l'enregistrement, pour la forme d'onde.
+  Stream<double> levels();
+
   Future<void> dispose();
 }
 
@@ -25,7 +29,7 @@ abstract class VoiceNoteRecorder {
 @immutable
 class VoiceNoteConstraints {
   const VoiceNoteConstraints({
-    this.maxDuration = const Duration(seconds: 45),
+    this.maxDuration = const Duration(seconds: 60),
     this.maxUploadBytes = 512 * 1024,
   });
 
