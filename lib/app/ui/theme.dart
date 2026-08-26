@@ -37,6 +37,22 @@ abstract final class Motion {
   static const fast = Duration(milliseconds: 120);
   static const base = Duration(milliseconds: 250);
   static const enter = Duration(milliseconds: 350);
+
+  /// Zéro quand le système demande moins d'animation : l'état change tout de
+  /// suite, le retour haptique et sémantique reste entier.
+  static Duration of(BuildContext context, Duration duration) =>
+      MediaQuery.disableAnimationsOf(context) ? Duration.zero : duration;
+}
+
+abstract final class Touch {
+  /// Plancher absolu d'une cible tactile (`docs/WOUTALMA-UI.md` §1).
+  static const double min = 56;
+
+  /// Action primaire, champ, ligne actionnable.
+  static const double comfy = 64;
+
+  /// Action de tête d'écran, fantôme et discrète.
+  static const double compact = 48;
 }
 
 abstract final class AppText {
@@ -98,7 +114,7 @@ class Tones extends ThemeExtension<Tones> {
     warning: Color(0xFF8A4B00),
     danger: Color(0xFFC42B1C),
     accent: Color(0xFF0B3B66),
-    whatsapp: Color(0xFF1FAE54),
+    whatsapp: Color(0xFF12833E),
     inkSecondary: Color(0xFF52525B),
     inkTertiary: Color(0xFF6B6B75),
     hairline: Color(0xFFE7E7EA),

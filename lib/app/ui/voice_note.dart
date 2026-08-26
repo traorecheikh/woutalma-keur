@@ -4,17 +4,46 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/app_config.dart';
+import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/domain/voice_note_service.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
 
-Source voiceNoteSource(String asset) {
+/// Source jouable pour [asset].
+///
+/// Le serveur sert les messages vocaux sans en-tête `Range` ; le lecteur
+/// Android d'entrée de gamme échoue à les diffuser. On télécharge donc une
+/// fois dans le cache, puis on lit un fichier local.
+Future<Source> voiceNoteSource(String asset) async {
+  if (asset.startsWith('api:') && !kIsWeb)
+    return DeviceFileSource(await _download(asset.substring(4)));
   if (asset.startsWith('api:'))
     return UrlSource(
       '${AppConfig.apiBaseUrl}/properties/voice-notes/${asset.substring(4)}',
     );
   if (asset.startsWith('http')) return UrlSource(asset);
   return DeviceFileSource(asset);
+}
+
+Future<String> _download(String id) async {
+  final dir = Directory('${(await getTemporaryDirectory()).path}/voice-notes');
+  final file = File('${dir.path}/$id.m4a');
+  if (file.existsSync()) return file.path;
+  await dir.create(recursive: true);
+  final request = await HttpClient().getUrl(
+    Uri.parse('${AppConfig.apiBaseUrl}/properties/voice-notes/$id'),
+  );
+  final response = await request.close();
+  if (response.statusCode != 200)
+    throw HttpException('${response.statusCode}', uri: request.uri);
+  // Fichier d'attente puis renommage : une coupure de réseau laisserait
+  // sinon un fichier tronqué que la lecture suivante réutiliserait.
+  final partial = File('${file.path}.part');
+  await response.pipe(partial.openWrite());
+  await partial.rename(file.path);
+  return file.path;
 }
 
 String _clock(Duration d) =>
@@ -33,7 +62,7 @@ class _PlayerState extends State<AppVoiceNotePlayer> {
   final _subs = <StreamSubscription<Object?>>[];
   Duration _position = Duration.zero, _duration = Duration.zero;
   PlayerState _state = PlayerState.stopped;
-  bool _failed = false;
+  bool _failed = false, _loading = false;
 
   @override
   void initState() {
@@ -73,18 +102,32 @@ class _PlayerState extends State<AppVoiceNotePlayer> {
   }
 
   Future<void> _toggle() async {
+    final feedback = context.read<InteractionFeedbackService?>();
+    final l = context.l10n;
     try {
       if (_state == PlayerState.playing) {
         await _player.pause();
+        feedback?.announce(l.voiceNotePaused);
       } else if (_state == PlayerState.paused) {
         await _player.resume();
+        feedback?.announce(l.voiceNotePlaying);
       } else {
-        await _player.play(voiceNoteSource(widget.asset));
+        setState(() => _loading = true);
+        final source = await voiceNoteSource(widget.asset);
+        if (!mounted) return;
+        setState(() => _loading = false);
+        await _player.play(source);
+        feedback?.announce(l.voiceNotePlaying);
       }
       if (_failed && mounted) setState(() => _failed = false);
     } on Object catch (e) {
       debugPrint('[wk] lecture vocale impossible : $e');
-      if (mounted) setState(() => _failed = true);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _failed = true;
+        });
+      }
     }
   }
 
@@ -94,10 +137,12 @@ class _PlayerState extends State<AppVoiceNotePlayer> {
     final progress = _duration.inMilliseconds == 0
         ? 0.0
         : (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
-    final time = _duration == Duration.zero
+    final l = context.l10n;
+    final time = _loading
+        ? l.stateLoading
+        : _duration == Duration.zero
         ? _clock(_position)
         : '${_clock(_position)} / ${_clock(_duration)}';
-    final l = context.l10n;
     return AppCard(
       padding: const EdgeInsets.all(Insets.lg),
       child: Column(
@@ -114,24 +159,25 @@ class _PlayerState extends State<AppVoiceNotePlayer> {
           ],
           Row(
             children: [
-              Semantics(
-                button: true,
-                label: playing ? l.voiceNotePause : l.voiceNotePlay,
-                excludeSemantics: true,
-                child: FTappable(
-                  onPress: _toggle,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: context.colors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      playing ? FIcons.pause : FIcons.play,
-                      color: context.colors.onPrimary,
-                      size: 26,
+              MergeSemantics(
+                child: Semantics(
+                  label: playing ? l.voiceNotePause : l.voiceNotePlay,
+                  child: FTappable(
+                    onPress: _toggle,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: Touch.min,
+                      height: Touch.min,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: context.colors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        playing ? FIcons.pause : FIcons.play,
+                        color: context.colors.onPrimary,
+                        size: 26,
+                      ),
                     ),
                   ),
                 ),
@@ -193,6 +239,7 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
 
   Future<void> _start() async {
     final l = context.l10n;
+    final feedback = context.read<InteractionFeedbackService?>();
     if (!await widget.recorder.requestPermission()) {
       if (mounted) setState(() => _error = l.voiceNotePermissionDenied);
       return;
@@ -201,10 +248,12 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
       await widget.recorder.start();
     } on Object catch (e) {
       debugPrint('[wk] enregistrement impossible : $e');
+      feedback?.emit(FeedbackIntent.error);
       if (mounted) setState(() => _error = l.voiceNoteFailed);
       return;
     }
     if (!mounted) return;
+    feedback?.emit(FeedbackIntent.recordingStarted);
     setState(() {
       _recording = true;
       _seconds = 0;
@@ -222,12 +271,21 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
     _ticker?.cancel();
     if (!_recording) return;
     _recording = false;
-    final path = await widget.recorder.stop();
+    final l = context.l10n;
+    final feedback = context.read<InteractionFeedbackService?>();
+    String? path;
+    try {
+      path = await widget.recorder.stop();
+    } on Object catch (e) {
+      debugPrint('[wk] arrêt de l\'enregistrement impossible : $e');
+    }
     if (!mounted) return;
     if (path == null) {
-      setState(() => _error = context.l10n.voiceNoteFailed);
+      feedback?.emit(FeedbackIntent.error);
+      setState(() => _error = l.voiceNoteFailed);
       return;
     }
+    feedback?.emit(FeedbackIntent.recordingStopped);
     setState(() {});
     widget.onChanged(path);
   }
@@ -250,26 +308,34 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: context.tones.danger,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(FIcons.mic, color: context.colors.onPrimary),
+            Semantics(
+              liveRegion: true,
+              // Le compteur change chaque seconde : l'annoncer à chaque tic
+              // couvrirait tout le reste. L'état, lui, s'annonce une fois.
+              label: l.voiceNoteRecordingStarted,
+              child: ExcludeSemantics(
+                child: Row(
+                  children: [
+                    Container(
+                      width: Touch.min,
+                      height: Touch.min,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: context.tones.danger,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(FIcons.mic, color: context.colors.onPrimary),
+                    ),
+                    const SizedBox(width: Insets.lg),
+                    Expanded(
+                      child: Text(
+                        l.voiceNoteRecording(_seconds),
+                        style: context.text.titleMedium,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: Insets.lg),
-                Expanded(
-                  child: Text(
-                    l.voiceNoteRecording(_seconds),
-                    style: context.text.titleMedium,
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: Insets.md),
             _Bar(
@@ -317,7 +383,6 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
                 l.voiceNoteRedo,
                 icon: FIcons.mic,
                 variant: AppButtonVariant.ghost,
-                size: 40,
                 onPressed: _start,
               ),
               const Spacer(),
@@ -325,7 +390,6 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
                 l.voiceNoteDelete,
                 icon: FIcons.trash2,
                 variant: AppButtonVariant.ghost,
-                size: 40,
                 onPressed: _delete,
               ),
             ],

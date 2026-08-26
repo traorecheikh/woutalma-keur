@@ -34,7 +34,7 @@
   "@commonNext": {
     "description": "Action de passer à l'étape suivante."
   },
-  "commonUnspecified": "Non précisé",
+  "commonUnspecified": "Je ne sais pas",
   "@commonUnspecified": {
     "description": "Option d'un sélecteur facultatif laissé sans réponse."
   },
@@ -49,6 +49,19 @@
   "commonListen": "Écouter",
   "@commonListen": {
     "description": "Action de faire lire l'écran à voix haute."
+  },
+  "commonOpen": "Ouvrir",
+  "@commonOpen": {
+    "description": "Ouvre la fiche du repère sélectionné sur la carte."
+  },
+  "searchClear": "Effacer ce que j'ai écrit",
+  "@searchClear": {
+    "description": "Vide le champ de recherche."
+  },
+  "photoPosition": "Photo {index} sur {total}",
+  "@photoPosition": {
+    "description": "Position dans le carrousel, énoncée au lecteur d'écran.",
+    "placeholders": { "index": { "type": "int" }, "total": { "type": "int" } }
   },
 
   "stateLoading": "Un instant…",
@@ -157,11 +170,11 @@
   "@authFailed": {
     "description": "Échec d'une tentative de connexion, quel que soit le moyen."
   },
-  "settingsSignOut": "Fermer la session",
+  "settingsSignOut": "Sortir de mon compte",
   "@settingsSignOut": {
     "description": "Action de déconnexion depuis les réglages."
   },
-  "settingsSignOutTitle": "Fermer la session ?",
+  "settingsSignOutTitle": "Sortir de mon compte ?",
   "@settingsSignOutTitle": {
     "description": "Titre de la confirmation de déconnexion."
   },
@@ -305,7 +318,7 @@
   "@statusAvailable": {
     "description": "Statut d'un bien encore proposé."
   },
-  "statusReserved": "Réservé",
+  "statusReserved": "Déjà pris",
   "@statusReserved": {
     "description": "Statut d'un bien en cours de réservation."
   },
@@ -358,7 +371,7 @@
   "kindRoom": "Chambre",
   "@kindRoom": { "description": "Type de bien." },
 
-  "priceRent": "{price} F/mois",
+  "priceRent": "{price} F / mois",
   "@priceRent": {
     "description": "Loyer mensuel. L'unité est ici parce qu'elle change avec le pays.",
     "placeholders": { "price": { "type": "String" } }
@@ -367,6 +380,21 @@
   "@priceSale": {
     "description": "Prix de vente.",
     "placeholders": { "price": { "type": "String" } }
+  },
+  "priceRentSpoken": "{price} francs par mois",
+  "@priceRentSpoken": {
+    "description": "Loyer dit à voix haute : « F » ne se prononce pas.",
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "priceSpoken": "{price} francs",
+  "@priceSpoken": {
+    "description": "Prix dit à voix haute.",
+    "placeholders": { "price": { "type": "String" } }
+  },
+  "ratingSpoken": "{value} sur 5",
+  "@ratingSpoken": {
+    "description": "Note dite à voix haute, à la place de « 4,6 / 5 ».",
+    "placeholders": { "value": { "type": "String" } }
   },
   "surfaceValue": "{surface} m²",
   "@surfaceValue": {
@@ -401,8 +429,13 @@
   },
   "brokerResponseRate": "Répond à {percent} % des demandes",
   "@brokerResponseRate": {
-    "description": "Taux de réponse du courtier, en clair.",
+    "description": "Taux de réponse en pourcentage. Remplacé par brokerRespondsOutOfTen partout où le formatage passe par WkFormat.responseRate.",
     "placeholders": { "percent": { "type": "int" } }
+  },
+  "brokerRespondsOutOfTen": "Répond à {count} personnes sur 10",
+  "@brokerRespondsOutOfTen": {
+    "description": "Taux de réponse compté sur dix : un pourcentage ne se lit pas.",
+    "placeholders": { "count": { "type": "int" } }
   },
   "brokerProfileEditorTitle": "Modifier mon profil",
   "@brokerProfileEditorTitle": {
@@ -662,7 +695,11 @@
   "@settingsSounds": { "description": "Active les signaux sonores." },
   "settingsHaptics": "Vibrations",
   "@settingsHaptics": { "description": "Active les retours haptiques." },
-  "settingsGuidedVoice": "Guidage vocal",
+  "settingsGuidedVoicePreview": "Le téléphone lira les résultats à voix haute.",
+  "@settingsGuidedVoicePreview": {
+    "description": "Phrase lue à voix haute au moment où l'on allume le guidage vocal."
+  },
+  "settingsGuidedVoice": "Voix guidée",
   "@settingsGuidedVoice": {
     "description": "Fait énoncer les résultats à voix haute."
   },
@@ -766,7 +803,7 @@
   "@propertyDeleted": { "description": "Confirmation après retrait. Ne dit pas « supprimé » : le bien est toujours là, fermé." },
   "propertyStatusChange": "Changer le statut",
   "@propertyStatusChange": { "description": "Ouvre la feuille M08." },
-  "propertyStatusImpactClosed": "Ce bien disparaîtra des recherches côté client.",
+  "propertyStatusImpactClosed": "Les clients ne le verront plus.",
   "@propertyStatusImpactClosed": {
     "description": "Conséquence publique du statut vendu ou loué, dite avant de valider."
   },
@@ -858,7 +895,7 @@
   "@filtersKind": { "description": "Filtre sur le type de bien." },
   "filtersMaxPrice": "Prix maximum",
   "@filtersMaxPrice": { "description": "Filtre sur le prix." },
-  "filtersRadius": "Distance",
+  "filtersRadius": "Jusqu'où chercher",
   "@filtersRadius": { "description": "Filtre sur le rayon de recherche." },
   "filtersAny": "Peu importe",
   "@filtersAny": {
@@ -996,7 +1033,7 @@
   "@brokerReviewsEmptyBody": {
     "description": "Explication de l'état vide de B06 : rappelle la règle."
   },
-  "reviewModerationPending": "En modération",
+  "reviewModerationPending": "On vérifie votre avis",
   "@reviewModerationPending": {
     "description": "Statut d'un avis pas encore publié. Invisible du client."
   },
@@ -1112,7 +1149,7 @@
   "@authPhoneFallback": {
     "description": "Sépare les options Google/email du chemin téléphone existant."
   },
-  "authOtpTitle": "Code reçu par SMS",
+  "authOtpTitle": "Le code du message",
   "@authOtpTitle": { "description": "Titre de G04." },
   "authOtpSentTo": "Envoyé au {phone}",
   "@authOtpSentTo": {
@@ -1121,7 +1158,7 @@
   },
   "authOtpWrong": "Code incorrect, réessayez",
   "@authOtpWrong": { "description": "Code OTP erroné." },
-  "authOtpCodeLabel": "Code SMS",
+  "authOtpCodeLabel": "Le code du message",
   "@authOtpCodeLabel": { "description": "Libellé du champ de saisie du code reçu." },
   "authOtpCodeHint": "6 chiffres",
   "@authOtpCodeHint": { "description": "Exemple court pour le champ OTP." },
@@ -1156,14 +1193,10 @@
   "@settingsSignIn": {
     "description": "Ouvre G03. Nécessaire avant de contacter ou de publier."
   },
-  "settingsSignedInAs": "Identifié avec le {phone}",
+  "settingsSignedInAs": "Vous êtes entré avec le numéro {phone}",
   "@settingsSignedInAs": {
     "description": "Rappelle quel numéro est identifié.",
     "placeholders": { "phone": { "type": "String" } }
-  },
-  "settingsSignOut": "Me déconnecter",
-  "@settingsSignOut": {
-    "description": "Oublie l'identité locale. Les données restent."
   },
 
   "brokerActivityTitle": "Consultations et contacts",
@@ -1198,7 +1231,7 @@
 
   "brokerVerificationTitle": "Vérification",
   "@brokerVerificationTitle": { "description": "Titre de B09." },
-  "brokerVerificationExplain": "Un profil vérifié inspire confiance et remonte dans les résultats.",
+  "brokerVerificationExplain": "Un profil vérifié inspire confiance et apparaît plus haut dans la liste.",
   "@brokerVerificationExplain": {
     "description": "Dit à quoi sert la vérification, en termes concrets."
   },
@@ -1498,6 +1531,18 @@
   "@voiceNoteRecord": { "description": "Démarre l'enregistrement." },
   "voiceNoteStop": "Arrêter",
   "@voiceNoteStop": { "description": "Termine l'enregistrement." },
+  "voiceNotePlaying": "Lecture en cours",
+  "@voiceNotePlaying": {
+    "description": "État annoncé quand le message vocal démarre."
+  },
+  "voiceNotePaused": "Lecture en pause",
+  "@voiceNotePaused": {
+    "description": "État annoncé quand le message vocal est mis en pause."
+  },
+  "voiceNoteRecordingStarted": "Enregistrement en cours",
+  "@voiceNoteRecordingStarted": {
+    "description": "État annoncé une fois quand le micro s'ouvre. Le compteur de secondes reste visuel : l'annoncer chaque seconde couvrirait tout le reste."
+  },
   "voiceNoteRecording": "Enregistrement… {seconds} s",
   "@voiceNoteRecording": {
     "description": "Compteur pendant l'enregistrement.",

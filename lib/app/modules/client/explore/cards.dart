@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
@@ -22,6 +24,8 @@ class PhotoCarousel extends StatefulWidget {
 
 class _PhotoCarouselState extends State<PhotoCarousel> {
   final _page = PageController();
+  int _index = 0;
+
   @override
   void dispose() {
     _page.dispose();
@@ -44,34 +48,47 @@ class _PhotoCarouselState extends State<PhotoCarousel> {
               if (photos.isEmpty)
                 AppPhoto(null, fallbackIcon: icon, radius: BorderRadius.zero)
               else
-                PageView.builder(
-                  controller: _page,
-                  itemCount: photos.length,
-                  itemBuilder: (_, i) => AppPhoto(
-                    photos[i],
-                    fallbackIcon: icon,
-                    radius: BorderRadius.zero,
+                Semantics(
+                  label: photos.length == 1
+                      ? null
+                      : context.l10n.photoPosition(_index + 1, photos.length),
+                  child: PageView.builder(
+                    controller: _page,
+                    itemCount: photos.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (_, i) => AppPhoto(
+                      photos[i],
+                      fallbackIcon: icon,
+                      radius: BorderRadius.zero,
+                    ),
                   ),
                 ),
               if (photos.length > 1)
                 Positioned(
                   bottom: Insets.md,
-                  left: 0,
-                  right: 0,
-                  child: IgnorePointer(
-                    child: Center(
-                      child: SmoothPageIndicator(
-                        controller: _page,
-                        count: photos.length,
-                        effect: ExpandingDotsEffect(
-                          dotHeight: 6,
-                          dotWidth: 6,
-                          expansionFactor: 3,
-                          activeDotColor: context.colors.surface,
-                          dotColor: context.colors.surface.withValues(
-                            alpha: .5,
-                          ),
+                  right: Insets.md,
+                  // Écartés du centre : c'est là qu'on appuie pour ouvrir le
+                  // bien, et les points ne doivent pas prendre ce geste.
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: SmoothPageIndicator(
+                      controller: _page,
+                      count: photos.length,
+                      // Le glissement n'est pas la seule façon de changer de
+                      // photo : les points s'appuient aussi.
+                      onDotClicked: (i) => unawaited(
+                        _page.animateToPage(
+                          i,
+                          duration: Motion.of(context, Motion.base),
+                          curve: Curves.easeOut,
                         ),
+                      ),
+                      effect: ExpandingDotsEffect(
+                        dotHeight: 8,
+                        dotWidth: 8,
+                        expansionFactor: 3,
+                        activeDotColor: context.colors.surface,
+                        dotColor: context.colors.surface.withValues(alpha: .5),
                       ),
                     ),
                   ),
@@ -133,8 +150,9 @@ class PropertyCard extends StatelessWidget {
         children: [
           PhotoCarousel(property: property, onTap: onTap),
           const SizedBox(height: Insets.md),
-          Text(
-            WkFormat.price(l, property.price, property.transaction),
+          AppMoney(
+            property.price,
+            monthly: property.transaction == TransactionKind.rent,
             style: compact
                 ? AppText.moneyLg
                 : AppText.moneyXl.copyWith(fontSize: 24),
@@ -143,7 +161,7 @@ class PropertyCard extends StatelessWidget {
           Text(
             property.title,
             style: context.text.titleMedium,
-            maxLines: compact ? 1 : 2,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
@@ -218,7 +236,7 @@ class BrokerCard extends StatelessWidget {
           if (width == null) ...[
             const SizedBox(height: Insets.sm),
             Text(
-              l.brokerResponseRate((b.responseRate * 100).round()),
+              WkFormat.responseRate(l, b.responseRate),
               style: context.text.bodySmall!.copyWith(
                 color: context.tones.inkSecondary,
               ),

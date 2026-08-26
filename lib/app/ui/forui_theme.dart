@@ -276,7 +276,7 @@ OutlineInputBorder _fieldBorder(Color color) => OutlineInputBorder(
   borderSide: BorderSide(color: color, width: 2),
 );
 
-FThemeData buildForuiTheme(Brightness brightness) {
+FThemeData buildForuiTheme(Brightness brightness, {bool reduceMotion = false}) {
   final dark = brightness == Brightness.dark;
   final colors = foruiColors(brightness);
   final tones = dark ? Tones.dark : Tones.light;
@@ -316,10 +316,12 @@ FThemeData buildForuiTheme(Brightness brightness) {
     sizes: FSizes.inherit(touch: true),
     iconStyle: IconThemeData(color: ink, size: 24),
     tappableStyle: FTappableStyle(
-      motion: const FTappableMotion(
-        bounceDownDuration: Motion.fast,
-        bounceUpDuration: Motion.fast,
-      ),
+      motion: reduceMotion
+          ? FTappableMotion.none
+          : const FTappableMotion(
+              bounceDownDuration: Motion.fast,
+              bounceUpDuration: Motion.fast,
+            ),
     ),
     borderRadius: _radius,
     pagePadding: const EdgeInsets.symmetric(horizontal: Insets.page),
@@ -386,7 +388,9 @@ FThemeData buildForuiTheme(Brightness brightness) {
           typography,
           style,
           fill: colors.card,
-          border: colors.border,
+          // `colors.border` est un filet décoratif à 1,2:1 : invisible dehors,
+          // et sous les 3:1 exigés d'une bordure porteuse de sens.
+          border: tones.inkTertiary,
           text: ink,
           pressed: tones.sunken,
         ),

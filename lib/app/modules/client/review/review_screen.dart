@@ -188,7 +188,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   child: _Stars(
                     value: model.rating,
                     onChanged: model.setRating,
-                    size: 56,
+                    size: Touch.min,
                   ),
                 ),
                 const SizedBox(height: Insets.sm),
@@ -261,6 +261,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
       FeedbackIntent.success,
       eventId: 'C05:success:${model.hashCode}',
     );
+    // Dit avant de quitter l'écran : sinon l'avis part sans que rien ne
+    // confirme qu'il est arrivé.
+    toast(context, context.l10n.reviewSent);
     widget.onDone();
   }
 }
@@ -282,7 +285,7 @@ class _Criterion extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: context.text.bodyLarge),
-        _Stars(value: value, onChanged: onChanged, size: 44),
+        _Stars(value: value, onChanged: onChanged, size: Touch.compact),
       ],
     ),
   );
@@ -299,33 +302,37 @@ class _Stars extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => Wrap(
+    spacing: Insets.md,
+    runSpacing: Insets.sm,
     children: [
       for (var star = 1; star <= 5; star++)
-        Semantics(
-          button: true,
+        FTappable(
+          behavior: HitTestBehavior.opaque,
           selected: star <= value,
-          label: context.l10n.reviewStarLabel(star),
-          excludeSemantics: true,
-          child: FTappable(
-            behavior: HitTestBehavior.opaque,
-            onPress: () {
-              context.read<InteractionFeedbackService?>()?.emit(
-                FeedbackIntent.selection,
-              );
-              onChanged(star);
-            },
-            child: SizedBox(
-              width: size,
-              height: size,
-              child: Icon(
-                FIcons.star,
-                size: size * 0.6,
-                color: star <= value
-                    ? context.tones.accent
-                    : context.tones.hairline,
-              ),
+          semanticsLabel: context.l10n.reviewStarLabel(star),
+          onPress: () {
+            context.read<InteractionFeedbackService?>()?.emit(
+              FeedbackIntent.selection,
+            );
+            onChanged(star);
+          },
+          // La police Lucide n'a pas d'étoile pleine : l'étoile choisie porte
+          // donc un disque, pas seulement une autre couleur.
+          child: Container(
+            width: size,
+            height: size,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: star <= value ? context.tones.accent : null,
+            ),
+            child: Icon(
+              FIcons.star,
+              size: size * 0.6,
+              color: star <= value
+                  ? context.colors.onPrimary
+                  : context.tones.inkTertiary,
             ),
           ),
         ),

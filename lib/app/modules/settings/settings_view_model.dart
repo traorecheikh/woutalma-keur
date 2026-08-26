@@ -30,12 +30,20 @@ class SettingsViewModel extends ChangeNotifier {
     AppMode mode = AppMode.demo,
     UserRole role = UserRole.client,
     FeedbackPreferences preferences = const FeedbackPreferences(),
+    InteractionFeedbackService? feedback,
   }) : _seed = seed,
        _mode = mode,
        _role = role,
-       _preferences = preferences;
+       _preferences = preferences,
+       _feedback = feedback {
+    _feedback?.preferences = _preferences;
+  }
 
   final SeedRepository _seed;
+
+  /// Destinataire des préférences. Sans lui, les interrupteurs de S01
+  /// changeaient un état que personne ne lisait.
+  InteractionFeedbackService? _feedback;
 
   AppMode _mode;
   UserRole _role;
@@ -59,8 +67,20 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Branche le service de retour et lui pousse l'état courant.
+  ///
+  /// L'écran le fait au premier build : l'assemblage de l'application crée le
+  /// modèle avant que le service ne soit disponible dans l'arbre.
+  void useFeedback(InteractionFeedbackService service) {
+    if (identical(_feedback, service)) {
+      return;
+    }
+    _feedback = service..preferences = _preferences;
+  }
+
   void setPreferences(FeedbackPreferences value) {
     _preferences = value;
+    _feedback?.preferences = value;
     notifyListeners();
   }
 

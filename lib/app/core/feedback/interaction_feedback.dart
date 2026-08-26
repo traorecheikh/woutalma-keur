@@ -26,6 +26,10 @@ enum FeedbackIntent {
 
   /// Le micro s'arrête ou est annulé.
   recordingStopped,
+
+  /// Démonstration d'un réglage dans S01 : la personne vient de l'allumer et
+  /// doit entendre ou sentir ce que ça change.
+  preview,
 }
 
 /// Préférences utilisateur, réglables séparément dans S01.
@@ -91,6 +95,20 @@ abstract class InteractionFeedbackService {
   /// Annonce polie au lecteur d'écran. Chemin d'annonce unique : le guidage
   /// vocal se superpose à lui, il ne le remplace pas.
   void announce(String message);
+
+  /// Annonce [text] et le fait lire à voix haute.
+  ///
+  /// [spontaneous] marque une lecture que personne n'a demandée — elle n'a
+  /// lieu qu'avec le guidage vocal activé. Une lecture demandée par le bouton
+  /// « Écouter » parle dans tous les cas, sauf lecteur d'écran actif : les
+  /// deux ne parlent jamais ensemble.
+  Future<void> speak(String text, {bool spontaneous = false});
+
+  /// Coupe la lecture en cours.
+  Future<void> stopSpeaking();
+
+  /// Préférences vivantes : S01 les repousse ici à chaque changement.
+  set preferences(FeedbackPreferences value);
 
   /// Oublie les identités consommées d'un écran qui disparaît.
   void forgetScope(String scope);

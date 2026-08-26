@@ -4,6 +4,7 @@ import 'dart:ui' show FlutterView, PlatformDispatcher;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/domain/voice_service.dart';
 
 /// Implémentation réelle, adossée aux primitives haptiques du SDK.
 ///
@@ -19,8 +20,10 @@ class PlatformInteractionFeedbackService implements InteractionFeedbackService {
     FeedbackPreferences preferences = const FeedbackPreferences(),
     bool screenReaderActive = false,
     FlutterView? Function()? viewResolver,
+    VoiceService? voice,
   }) : _preferences = preferences,
        _screenReaderActive = screenReaderActive,
+       _voice = voice,
        _viewResolver =
            viewResolver ?? (() => PlatformDispatcher.instance.implicitView);
 
@@ -32,9 +35,14 @@ class PlatformInteractionFeedbackService implements InteractionFeedbackService {
   FeedbackPreferences _preferences;
   bool _screenReaderActive;
 
+  /// Créée au premier besoin : la plupart des sessions ne parlent jamais, et
+  /// un moteur de synthèse ouvert au démarrage coûterait à tout le monde.
+  VoiceService? _voice;
+
   /// Identités déjà émises. Vidée par écran via [forgetScope].
   final Set<String> _consumed = <String>{};
 
+  @override
   set preferences(FeedbackPreferences value) => _preferences = value;
 
   /// Vrai quand TalkBack ou VoiceOver tourne. Le guidage vocal est alors
@@ -57,6 +65,9 @@ class PlatformInteractionFeedbackService implements InteractionFeedbackService {
     if (_preferences.haptics) {
       _haptic(intent);
     }
+    if (_preferences.sounds) {
+      _earcon(intent);
+    }
   }
 
   @override
@@ -74,6 +85,23 @@ class PlatformInteractionFeedbackService implements InteractionFeedbackService {
   }
 
   @override
+  Future<void> speak(String text, {bool spontaneous = false}) async {
+    announce(text);
+    // Le lecteur d'écran vient de dire la même chose ; parler par-dessus
+    // rendrait les deux inaudibles.
+    if (_screenReaderActive || text.trim().isEmpty) {
+      return;
+    }
+    if (spontaneous && !_preferences.guidedVoice) {
+      return;
+    }
+    await (_voice ??= TtsVoiceService()).speak(text);
+  }
+
+  @override
+  Future<void> stopSpeaking() => _voice?.stop() ?? Future<void>.value();
+
+  @override
   void forgetScope(String scope) {
     _consumed.removeWhere((String id) => id.startsWith('$scope:'));
   }
@@ -86,6 +114,7 @@ class PlatformInteractionFeedbackService implements InteractionFeedbackService {
         HapticFeedback.selectionClick();
       case FeedbackIntent.stepValid:
       case FeedbackIntent.recordingStarted:
+      case FeedbackIntent.preview:
         HapticFeedback.lightImpact();
       case FeedbackIntent.warning:
       case FeedbackIntent.success:
@@ -94,5 +123,26 @@ class PlatformInteractionFeedbackService implements InteractionFeedbackService {
       case FeedbackIntent.error:
         HapticFeedback.heavyImpact();
     }
+  }
+
+  /// Les cinq earcons de `docs/INTERACTION-FEEDBACK.md` §5 n'existent pas
+  /// encore. En attendant, les sons du système couvrent F4, F5 et F6 : sans
+  /// eux le réglage « Sons » ne commanderait rien du tout.
+  void _earcon(FeedbackIntent intent) {
+    final SystemSoundType? sound = switch (intent) {
+      FeedbackIntent.error => SystemSoundType.alert,
+      FeedbackIntent.success ||
+      FeedbackIntent.warning ||
+      FeedbackIntent.recordingStarted ||
+      FeedbackIntent.recordingStopped ||
+      FeedbackIntent.preview => SystemSoundType.click,
+      FeedbackIntent.selection || FeedbackIntent.stepValid => null,
+    };
+    if (sound == null) {
+      return;
+    }
+    // Pas de canal audio : le son n'est qu'un renfort, le visuel reste
+    // complet.
+    unawaited(SystemSound.play(sound).catchError((Object _) {}));
   }
 }
