@@ -100,7 +100,7 @@ void main() {
     await auth.verify('+221771234567', code!);
     expect(auth.current, isNotNull);
 
-    auth.signOut();
+    await auth.signOut();
 
     expect(auth.current, isNull);
   });

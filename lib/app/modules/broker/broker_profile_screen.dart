@@ -133,9 +133,7 @@ class _Body extends StatelessWidget {
                         ),
                       const SizedBox(height: Insets.xs),
                       Text(
-                        l.brokerResponseRate(
-                          (broker.responseRate * 100).round(),
-                        ),
+                        WkFormat.responseRate(l, broker.responseRate),
                         style: context.text.bodySmall!.copyWith(
                           color: context.tones.inkSecondary,
                         ),

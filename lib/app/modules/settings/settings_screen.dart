@@ -133,9 +133,8 @@ class SettingsScreen extends StatelessWidget {
       danger: true,
     );
     if (!out || !context.mounted) return;
-    context.read<AuthService>().signOut();
-    // Le rôle courtier n'a plus de profil derrière lui une fois la session
-    // fermée : y rester afficherait quatre écrans verrouillés.
+    await context.read<AuthService>().signOut();
+    if (!context.mounted) return;
     context.read<SettingsViewModel>().setRole(UserRole.client);
     onSignedOut();
   }

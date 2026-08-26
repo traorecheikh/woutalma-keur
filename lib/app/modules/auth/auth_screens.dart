@@ -242,7 +242,6 @@ class _GoogleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FTappable(
     semanticsLabel: label,
-    excludeSemantics: true,
     behavior: HitTestBehavior.opaque,
     onPress: () {
       context.read<InteractionFeedbackService?>()?.emit(
@@ -250,37 +249,39 @@ class _GoogleButton extends StatelessWidget {
       );
       onPressed();
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: _fill,
-        borderRadius: Radii.control,
-        border: Border.all(color: _stroke),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Insets.md,
-          vertical: Insets.md,
+    child: ExcludeSemantics(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _fill,
+          borderRadius: Radii.control,
+          border: Border.all(color: _stroke),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/brand/google_signin_light_square_2x.png',
-              width: 18,
-              height: 18,
-              excludeFromSemantics: true,
-            ),
-            const SizedBox(width: Insets.sm),
-            Flexible(
-              child: Text(
-                label,
-                style: AppText.label.copyWith(color: _text),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Insets.md,
+            vertical: Insets.md,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/brand/google_signin_light_square_2x.png',
+                width: 18,
+                height: 18,
+                excludeFromSemantics: true,
               ),
-            ),
-          ],
+              const SizedBox(width: Insets.sm),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppText.label.copyWith(color: _text),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),

@@ -104,12 +104,14 @@ class AppPhotoPicker extends StatelessWidget {
       icon: (s) => s == PhotoSource.camera ? FIcons.camera : FIcons.image,
     );
     if (source == null || !context.mounted) return;
-    final path = await service.pick(source);
-    if (!context.mounted) return;
-    // `PhotoService.pick` rend `null` pour un abandon **comme** pour un échec.
-    // Tant que le contrat ne les distingue pas, annoncer « photo non
-    // ajoutée » après un simple retour serait une fausse alerte.
-    if (path == null) return;
+    final String? path;
+    try {
+      path = await service.pick(source);
+    } on Object {
+      if (context.mounted) toast(context, l.photosFailed);
+      return;
+    }
+    if (!context.mounted || path == null) return;
     onChanged([...paths, path]);
   }
 }
