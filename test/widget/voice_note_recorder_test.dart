@@ -29,7 +29,13 @@ void main() {
     expect(recorder.starts, 1);
     expect(find.text('Arrêter'), findsOneWidget);
 
-    await tester.pump(const Duration(seconds: 50));
+    for (var i = 0; i < 40; i++) {
+      recorder.levelsController.add(i / 40);
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(tester.takeException(), isNull);
+
+    await tester.pump(const Duration(seconds: 48));
     expect(find.text('Fin dans 10 s'), findsOneWidget);
     expect(recorder.stops, 0);
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:woutalma_keur/app/domain/voice_note_service.dart';
 
 /// Enregistreur sans micro : rend un chemin fixe, ou refuse la permission.
@@ -24,8 +26,11 @@ class FakeVoiceNoteRecorder implements VoiceNoteRecorder {
   @override
   Future<void> cancel() async {}
 
+  final StreamController<double> levelsController =
+      StreamController<double>.broadcast();
+
   @override
-  Stream<double> levels() => const Stream<double>.empty();
+  Stream<double> levels() => levelsController.stream;
 
   @override
   Future<void> dispose() async {}
