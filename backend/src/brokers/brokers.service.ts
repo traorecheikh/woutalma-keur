@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Role, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { geographyPoint, selectLatLng } from '../common/postgis';
@@ -74,7 +80,11 @@ export class BrokersService {
     if (dto.kind !== undefined) assignments.push(Prisma.sql`"kind" = ${dto.kind}::"BrokerKind"`);
     if (dto.name !== undefined) assignments.push(Prisma.sql`"name" = ${dto.name}`);
     if (dto.phone !== undefined) assignments.push(Prisma.sql`"phone" = ${dto.phone}`);
-    if (dto.whatsapp !== undefined) assignments.push(Prisma.sql`"whatsapp" = ${dto.whatsapp}`);
+    if (dto.clearWhatsapp) {
+      assignments.push(Prisma.sql`"whatsapp" = NULL`);
+    } else if (dto.whatsapp !== undefined) {
+      assignments.push(Prisma.sql`"whatsapp" = ${dto.whatsapp}`);
+    }
     if (dto.coverage !== undefined) assignments.push(Prisma.sql`"coverage" = ${textArray(dto.coverage)}`);
     if (dto.logoAsset !== undefined) assignments.push(Prisma.sql`"logoAsset" = ${dto.logoAsset}`);
     if (dto.latitude !== undefined && dto.longitude !== undefined) {
@@ -146,6 +156,16 @@ export class BrokersService {
       throw new ForbiddenException('This profile belongs to another account');
     }
     return { verification: broker.verification };
+  }
+
+  /// Same question as [requireOwned], asked by a route that stays public and
+  /// merely shows the owner more. Answers false instead of throwing.
+  async isOwnedBy(id: string, ownerId?: string): Promise<boolean> {
+    if (!ownerId) {
+      return false;
+    }
+    const broker = await this.prisma.broker.findUnique({ where: { id }, select: { ownerId: true } });
+    return broker?.ownerId === ownerId;
   }
 }
 

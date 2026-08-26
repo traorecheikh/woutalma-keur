@@ -11,6 +11,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { BrokerContactLogDto } from '../contacts/dto/broker-contact-log.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { AuthenticatedRequestUser } from '../auth/jwt-payload.interface';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 
 @ApiTags('brokers')
 @Controller('brokers')
@@ -33,10 +34,7 @@ export class BrokersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'B01 — create the caller’s broker profile. Starts unverified.' })
   @ApiOkResponse({ type: BrokerDto })
-  create(
-    @Body() dto: CreateBrokerDto,
-    @CurrentUser() user: AuthenticatedRequestUser,
-  ): Promise<BrokerDto> {
+  create(@Body() dto: CreateBrokerDto, @CurrentUser() user: AuthenticatedRequestUser): Promise<BrokerDto> {
     return this.brokers.createForOwner(user.userId, dto);
   }
 
@@ -92,13 +90,19 @@ export class BrokersController {
   }
 
   @Get(':id/properties')
-  @ApiOperation({ summary: 'Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary:
+      'Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}). onlyDiscoverable=false is owner-only — B02 needs its own withdrawn listings, a visitor has no business reading them.',
+  })
   @ApiQuery({ name: 'onlyDiscoverable', required: false, type: Boolean })
   @ApiOkResponse({ type: [PropertyDto] })
-  findProperties(
+  async findProperties(
     @Param('id') id: string,
     @Query('onlyDiscoverable') onlyDiscoverable?: string,
+    @CurrentUser() user?: AuthenticatedRequestUser,
   ): Promise<PropertyDto[]> {
-    return this.properties.findByBroker(id, onlyDiscoverable !== 'false');
+    const withdrawnToo = onlyDiscoverable === 'false' && (await this.brokers.isOwnedBy(id, user?.userId));
+    return this.properties.findByBroker(id, !withdrawnToo);
   }
 }

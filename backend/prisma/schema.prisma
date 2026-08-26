@@ -144,6 +144,11 @@ model Property {
   /// null when the broker recorded none.
   voiceAsset    String?
   status        PropertyStatus  @default(AVAILABLE)
+  /// Key minted by the editor before the first attempt. A broker who taps
+  /// "Publier" on a stalled request, or whose app is killed mid-publish,
+  /// retries with the same key and gets the listing back instead of a second
+  /// one. Same bargain as ContactLog.clientRequestId.
+  clientRequestId String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -153,6 +158,7 @@ model Property {
 
   @@index([status])
   @@index([position], type: Gist)
+  @@unique([brokerId, clientRequestId])
   @@map("properties")
 }
 

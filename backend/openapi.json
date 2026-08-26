@@ -455,7 +455,7 @@
     "/brokers/{id}/properties": {
       "get": {
         "operationId": "BrokersController_findProperties",
-        "summary": "Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).",
+        "summary": "Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}). onlyDiscoverable=false is owner-only — B02 needs its own withdrawn listings, a visitor has no business reading them.",
         "parameters": [
           {
             "name": "id",
@@ -497,7 +497,7 @@
     "/properties": {
       "get": {
         "operationId": "PropertiesController_findAll",
-        "summary": "Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly=true for the latter.",
+        "summary": "Mirrors PropertyRepository.all()/.discoverable(). discoverableOnly=false additionally returns the CALLER’S OWN withdrawn listings; another broker’s never leave their account.",
         "parameters": [
           {
             "name": "discoverableOnly",
@@ -1772,6 +1772,10 @@
           "logoAsset": {
             "type": "string",
             "nullable": true
+          },
+          "clearWhatsapp": {
+            "type": "boolean",
+            "description": "Removes the WhatsApp number. Wins over `whatsapp`."
           }
         }
       },
@@ -2048,6 +2052,11 @@
           },
           "newVoiceNote": {
             "$ref": "#/components/schemas/UploadVoiceNoteDto"
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Idempotency key, unique per broker. Replaying it returns the listing already created.",
+            "maxLength": 64
           }
         },
         "required": [
@@ -2150,6 +2159,19 @@
           },
           "newVoiceNote": {
             "$ref": "#/components/schemas/UploadVoiceNoteDto"
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "Idempotency key, unique per broker. Replaying it returns the listing already created.",
+            "maxLength": 64
+          },
+          "clearSurface": {
+            "type": "boolean",
+            "description": "Sets surface back to unstated. Wins over `surface`."
+          },
+          "clearRooms": {
+            "type": "boolean",
+            "description": "Sets rooms back to unstated. Wins over `rooms`."
           }
         }
       },

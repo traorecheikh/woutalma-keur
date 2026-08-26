@@ -9,6 +9,8 @@ import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/domain/photo_service.dart';
 import 'package:woutalma_keur/app/domain/property_description.dart';
 import 'package:woutalma_keur/app/domain/voice_note_service.dart';
+import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
+import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_properties_screen.dart'
     show statusIcon;
 import 'package:woutalma_keur/app/modules/broker/property_editor_view_model.dart';
@@ -27,6 +29,7 @@ class PropertyEditorScreen extends StatefulWidget {
     required this.onSaved,
     required this.photos,
     required this.voiceNotes,
+    this.recoverLostPhoto,
     super.key,
   });
 
@@ -34,6 +37,11 @@ class PropertyEditorScreen extends StatefulWidget {
   final void Function(String propertyId) onSaved;
   final PhotoService photos;
   final VoiceNoteRecorder voiceNotes;
+
+  /// Photo restée chez le système parce qu'Android a tué l'application
+  /// pendant la prise de vue. Fournie par la route, qui connaît
+  /// l'implémentation réelle du sélecteur.
+  final Future<String?> Function()? recoverLostPhoto;
 
   @override
   State<PropertyEditorScreen> createState() => _PropertyEditorScreenState();
@@ -60,6 +68,48 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
         _composedDescription = existing.description;
       }
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resume());
+  }
+
+  /// Ce que l'écran a perdu au dernier passage : la saisie non publiée, et la
+  /// photo prise juste avant qu'Android ne ferme l'application.
+  Future<void> _resume() async {
+    final model = context.read<PropertyEditorViewModel>();
+    final draft = await model.pendingDraft();
+    if (draft != null && mounted) {
+      final resumed = await confirm(
+        context,
+        title: context.l10n.propertyDraftTitle,
+        message: context.l10n.propertyDraftBody,
+        action: context.l10n.propertyDraftResume,
+      );
+      if (!mounted) return;
+      if (resumed) {
+        model.restore(draft);
+        _title.text = draft.title;
+        _price.text = draft.priceText;
+        _description.text = draft.description;
+      } else {
+        await model.discardDraft();
+      }
+      if (!mounted) return;
+      setState(() {});
+    }
+
+    final lost = await widget.recoverLostPhoto?.call();
+    if (lost == null || !mounted) return;
+    if (model.photos.length < kServerPhotoLimit &&
+        !model.photos.contains(lost)) {
+      model.setPhotos(<String>[...model.photos, lost]);
+    }
+  }
+
+  void _remember() {
+    context.read<PropertyEditorViewModel>().rememberDraft(
+      title: _title.text,
+      priceText: _price.text,
+      description: _description.text,
+    );
   }
 
   @override
@@ -79,6 +129,19 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
   Widget build(BuildContext context) {
     final model = context.watch<PropertyEditorViewModel>();
     final l = context.l10n;
+    return PopScope(
+      // Le retour système quittait l'éditeur depuis l'étape 3 : trois écrans
+      // remplis disparaissaient d'un geste qui ne voulait dire que « revenir
+      // en arrière ».
+      canPop: _step == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _step--);
+      },
+      child: _form(context, model, l),
+    );
+  }
+
+  Widget _form(BuildContext context, PropertyEditorViewModel model, AppL10n l) {
     return AppScaffold(
       headerTitle: model.isEditing ? l.propertyEditorEdit : l.propertyEditorNew,
       onBack: _step == 0 ? widget.onBack : () => setState(() => _step--),
@@ -178,20 +241,31 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
         error: _submitted && _title.text.trim().isEmpty
             ? l.validationRequired
             : null,
-        onChanged: (_) => setState(() {}),
+        onChanged: (_) => setState(_remember),
       ),
       _Suggested(source: _title, written: _suggestedTitle),
       const SizedBox(height: Insets.lg),
       AppField(
-        label: l.fieldPrice,
+        // Le libellé porte l'unité et la périodicité : « Prix » seul laissait
+        // saisir un loyer annuel dans un champ affiché « par mois ».
+        label: model.transaction == TransactionKind.rent
+            ? l.fieldPriceRent
+            : l.fieldPriceSale,
         controller: _price,
         keyboardType: TextInputType.number,
         maxLength: 11,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        error: _submitted && (price == null || price <= 0)
+        error: !_submitted
+            ? null
+            : price == null || price <= 0
             ? l.validationPositiveNumber
+            : model.isPriceTooHigh(price)
+            ? l.validationPriceTooHigh(PropertyEditorViewModel.maxPriceCfa)
             : null,
-        onChanged: (_) => setState(() => _composeDescription(model)),
+        onChanged: (_) => setState(() {
+          _composeDescription(model);
+          _remember();
+        }),
       ),
       const SizedBox(height: Insets.xl),
       _Label(l.fieldSurfaceChoice),
@@ -218,7 +292,7 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
         label: l.fieldDescription,
         controller: _description,
         maxLines: 4,
-        onChanged: (_) => setState(() {}),
+        onChanged: (_) => setState(_remember),
       ),
       _Suggested(source: _description, written: _composedDescription),
     ];
@@ -230,14 +304,20 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
       AppPhotoPicker(
         paths: model.photos,
         service: widget.photos,
-        onChanged: model.setPhotos,
+        onChanged: (paths) {
+          model.setPhotos(paths);
+          _remember();
+        },
         max: kServerPhotoLimit,
       ),
       _Hint(l.photosServerLimit(kServerPhotoLimit), bottom: Insets.xl),
       AppVoiceNoteRecorder(
         asset: model.voiceNote,
         recorder: widget.voiceNotes,
-        onChanged: model.setVoiceNote,
+        onChanged: (asset) {
+          model.setVoiceNote(asset);
+          _remember();
+        },
       ),
       const SizedBox(height: Insets.xl),
       if (model.isEditing) ...[
@@ -296,6 +376,7 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     setState(() {
       _suggestTitle(model);
       _composeDescription(model);
+      _remember();
     });
   }
 
@@ -350,22 +431,30 @@ class _PropertyEditorScreenState extends State<PropertyEditorScreen> {
     if (id == null) {
       final submission = model.submission;
       if (submission is MutationFailure) {
-        final message = failureText(context.l10n, submission.failure);
+        final message = brokerFailureText(context.l10n, model.writeFailure);
         feedback?.emit(FeedbackIntent.error);
         feedback?.announce(message);
         toast(context, message);
         return;
       }
       final price = _priceValue;
+      final priceRefused =
+          price == null || price <= 0 || model.isPriceTooHigh(price);
       setState(() {
         _step = model.neighbourhood == null
             ? 0
-            : _title.text.trim().isEmpty || price == null || price <= 0
+            : _title.text.trim().isEmpty || priceRefused
             ? 1
             : _kStepCount - 1;
       });
       feedback?.emit(FeedbackIntent.error);
-      feedback?.announce(context.l10n.validationFixFirst);
+      feedback?.announce(
+        model.isPriceTooHigh(price)
+            ? context.l10n.validationPriceTooHigh(
+                PropertyEditorViewModel.maxPriceCfa,
+              )
+            : context.l10n.validationFixFirst,
+      );
       return;
     }
 

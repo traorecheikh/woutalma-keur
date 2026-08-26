@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
@@ -5,6 +7,7 @@ import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/domain/property_surface.dart';
 import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
+import 'package:woutalma_keur/app/modules/broker/property_editor_draft.dart';
 
 /// Nombres de pièces proposés.
 ///
@@ -20,7 +23,7 @@ const List<int> kRoomSteps = <int>[1, 2, 3, 4, 5, 6];
 /// Le quartier, la surface et le nombre de pièces sont des **choix**, pas des
 /// saisies : ils vivent donc ici, typés, plutôt que dans des contrôleurs de
 /// texte que l'écran devrait reparser à chaque enregistrement.
-class PropertyEditorViewModel extends ChangeNotifier {
+class PropertyEditorViewModel extends ChangeNotifier with BrokerFailures {
   PropertyEditorViewModel({
     required PropertyRepository properties,
     required String brokerId,
@@ -28,10 +31,12 @@ class PropertyEditorViewModel extends ChangeNotifier {
     required DateTime Function() now,
     Property? existing,
     Property? previous,
+    PropertyDraftStore drafts = const PropertyDraftStore(),
   }) : _properties = properties,
        _brokerId = brokerId,
        _fallbackPosition = fallbackPosition,
        _now = now,
+       _drafts = drafts,
        _existing = existing {
     if (existing != null) {
       kind = existing.kind;
@@ -64,7 +69,15 @@ class PropertyEditorViewModel extends ChangeNotifier {
   final String _brokerId;
   final GeoPoint _fallbackPosition;
   final DateTime Function() _now;
+  final PropertyDraftStore _drafts;
   final Property? _existing;
+
+  /// Frappé une fois, gardé d'un essai à l'autre : c'est la clé d'idempotence
+  /// que le serveur reconnaît. Le regénérer à chaque appui publiait deux fois
+  /// la même annonce quand le premier envoi avait dépassé le délai.
+  late final String _draftId = 'prp-${_now().microsecondsSinceEpoch}';
+
+  Timer? _persist;
 
   PropertyKind kind = PropertyKind.apartment;
   TransactionKind transaction = TransactionKind.rent;
@@ -194,9 +207,13 @@ class PropertyEditorViewModel extends ChangeNotifier {
     required String priceText,
     String description = '',
   }) async {
-    final int? price = int.tryParse(priceText.replaceAll(RegExp(r'\D'), ''));
+    final int? price = parsePrice(priceText);
     final Neighbourhood? area = neighbourhood;
-    if (title.trim().isEmpty || area == null || price == null || price <= 0) {
+    if (title.trim().isEmpty ||
+        area == null ||
+        price == null ||
+        price <= 0 ||
+        isPriceTooHigh(price)) {
       // Rien n'est parti sur le réseau : la soumission repart de zéro, sinon
       // un échec précédent resterait affiché comme s'il venait d'arriver.
       _submission = const MutationState.idle();
@@ -207,9 +224,8 @@ class PropertyEditorViewModel extends ChangeNotifier {
     _submission = const MutationState.submitting();
     notifyListeners();
 
-    final String id = _existing?.id ?? 'prp-${_now().microsecondsSinceEpoch}';
     final Property property = Property(
-      id: id,
+      id: _existing?.id ?? _draftId,
       brokerId: _brokerId,
       kind: kind,
       transaction: transaction,
@@ -237,14 +253,87 @@ class PropertyEditorViewModel extends ChangeNotifier {
     } on Object catch (error) {
       // Le dépôt est distant : annoncer « base locale indisponible » à
       // quelqu'un qui a perdu le réseau envoie chercher la panne au mauvais
-      // endroit.
-      _submission = MutationState.failure(brokerFailure(error));
+      // endroit. Le brouillon reste : c'est tout ce qu'il lui reste.
+      _submission = MutationState.failure(onWriteError(error));
       notifyListeners();
       return null;
     }
+    _persist?.cancel();
+    await _drafts.clear();
     notifyListeners();
     return savedId;
   }
+
+  /// Brouillon laissé par une saisie que rien n'a publiée, ou `null`.
+  ///
+  /// Seulement en création : rouvrir un bien existant part de ce que le
+  /// serveur en dit, pas d'une saisie abandonnée sur un autre bien.
+  Future<PropertyDraft?> pendingDraft() =>
+      isEditing ? Future<PropertyDraft?>.value() : _drafts.read();
+
+  /// Reprend le brouillon. Le titre, le prix et la description sont rendus à
+  /// l'écran, qui possède leurs contrôleurs.
+  void restore(PropertyDraft draft) {
+    kind = draft.kind;
+    transaction = draft.transaction;
+    surface = draft.surface;
+    rooms = draft.rooms;
+    neighbourhood = draft.neighbourhood;
+    photos = List<String>.of(draft.photos);
+    voiceNote = draft.voiceNote;
+    prefilledFromPrevious = false;
+    notifyListeners();
+  }
+
+  Future<void> discardDraft() {
+    _persist?.cancel();
+    return _drafts.clear();
+  }
+
+  /// Enregistre la saisie en cours, une fois la frappe retombée : écrire à
+  /// chaque caractère ferait tourner le disque d'un téléphone d'entrée de
+  /// gamme pendant toute la saisie.
+  void rememberDraft({
+    required String title,
+    required String priceText,
+    required String description,
+  }) {
+    if (isEditing) return;
+    _persist?.cancel();
+    _persist = Timer(const Duration(milliseconds: 600), () {
+      _drafts.write(
+        PropertyDraft(
+          id: _draftId,
+          kind: kind,
+          transaction: transaction,
+          title: title,
+          description: description,
+          priceText: priceText,
+          surface: surface,
+          rooms: rooms,
+          neighbourhood: neighbourhood,
+          photos: photos,
+          voiceNote: voiceNote,
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _persist?.cancel();
+    super.dispose();
+  }
+
+  /// Plafond du serveur (`MAX_PRICE_CFA`). Un zéro de trop passait le
+  /// formulaire et se faisait refuser après l'envoi, sans dire lequel des
+  /// champs était en cause.
+  static const int maxPriceCfa = 10000000000;
+
+  static int? parsePrice(String text) =>
+      int.tryParse(text.replaceAll(RegExp(r'\D'), ''));
+
+  bool isPriceTooHigh(int? price) => price != null && price > maxPriceCfa;
 
   /// Position connue du téléphone, fournie par la route.
   ///

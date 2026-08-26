@@ -82,6 +82,14 @@ class AppL10nFr extends AppL10n {
   String get failureUnknown => 'Ça n\'a pas marché.';
 
   @override
+  String get failureSessionExpired =>
+      'Votre session a expiré. Identifiez-vous à nouveau.';
+
+  @override
+  String get failureRejected =>
+      'Le serveur a refusé ces informations. Vérifiez ce que vous avez saisi.';
+
+  @override
   String offlineCached(String when) {
     return 'Hors ligne. Informations enregistrées $when.';
   }
@@ -652,10 +660,35 @@ class AppL10nFr extends AppL10n {
       'Ce bien restera visible dans les recherches.';
 
   @override
+  String get propertyMoreActions => 'Plus d\'actions';
+
+  @override
+  String get propertyMarkClosed => 'Marquer vendu ou loué';
+
+  @override
+  String get propertyMarkAvailable => 'Remettre disponible';
+
+  @override
+  String get propertyDraftTitle => 'Reprendre le brouillon ?';
+
+  @override
+  String get propertyDraftBody =>
+      'Vous aviez commencé un bien sans le publier. On repart d\'où vous vous étiez arrêté ?';
+
+  @override
+  String get propertyDraftResume => 'Reprendre le brouillon';
+
+  @override
+  String get propertyDraftDiscard => 'Recommencer à zéro';
+
+  @override
   String get fieldTitle => 'Titre';
 
   @override
-  String get fieldPrice => 'Prix';
+  String get fieldPriceRent => 'Prix par mois (F)';
+
+  @override
+  String get fieldPriceSale => 'Prix de vente (F)';
 
   @override
   String get fieldSurface => 'Surface en m²';
@@ -722,6 +755,16 @@ class AppL10nFr extends AppL10n {
   @override
   String get validationPositiveNumber =>
       'Indiquez un nombre plus grand que zéro';
+
+  @override
+  String validationPriceTooHigh(int max) {
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Ce prix dépasse $maxString F. Vérifiez les zéros.';
+  }
 
   @override
   String get validationFixFirst => 'Corrigez le premier champ signalé';
@@ -1006,6 +1049,10 @@ class AppL10nFr extends AppL10n {
   String get authOtpWrong => 'Code incorrect, réessayez';
 
   @override
+  String get authOtpTooManyAttempts =>
+      'Trop d\'essais. Attendez un instant, puis demandez un nouveau code.';
+
+  @override
   String get authOtpCodeLabel => 'Code SMS';
 
   @override
@@ -1233,6 +1280,14 @@ class AppL10nFr extends AppL10n {
   String get photosFailed => 'Cette photo n\'a pas pu être ajoutée.';
 
   @override
+  String get photoTooLarge =>
+      'Une photo est trop lourde pour être envoyée. Reprenez-la ou choisissez-en une autre.';
+
+  @override
+  String get photoUnsupported =>
+      'Ce format de photo n\'est pas accepté. Prenez la photo avec l\'appareil.';
+
+  @override
   String get viewList => 'Liste';
 
   @override
@@ -1403,6 +1458,10 @@ class AppL10nFr extends AppL10n {
   @override
   String get voiceNoteTooLarge =>
       'Le message vocal est trop lourd pour être envoyé.';
+
+  @override
+  String get voiceNoteUnsupported =>
+      'Ce message vocal n\'est pas dans un format accepté. Réenregistrez-le.';
 
   @override
   String get voiceNoteReady => 'Message vocal prêt';

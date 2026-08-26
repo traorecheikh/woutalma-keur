@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -9,6 +21,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { AuthenticatedRequestUser } from '../auth/jwt-payload.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { requireBrokerIdForOwner } from '../common/broker-owner';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
 
 @ApiTags('properties')
 @Controller('properties')
@@ -19,12 +32,32 @@ export class PropertiesController {
   ) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
-    summary: 'Mirrors PropertyRepository.all()/.discoverable() — pass discoverableOnly=true for the latter.',
+    summary:
+      'Mirrors PropertyRepository.all()/.discoverable(). discoverableOnly=false additionally returns the CALLER’S OWN withdrawn listings; another broker’s never leave their account.',
   })
   @ApiOkResponse({ type: [PropertyDto] })
-  findAll(@Query('discoverableOnly') discoverableOnly?: string): Promise<PropertyDto[]> {
-    return this.properties.findAll(discoverableOnly === 'true');
+  async findAll(
+    @Query('discoverableOnly') discoverableOnly?: string,
+    @CurrentUser() user?: AuthenticatedRequestUser,
+  ): Promise<PropertyDto[]> {
+    const onlyDiscoverable = discoverableOnly === 'true';
+    const viewerBrokerId = onlyDiscoverable ? undefined : await this.viewerBrokerId(user);
+    return this.properties.findAll(onlyDiscoverable, viewerBrokerId);
+  }
+
+  /// The broker profile of a signed-in caller, or undefined for anyone else.
+  /// Never throws: these routes stay public, they simply show less.
+  private async viewerBrokerId(user?: AuthenticatedRequestUser): Promise<string | undefined> {
+    if (!user) {
+      return undefined;
+    }
+    const broker = await this.prisma.broker.findUnique({
+      where: { ownerId: user.userId },
+      select: { id: true },
+    });
+    return broker?.id;
   }
 
   /// Declared before ':id' so the literal segment wins the route match.
@@ -85,10 +118,7 @@ export class PropertiesController {
     summary: 'Withdraw a listing. Soft delete to CLOSED so client contact history keeps resolving it.',
   })
   @ApiOkResponse({ type: PropertyDto })
-  async close(
-    @Param('id') id: string,
-    @CurrentUser() user: AuthenticatedRequestUser,
-  ): Promise<PropertyDto> {
+  async close(@Param('id') id: string, @CurrentUser() user: AuthenticatedRequestUser): Promise<PropertyDto> {
     const brokerId = await requireBrokerIdForOwner(this.prisma, user.userId);
     return this.properties.close(id, brokerId);
   }

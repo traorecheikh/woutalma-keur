@@ -8,7 +8,7 @@ import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/modules/broker/broker_failures.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
 
-class BrokerReviewsViewModel extends ChangeNotifier {
+class BrokerReviewsViewModel extends ChangeNotifier with BrokerFailures {
   BrokerReviewsViewModel({
     required ReviewRepository reviews,
     required String brokerId,
@@ -40,7 +40,7 @@ class BrokerReviewsViewModel extends ChangeNotifier {
           ? const ScreenState<List<Review>>.empty()
           : ScreenState<List<Review>>.data(all);
     } on Object catch (error) {
-      _state = ScreenState<List<Review>>.error(brokerFailure(error));
+      _state = ScreenState<List<Review>>.error(onLoadError(error));
     }
     notifyListeners();
   }
@@ -67,7 +67,7 @@ class BrokerReviewsViewModel extends ChangeNotifier {
       await action();
       _mutation = const MutationState.success();
     } on Object catch (error) {
-      _mutation = MutationState.failure(brokerFailure(error));
+      _mutation = MutationState.failure(onWriteError(error));
       notifyListeners();
       return;
     }
@@ -97,7 +97,8 @@ class BrokerReviewsScreen extends StatelessWidget {
           title: l.brokerReviewsEmptyTitle,
           message: l.brokerReviewsEmptyBody,
         ),
-        error: (failure) => failureState(context, failure, onRetry: model.load),
+        error: (_) =>
+            brokerFailureState(context, model.loadFailure, onRetry: model.load),
         data: (reviews) => ListView.separated(
           padding: const EdgeInsets.fromLTRB(
             Insets.page,
@@ -193,10 +194,9 @@ class BrokerReviewsScreen extends StatelessWidget {
   }
 
   bool _announceFailure(BuildContext context, BrokerReviewsViewModel model) {
-    final mutation = model.mutation;
-    if (mutation is! MutationFailure) return false;
+    if (model.mutation is! MutationFailure) return false;
     context.read<InteractionFeedbackService?>()?.emit(FeedbackIntent.error);
-    toast(context, failureText(context.l10n, mutation.failure));
+    toast(context, brokerFailureText(context.l10n, model.writeFailure));
     return true;
   }
 }

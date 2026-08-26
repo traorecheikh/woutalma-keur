@@ -4,6 +4,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsLatitude,
@@ -272,6 +273,34 @@ export class CreatePropertyDto {
   @ValidateNested()
   @Type(() => UploadVoiceNoteDto)
   newVoiceNote?: UploadVoiceNoteDto;
+
+  /// Minted by the editor before the first attempt and reused on every retry.
+  /// A broker on a weak network taps "Publier" again — or the app is killed
+  /// and reopened — and the second POST returns the listing already stored
+  /// rather than publishing it twice.
+  @ApiPropertyOptional({
+    description: 'Idempotency key, unique per broker. Replaying it returns the listing already created.',
+    maxLength: 64,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  clientRequestId?: string;
 }
 
-export class UpdatePropertyDto extends PartialType(CreatePropertyDto) {}
+/// A patch that only carries the keys it changes cannot say "erase this one":
+/// built_value omits nulls on the wire, so `surface: null` never leaves the
+/// phone and the server could not tell it from "unchanged". These flags do,
+/// and they are the only way B03 can take a listing from "3 pièces" back to
+/// "non précisé" — a terrain, for instance, has none.
+export class UpdatePropertyDto extends PartialType(CreatePropertyDto) {
+  @ApiPropertyOptional({ description: 'Sets surface back to unstated. Wins over `surface`.' })
+  @IsOptional()
+  @IsBoolean()
+  clearSurface?: boolean;
+
+  @ApiPropertyOptional({ description: 'Sets rooms back to unstated. Wins over `rooms`.' })
+  @IsOptional()
+  @IsBoolean()
+  clearRooms?: boolean;
+}

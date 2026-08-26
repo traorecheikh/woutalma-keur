@@ -180,6 +180,49 @@ class Property {
   bool get isDiscoverable => status != PropertyStatus.closed;
 
   bool get hasVoiceNote => voiceAsset != null && voiceAsset!.isNotEmpty;
+
+  /// Copie modifiée. Même raison que [Broker.copyWith], et le même incident :
+  /// « Marquer loué » recomposait les quinze champs à la main, oubliait
+  /// `voiceAsset`, et le message vocal du courtier disparaissait du serveur
+  /// alors qu'il n'avait touché qu'un statut.
+  ///
+  /// `surface`, `rooms` et `voiceAsset` se vident volontairement, d'où les
+  /// drapeaux : `null` ne peut pas dire à la fois « inchangé » et « retiré ».
+  Property copyWith({
+    PropertyKind? kind,
+    TransactionKind? transaction,
+    String? title,
+    String? description,
+    int? price,
+    int? surface,
+    int? rooms,
+    GeoPoint? position,
+    String? neighbourhood,
+    List<String>? photoAssets,
+    String? voiceAsset,
+    PropertyStatus? status,
+    bool clearSurface = false,
+    bool clearRooms = false,
+    bool clearVoiceAsset = false,
+  }) {
+    return Property(
+      id: id,
+      brokerId: brokerId,
+      kind: kind ?? this.kind,
+      transaction: transaction ?? this.transaction,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      surface: clearSurface ? null : surface ?? this.surface,
+      rooms: clearRooms ? null : rooms ?? this.rooms,
+      position: position ?? this.position,
+      neighbourhood: neighbourhood ?? this.neighbourhood,
+      photoAssets: photoAssets ?? this.photoAssets,
+      voiceAsset: clearVoiceAsset ? null : voiceAsset ?? this.voiceAsset,
+      status: status ?? this.status,
+      createdAt: createdAt,
+    );
+  }
 }
 
 @immutable

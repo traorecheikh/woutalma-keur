@@ -16,6 +16,7 @@ Name | Type | Description | Notes
 **longitude** | **num** |  | [optional] 
 **coverage** | **BuiltList&lt;String&gt;** |  | [optional] 
 **logoAsset** | **String** |  | [optional] 
+**clearWhatsapp** | **bool** | Removes the WhatsApp number. Wins over `whatsapp`. | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

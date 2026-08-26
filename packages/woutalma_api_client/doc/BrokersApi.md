@@ -13,7 +13,7 @@ Method | HTTP request | Description
 [**brokersControllerFindAll**](BrokersApi.md#brokerscontrollerfindall) | **GET** /brokers | Mirrors BrokerRepository.all().
 [**brokersControllerFindById**](BrokersApi.md#brokerscontrollerfindbyid) | **GET** /brokers/{id} | Mirrors BrokerRepository.byId.
 [**brokersControllerFindContacts**](BrokersApi.md#brokerscontrollerfindcontacts) | **GET** /brokers/{id}/contacts | Contacts this broker RECEIVED — the broker-side counterpart of GET /contacts, which only ever lists what the caller sent as a client. Owner-only, and without any client-identifying field (PRODUCT.md §4 rule 7).
-[**brokersControllerFindProperties**](BrokersApi.md#brokerscontrollerfindproperties) | **GET** /brokers/{id}/properties | Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).
+[**brokersControllerFindProperties**](BrokersApi.md#brokerscontrollerfindproperties) | **GET** /brokers/{id}/properties | Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}). onlyDiscoverable&#x3D;false is owner-only — B02 needs its own withdrawn listings, a visitor has no business reading them.
 [**brokersControllerRequestVerification**](BrokersApi.md#brokerscontrollerrequestverification) | **POST** /brokers/{id}/verification-request | B02 — puts the caller’s own profile in the verification queue (NONE/REJECTED → PENDING). A request, never a grant: PENDING is the only status it can write, and calling it again while PENDING or VERIFIED just returns the current state.
 [**brokersControllerUpdate**](BrokersApi.md#brokerscontrollerupdate) | **PATCH** /brokers/{id} | Edit the caller’s own broker profile. 403 for someone else’s.
 
@@ -181,7 +181,7 @@ Name | Type | Description  | Notes
 # **brokersControllerFindProperties**
 > BuiltList<PropertyDto> brokersControllerFindProperties(id, onlyDiscoverable)
 
-Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}).
+Mirrors PropertyRepository.byBroker(brokerId, {onlyDiscoverable}). onlyDiscoverable=false is owner-only — B02 needs its own withdrawn listings, a visitor has no business reading them.
 
 ### Example
 ```dart

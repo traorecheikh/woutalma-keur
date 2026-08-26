@@ -3,6 +3,7 @@ import { BrokerKind } from '@prisma/client';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsLatitude,
   IsLongitude,
@@ -63,4 +64,13 @@ export class UpdateBrokerDto {
   @IsString()
   @MaxLength(200)
   logoAsset?: string | null;
+
+  /// built_value omits nulls on the wire, so a broker who empties the WhatsApp
+  /// field sent nothing and kept their old number — with a button that opened
+  /// a conversation they no longer read. This flag is how the field is
+  /// actually cleared.
+  @ApiPropertyOptional({ description: 'Removes the WhatsApp number. Wins over `whatsapp`.' })
+  @IsOptional()
+  @IsBoolean()
+  clearWhatsapp?: boolean;
 }

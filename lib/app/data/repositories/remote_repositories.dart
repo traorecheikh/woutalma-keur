@@ -77,6 +77,9 @@ class RemoteBrokerRepository implements BrokerRepository {
           ..name = broker.name
           ..phone = broker.phone
           ..whatsapp = broker.whatsapp
+          // built_value n'écrit pas les nuls : effacer le WhatsApp n'envoyait
+          // rien et le bouton continuait d'ouvrir un numéro abandonné.
+          ..clearWhatsapp = broker.whatsapp == null
           ..latitude = broker.position.latitude
           ..longitude = broker.position.longitude
           ..logoAsset = broker.logoAsset
@@ -120,6 +123,8 @@ class RemotePropertyRepository implements PropertyRepository {
   /// Sépare les clés déjà connues du serveur des fichiers locaux à téléverser.
   final PropertyPhotoUploader _photos;
   final PropertyVoiceNoteUploader _voiceNotes;
+
+  static const String _draftIdPrefix = 'prp-';
 
   @override
   Future<List<Property>> all() async {
@@ -185,15 +190,24 @@ class RemotePropertyRepository implements PropertyRepository {
   /// `photoAssets`, comme avant, faisait accepter au serveur une chaîne
   /// opaque : la photo ne s'affichait que sur le téléphone qui l'avait
   /// publiée.
+  ///
+  /// Publication ou modification se décide sur la forme de l'identifiant, sans
+  /// aller le demander : `PropertyRepository.save` fixe déjà que l'éditeur
+  /// fabrique `prp-<micros>` et que le serveur frappe le sien. La sonde
+  /// coûtait un aller-retour supplémentaire exactement au moment où le réseau
+  /// est le plus fragile — juste avant de publier.
   @override
   Future<Property> save(Property property) async {
-    final Property? existing = await byId(property.id);
+    final bool isNew = property.id.startsWith(_draftIdPrefix);
     final PreparedPhotos photos = await _photos.prepare(property.photoAssets);
     final PreparedVoiceNote voice = await _voiceNotes.prepare(
       property.voiceAsset,
-      previous: existing?.voiceAsset,
     );
-    final String? voiceAsset = voice.clear ? '' : voice.retained;
+    // Sur une modification, l'absence de vocal est une décision : la chaîne
+    // vide dit « retire-le », l'omission dirait « n'y touche pas ».
+    final String? voiceAsset = voice.upload != null
+        ? null
+        : voice.retained ?? (isNew ? null : '');
     final api.UploadVoiceNoteDto? newVoiceNote = voice.upload == null
         ? null
         : api.UploadVoiceNoteDto(
@@ -204,10 +218,14 @@ class RemotePropertyRepository implements PropertyRepository {
               ..dataBase64 = voice.upload!.dataBase64,
           );
 
-    if (existing == null) {
+    if (isNew) {
       final response = await _propertiesApi.propertiesControllerCreate(
         createPropertyDto: api.CreatePropertyDto(
           (b) => b
+            // Clé d'idempotence : l'éditeur garde le même identifiant de
+            // brouillon d'un essai à l'autre, donc republier après un
+            // délai dépassé rend l'annonce déjà créée au lieu d'une seconde.
+            ..clientRequestId = property.id
             ..kind = api.CreatePropertyDtoKindEnum.valueOf(
               propertyKindWireName(property.kind),
             )
@@ -248,6 +266,11 @@ class RemotePropertyRepository implements PropertyRepository {
           ..price = property.price
           ..surface = property.surface
           ..rooms = property.rooms
+          // Même raison que `clearWhatsapp` : un champ vidé ne part pas, donc
+          // un bien repassé en terrain gardait ses « 3 pièces » sur le
+          // serveur alors que le formulaire ne les proposait plus.
+          ..clearSurface = property.surface == null
+          ..clearRooms = property.rooms == null
           ..latitude = property.position.latitude
           ..longitude = property.position.longitude
           ..neighbourhood = property.neighbourhood

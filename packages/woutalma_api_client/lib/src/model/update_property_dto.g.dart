@@ -231,6 +231,12 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
   final String? voiceAsset;
   @override
   final UploadVoiceNoteDto? newVoiceNote;
+  @override
+  final String? clientRequestId;
+  @override
+  final bool? clearSurface;
+  @override
+  final bool? clearRooms;
 
   factory _$UpdatePropertyDto(
           [void Function(UpdatePropertyDtoBuilder)? updates]) =>
@@ -251,7 +257,10 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
       this.photoAssets,
       this.newPhotos,
       this.voiceAsset,
-      this.newVoiceNote})
+      this.newVoiceNote,
+      this.clientRequestId,
+      this.clearSurface,
+      this.clearRooms})
       : super._();
   @override
   UpdatePropertyDto rebuild(void Function(UpdatePropertyDtoBuilder) updates) =>
@@ -279,7 +288,10 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
         photoAssets == other.photoAssets &&
         newPhotos == other.newPhotos &&
         voiceAsset == other.voiceAsset &&
-        newVoiceNote == other.newVoiceNote;
+        newVoiceNote == other.newVoiceNote &&
+        clientRequestId == other.clientRequestId &&
+        clearSurface == other.clearSurface &&
+        clearRooms == other.clearRooms;
   }
 
   @override
@@ -300,6 +312,9 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
     _$hash = $jc(_$hash, newPhotos.hashCode);
     _$hash = $jc(_$hash, voiceAsset.hashCode);
     _$hash = $jc(_$hash, newVoiceNote.hashCode);
+    _$hash = $jc(_$hash, clientRequestId.hashCode);
+    _$hash = $jc(_$hash, clearSurface.hashCode);
+    _$hash = $jc(_$hash, clearRooms.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -321,7 +336,10 @@ class _$UpdatePropertyDto extends UpdatePropertyDto {
           ..add('photoAssets', photoAssets)
           ..add('newPhotos', newPhotos)
           ..add('voiceAsset', voiceAsset)
-          ..add('newVoiceNote', newVoiceNote))
+          ..add('newVoiceNote', newVoiceNote)
+          ..add('clientRequestId', clientRequestId)
+          ..add('clearSurface', clearSurface)
+          ..add('clearRooms', clearRooms))
         .toString();
   }
 }
@@ -398,6 +416,19 @@ class UpdatePropertyDtoBuilder
   set newVoiceNote(UploadVoiceNoteDtoBuilder? newVoiceNote) =>
       _$this._newVoiceNote = newVoiceNote;
 
+  String? _clientRequestId;
+  String? get clientRequestId => _$this._clientRequestId;
+  set clientRequestId(String? clientRequestId) =>
+      _$this._clientRequestId = clientRequestId;
+
+  bool? _clearSurface;
+  bool? get clearSurface => _$this._clearSurface;
+  set clearSurface(bool? clearSurface) => _$this._clearSurface = clearSurface;
+
+  bool? _clearRooms;
+  bool? get clearRooms => _$this._clearRooms;
+  set clearRooms(bool? clearRooms) => _$this._clearRooms = clearRooms;
+
   UpdatePropertyDtoBuilder() {
     UpdatePropertyDto._defaults(this);
   }
@@ -420,6 +451,9 @@ class UpdatePropertyDtoBuilder
       _newPhotos = $v.newPhotos?.toBuilder();
       _voiceAsset = $v.voiceAsset;
       _newVoiceNote = $v.newVoiceNote?.toBuilder();
+      _clientRequestId = $v.clientRequestId;
+      _clearSurface = $v.clearSurface;
+      _clearRooms = $v.clearRooms;
       _$v = null;
     }
     return this;
@@ -458,6 +492,9 @@ class UpdatePropertyDtoBuilder
             newPhotos: _newPhotos?.build(),
             voiceAsset: voiceAsset,
             newVoiceNote: _newVoiceNote?.build(),
+            clientRequestId: clientRequestId,
+            clearSurface: clearSurface,
+            clearRooms: clearRooms,
           );
     } catch (_) {
       late String _$failedField;

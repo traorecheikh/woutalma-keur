@@ -18,6 +18,21 @@ class ImagePickerPhotoService implements PhotoService {
   @override
   int get maxPerProperty => constraints.maxPerProperty;
 
+  /// Photo prise juste avant qu'Android ne ferme l'application pour récupérer
+  /// de la mémoire : le système la garde de côté, mais elle n'était jamais
+  /// réclamée et le courtier reprenait la photo.
+  ///
+  /// Ne rend que la dernière, la seule que l'éditeur puisse replacer sans
+  /// deviner l'ordre voulu.
+  Future<String?> recoverLost() async {
+    try {
+      final LostDataResponse lost = await _picker.retrieveLostData();
+      return lost.files?.lastOrNull?.path ?? lost.file?.path;
+    } on Object {
+      return null;
+    }
+  }
+
   @override
   Future<String?> pick(PhotoSource source) async {
     final XFile? picked = await _picker.pickImage(
