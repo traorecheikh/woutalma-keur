@@ -1,16 +1,20 @@
+import 'dart:async' show unawaited;
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart' hide FThemeBuildContext;
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/app_config.dart';
+import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/data/local/cache_status.dart';
 import 'package:woutalma_keur/app/data/services/backend_warmup.dart';
 import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
+import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/ui/theme.dart';
 
 export 'package:forui/forui.dart'
@@ -35,6 +39,16 @@ Widget _tap(
         behavior: HitTestBehavior.opaque,
         child: child,
       );
+
+/// Donne un nom à un contrôle qui n'en porte pas — une icône seule.
+///
+/// `excludeSemantics` est proscrit ici : le nœud sémantique de `FTappable` est
+/// **au-dessus** de son détecteur de geste, donc l'exclure supprime l'action
+/// « appuyer » et le contrôle devient inatteignable au lecteur d'écran. La
+/// fusion garde l'action et n'énonce qu'un seul nœud.
+Widget _named(String label, Widget child) => MergeSemantics(
+  child: Semantics(label: label, child: child),
+);
 
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
@@ -131,11 +145,14 @@ class _Banner extends StatelessWidget {
         Insets.page,
         0,
       ),
-      child: FAlert(
-        icon: Icon(
-          status?.servedFromCache == true ? FIcons.wifiOff : FIcons.hourglass,
+      child: Semantics(
+        liveRegion: true,
+        child: FAlert(
+          icon: Icon(
+            status?.servedFromCache == true ? FIcons.wifiOff : FIcons.hourglass,
+          ),
+          title: Text(text),
         ),
-        title: Text(text),
       ),
     );
   }
@@ -247,14 +264,18 @@ class AppIconButton extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? color;
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: label,
-    button: true,
-    excludeSemantics: true,
-    child: FButton.icon(
-      variant: FButtonVariant.ghost,
-      onPress: onTap,
-      child: Icon(icon, color: color ?? context.colors.onSurface),
+  Widget build(BuildContext context) => _named(
+    label,
+    ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: Touch.compact,
+        minHeight: Touch.compact,
+      ),
+      child: FButton.icon(
+        variant: FButtonVariant.ghost,
+        onPress: onTap,
+        child: Icon(icon, color: color ?? context.colors.onSurface),
+      ),
     ),
   );
 }
@@ -490,18 +511,33 @@ class AppButton extends StatelessWidget {
     this.variant = AppButtonVariant.primary,
     this.icon,
     this.loading = false,
-    this.size = 52,
+    this.size,
   });
   final String label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final IconData? icon;
   final bool loading;
-  final double size;
+
+  /// Hauteur demandée. Toujours ramenée au plancher tactile du produit :
+  /// `Touch.comfy` pour l'action dominante, `Touch.min` sinon, et jamais moins
+  /// de `Touch.compact` même pour une action discrète.
+  final double? size;
+
+  double get _height {
+    final base = switch (variant) {
+      AppButtonVariant.primary ||
+      AppButtonVariant.call ||
+      AppButtonVariant.whatsapp => Touch.comfy,
+      _ => Touch.min,
+    };
+    return size == null ? base : math.max(size!, Touch.compact);
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.tones;
+    final height = _height;
     final (fv, fill) = switch (variant) {
       AppButtonVariant.primary => (FButtonVariant.primary, null),
       AppButtonVariant.secondary => (FButtonVariant.outline, null),
@@ -510,11 +546,11 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.call => (FButtonVariant.primary, t.success),
       AppButtonVariant.whatsapp => (FButtonVariant.primary, t.whatsapp),
     };
-    return SizedBox(
-      height: size,
+    final button = SizedBox(
+      height: height,
       child: FButton(
         variant: fv,
-        size: size < 44 ? FButtonSizeVariant.xs : FButtonSizeVariant.md,
+        size: height < 52 ? FButtonSizeVariant.sm : FButtonSizeVariant.md,
         style: fill == null
             ? const FButtonStyleDelta.delta()
             : FButtonStyleDelta.delta(
@@ -524,7 +560,10 @@ class AppButton extends StatelessWidget {
                   ),
                 ]),
               ),
-        onPress: loading ? () {} : onPressed,
+        // Pendant l'envoi, le contrôle refuse le geste sans changer de
+        // largeur ; un `onPress` vide le laissait annoncé « actif » alors
+        // qu'il n'écoute plus.
+        onPress: loading ? null : onPressed,
         mainAxisSize: MainAxisSize.min,
         prefix: icon == null || loading ? null : Icon(icon, size: 20),
         child: loading
@@ -538,6 +577,11 @@ class AppButton extends StatelessWidget {
               ),
       ),
     );
+    // Le libellé disparaît derrière la roue : sans nom, le lecteur d'écran
+    // n'annoncerait plus rien du tout.
+    return loading
+        ? _named('$label — ${context.l10n.stateLoading}', button)
+        : button;
   }
 }
 
@@ -554,15 +598,45 @@ class AppPill extends StatelessWidget {
   final VoidCallback onTap;
   final IconData? icon;
   @override
-  Widget build(BuildContext context) => FButton(
-    variant: selected ? FButtonVariant.primary : FButtonVariant.secondary,
-    size: FButtonSizeVariant.sm,
-    style: pillButton,
-    selected: selected,
-    mainAxisSize: MainAxisSize.min,
-    onPress: onTap,
-    prefix: icon == null ? null : Icon(icon, size: 18),
-    child: Text(label, style: AppText.label),
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(minHeight: Touch.min),
+    child: FButton(
+      variant: selected ? FButtonVariant.primary : FButtonVariant.secondary,
+      size: FButtonSizeVariant.sm,
+      style: pillButton,
+      selected: selected,
+      mainAxisSize: MainAxisSize.min,
+      onPress: onTap,
+      prefix: icon == null ? null : Icon(icon, size: 18),
+      child: Flexible(
+        child: Text(
+          label,
+          style: AppText.label,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Rangée de pastilles défilante, aussi haute que ce qu'elle contient.
+class AppPillRow extends StatelessWidget {
+  const AppPillRow({
+    super.key,
+    required this.children,
+    this.padding = const EdgeInsets.symmetric(horizontal: Insets.page),
+  });
+  final List<Widget> children;
+  final EdgeInsetsGeometry padding;
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    padding: padding,
+    child: Row(
+      spacing: Insets.md,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: children,
+    ),
   );
 }
 
@@ -584,10 +658,16 @@ class AppSegmented extends StatelessWidget {
     ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      spacing: Insets.sm,
+      spacing: Insets.md,
       children: [
         for (var i = 0; i < options.length; i++)
-          AppPill(options[i], selected: i == index, onTap: () => onChanged(i)),
+          Flexible(
+            child: AppPill(
+              options[i],
+              selected: i == index,
+              onTap: () => onChanged(i),
+            ),
+          ),
       ],
     ),
   );
@@ -621,17 +701,9 @@ class AppChoice<T> extends StatelessWidget {
         ),
     ];
     if (!scroll)
-      return Wrap(spacing: Insets.sm, runSpacing: Insets.sm, children: pills);
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: Insets.page),
-        itemCount: pills.length,
-        separatorBuilder: (_, _) => const SizedBox(width: Insets.sm),
-        itemBuilder: (_, i) => pills[i],
-      ),
-    );
+      return Wrap(spacing: Insets.md, runSpacing: Insets.md, children: pills);
+    // Hauteur intrinsèque : une boîte figée coupait la rangée dès ×1.3.
+    return AppPillRow(children: pills);
   }
 }
 
@@ -707,31 +779,29 @@ class _AppFieldState extends State<AppField> {
   }
 }
 
-final _fr = NumberFormat.decimalPattern('fr');
-
-String formatCfa(int amount, {bool short = false}) =>
-    '${_fr.format(amount).replaceAll(RegExp(r'[\s ]'), ' ')} ${short ? 'F' : 'FCFA'}';
-
+/// Prix, écrit et dit de la même façon partout.
+///
+/// Une seule forme écrite — « 250 000 F », « 250 000 F / mois » — et un
+/// libellé parlé complet, parce que « F » ne se prononce pas.
 class AppMoney extends StatelessWidget {
   const AppMoney(
     this.amount, {
     super.key,
     this.style,
-    this.short = false,
     this.color,
-    this.suffix,
+    this.monthly = false,
   });
   final int amount;
   final TextStyle? style;
-  final bool short;
   final Color? color;
-  final String? suffix;
+  final bool monthly;
+
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '${_fr.format(amount)} francs CFA${suffix ?? ''}',
+    label: WkFormat.priceSpoken(context.l10n, amount, monthly: monthly),
     excludeSemantics: true,
     child: Text(
-      '${formatCfa(amount, short: short)}${suffix ?? ''}',
+      WkFormat.priceAmount(context.l10n, amount, monthly: monthly),
       style: (style ?? AppText.moneyMd).copyWith(
         color: color ?? context.colors.onSurface,
       ),
@@ -776,9 +846,7 @@ class AppTag extends StatelessWidget {
         spacing: Insets.xs,
         children: [
           if (icon != null) Icon(icon, size: 12, color: fg),
-          Flexible(
-            child: Text(text.toUpperCase(), overflow: TextOverflow.ellipsis),
-          ),
+          Flexible(child: Text(text, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
@@ -912,22 +980,26 @@ class AppSkeleton extends StatelessWidget {
   final int rows;
   final double height;
   @override
-  Widget build(BuildContext context) => ListView.separated(
-    padding: const EdgeInsets.symmetric(
-      horizontal: Insets.page,
-      vertical: Insets.sm,
-    ),
-    itemCount: rows,
-    separatorBuilder: (_, _) => const SizedBox(height: Insets.md),
-    itemBuilder: (_, _) => FCard.raw(
-      style: FCardStyleDelta.delta(
-        decoration: DecorationDelta.boxDelta(
-          color: context.tones.sunken,
-          borderRadius: Radii.control,
-          boxShadow: const [],
-        ),
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    label: context.l10n.stateLoading,
+    child: ListView.separated(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Insets.page,
+        vertical: Insets.sm,
       ),
-      child: SizedBox(height: height, width: double.infinity),
+      itemCount: rows,
+      separatorBuilder: (_, _) => const SizedBox(height: Insets.md),
+      itemBuilder: (_, _) => FCard.raw(
+        style: FCardStyleDelta.delta(
+          decoration: DecorationDelta.boxDelta(
+            color: context.tones.sunken,
+            borderRadius: Radii.control,
+            boxShadow: const [],
+          ),
+        ),
+        child: SizedBox(height: height, width: double.infinity),
+      ),
     ),
   );
 }
@@ -997,29 +1069,31 @@ class AppStars extends StatelessWidget {
   final double size;
   final int? count;
   @override
-  Widget build(BuildContext context) => Semantics(
-    label:
-        '${NumberFormat('0.0', 'fr').format(rating)} / 5${count == null ? '' : ', $count avis'}',
-    excludeSemantics: true,
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: Insets.xs,
-      children: [
-        Icon(FIcons.star, size: size, color: context.colors.onSurface),
-        Text(
-          NumberFormat('0.0', 'fr').format(rating),
-          style: context.text.labelLarge,
-        ),
-        if (count != null)
-          Text(
-            '($count)',
-            style: context.text.bodySmall!.copyWith(
-              color: context.tones.inkSecondary,
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final value = WkFormat.rating(rating);
+    return Semantics(
+      label: count == null
+          ? l.ratingSpoken(value)
+          : '${l.ratingSpoken(value)}, ${l.reviewCount(count!)}',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: Insets.xs,
+        children: [
+          Icon(FIcons.star, size: size, color: context.colors.onSurface),
+          Text(value, style: context.text.labelLarge),
+          if (count != null)
+            Text(
+              '($count)',
+              style: context.text.bodySmall!.copyWith(
+                color: context.tones.inkSecondary,
+              ),
             ),
-          ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 void popSheet<T>(BuildContext context, [T? result]) =>
@@ -1035,6 +1109,9 @@ Future<T?> showAppSheet<T>(
   side: FLayout.btt,
   mainAxisMaxRatio: scrollable ? .92 : null,
   useRootNavigator: true,
+  // Protège le haut d'une feuille haute ; le bas reste au contenu, qui ajoute
+  // déjà l'encoche de navigation.
+  useSafeArea: true,
   builder: (ctx) => Material(
     type: MaterialType.transparency,
     child: FCard.raw(
@@ -1143,12 +1220,53 @@ Future<T?> pick<T>(
   ),
 );
 
-void toast(BuildContext context, String message) => showFToast(
-  context: context,
-  alignment: FToastAlignment.topCenter,
-  title: Text(message),
-  duration: const Duration(seconds: 3),
-);
+/// Message court. Toujours annoncé : un toast qui n'existe qu'à l'écran ne
+/// dit rien à qui ne regarde pas.
+void toast(BuildContext context, String message) {
+  unawaited(
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      TextDirection.ltr,
+    ),
+  );
+  showFToast(
+    context: context,
+    alignment: FToastAlignment.topCenter,
+    title: Text(message),
+    duration: const Duration(seconds: 3),
+  );
+}
+
+/// Lit [text] à voix haute — sauf si un lecteur d'écran parle déjà, auquel cas
+/// le texte n'est qu'annoncé : deux voix ensemble n'en font entendre aucune.
+void speakAloud(BuildContext context, String text) {
+  final feedback = context.read<InteractionFeedbackService?>();
+  if (feedback == null) return;
+  if (MediaQuery.accessibleNavigationOf(context)) {
+    feedback.announce(text);
+    return;
+  }
+  unawaited(feedback.speak(text));
+}
+
+/// Fait lire l'écran à voix haute.
+///
+/// Le texte est construit au moment de l'appui : il doit décrire ce qui est
+/// affiché maintenant, pas ce qui l'était au montage.
+class AppListenButton extends StatelessWidget {
+  const AppListenButton({super.key, required this.text});
+  final String Function() text;
+
+  @override
+  Widget build(BuildContext context) => AppButton(
+    context.l10n.commonListen,
+    icon: FIcons.volume2,
+    variant: AppButtonVariant.ghost,
+    size: Touch.compact,
+    onPressed: () => speakAloud(context, text()),
+  );
+}
 
 class AppNavItem {
   const AppNavItem(this.label, this.icon);
@@ -1278,12 +1396,12 @@ class AppSearchPill extends StatelessWidget {
                                   ? const SizedBox.shrink()
                                   : FTappable(
                                       onPress: onClear,
-                                      semanticsLabel: context.l10n.commonClose,
-                                      excludeSemantics: true,
-                                      child: Icon(
-                                        FIcons.x,
-                                        size: 18,
-                                        color: context.tones.inkSecondary,
+                                      semanticsLabel: context.l10n.searchClear,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: const SizedBox(
+                                        width: Touch.compact,
+                                        height: Touch.compact,
+                                        child: Icon(FIcons.x, size: 18),
                                       ),
                                     ),
                             ),
@@ -1298,8 +1416,10 @@ class AppSearchPill extends StatelessWidget {
         : FTappable(
             onPress: onTap,
             semanticsLabel: hint,
-            excludeSemantics: true,
-            child: pill,
+            behavior: HitTestBehavior.opaque,
+            // Sous le détecteur de geste : l'action « appuyer » survit, seul
+            // le doublon du texte de la pastille disparaît.
+            child: ExcludeSemantics(child: pill),
           );
   }
 }

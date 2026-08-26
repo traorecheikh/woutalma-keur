@@ -1,6 +1,9 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart' show FSwitch;
+import 'package:forui/forui.dart' show FSwitch, FTileMixin;
 import 'package:provider/provider.dart';
+import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/modules/settings/settings_view_model.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
@@ -33,6 +36,8 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<SettingsViewModel>();
+    final feedback = context.read<InteractionFeedbackService?>();
+    if (feedback != null) model.useFeedback(feedback);
     final account = context.watch<AuthService>().current;
     final l = context.l10n;
     return AppScaffold(
@@ -78,24 +83,37 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Insets.page),
             child: AppCard.rows([
-              AppRow(
-                leading: const Icon(FIcons.vibrate),
-                title: l.settingsHaptics,
-                onTap: () => _setHaptics(model, !model.preferences.haptics),
-                trailing: FSwitch(
-                  value: model.preferences.haptics,
-                  semanticsLabel: l.settingsHaptics,
-                  onChange: (v) => _setHaptics(model, v),
+              _Preference(
+                icon: FIcons.vibrate,
+                label: l.settingsHaptics,
+                value: model.preferences.haptics,
+                onChanged: (v) => _apply(
+                  context,
+                  model,
+                  model.preferences.copyWith(haptics: v),
                 ),
               ),
-              AppRow(
-                leading: const Icon(FIcons.volume2),
-                title: l.settingsSounds,
-                onTap: () => _setSounds(model, !model.preferences.sounds),
-                trailing: FSwitch(
-                  value: model.preferences.sounds,
-                  semanticsLabel: l.settingsSounds,
-                  onChange: (v) => _setSounds(model, v),
+              _Preference(
+                icon: FIcons.volume2,
+                label: l.settingsSounds,
+                value: model.preferences.sounds,
+                onChanged: (v) => _apply(
+                  context,
+                  model,
+                  model.preferences.copyWith(sounds: v),
+                ),
+              ),
+              _Preference(
+                icon: FIcons.megaphone,
+                label: l.settingsGuidedVoice,
+                subtitle: MediaQuery.accessibleNavigationOf(context)
+                    ? l.settingsGuidedVoiceSuppressed
+                    : null,
+                value: model.preferences.guidedVoice,
+                onChanged: (v) => _apply(
+                  context,
+                  model,
+                  model.preferences.copyWith(guidedVoice: v),
                 ),
               ),
             ]),
@@ -214,11 +232,56 @@ class _Profile extends StatelessWidget {
   }
 }
 
-void _setHaptics(SettingsViewModel model, bool value) =>
-    model.setPreferences(model.preferences.copyWith(haptics: value));
+/// Une ligne de réglage, un seul nœud sémantique : le libellé, l'état et
+/// l'action ne se lisent pas séparément.
+class _Preference extends StatelessWidget with FTileMixin {
+  const _Preference({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.subtitle,
+  });
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
-void _setSounds(SettingsViewModel model, bool value) =>
-    model.setPreferences(model.preferences.copyWith(sounds: value));
+  @override
+  Widget build(BuildContext context) => MergeSemantics(
+    child: AppRow(
+      leading: Icon(icon),
+      title: label,
+      subtitle: subtitle,
+      onTap: () => onChanged(!value),
+      trailing: FSwitch(
+        value: value,
+        semanticsLabel: label,
+        onChange: onChanged,
+      ),
+    ),
+  );
+}
+
+/// Applique la préférence puis en donne un aperçu immédiat : sans lui, un
+/// interrupteur ne prouve rien à qui ne lit pas.
+void _apply(
+  BuildContext context,
+  SettingsViewModel model,
+  FeedbackPreferences next,
+) {
+  final wasGuided = model.preferences.guidedVoice;
+  model.setPreferences(next);
+  final feedback = context.read<InteractionFeedbackService?>();
+  if (feedback == null) return;
+  feedback.emit(FeedbackIntent.preview);
+  if (next.guidedVoice && !wasGuided) {
+    speakAloud(context, context.l10n.settingsGuidedVoicePreview);
+  } else if (!next.guidedVoice && wasGuided) {
+    unawaited(feedback.stopSpeaking());
+  }
+}
 
 String _roleLabel(BuildContext context, UserRole role) => switch (role) {
   UserRole.client => context.l10n.roleClient,

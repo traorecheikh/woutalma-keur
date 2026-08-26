@@ -142,30 +142,22 @@ class _SearchOverlayState extends State<SearchOverlay> {
               },
             ),
           ),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: Insets.page),
-              children: [
+          AppPillRow(
+            children: [
+              AppPill(
+                l.filtersActive(extra),
+                icon: FIcons.slidersHorizontal,
+                selected: extra > 0,
+                onTap: _openFilters,
+              ),
+              for (final q in _Quick.values)
                 AppPill(
-                  l.filtersActive(extra),
-                  icon: FIcons.slidersHorizontal,
-                  selected: extra > 0,
-                  onTap: _openFilters,
+                  _label(l, q),
+                  icon: _icon(q),
+                  selected: _selected == q,
+                  onTap: () => _quick(q),
                 ),
-                const SizedBox(width: Insets.sm),
-                for (final q in _Quick.values) ...[
-                  AppPill(
-                    _label(l, q),
-                    icon: _icon(q),
-                    selected: _selected == q,
-                    onTap: () => _quick(q),
-                  ),
-                  const SizedBox(width: Insets.sm),
-                ],
-              ],
-            ),
+            ],
           ),
           AppSegmented(
             options: [l.exploreSegmentProperties, l.exploreSegmentBrokers],
@@ -178,6 +170,26 @@ class _SearchOverlayState extends State<SearchOverlay> {
         ],
       ),
     );
+  }
+
+  /// Ce que « Écouter » dit : le nombre de résultats puis les trois premiers,
+  /// prix compris. Au-delà, personne ne retient.
+  String _spokenResults(
+    BuildContext context,
+    ExploreResults? results,
+    int count,
+  ) {
+    final l = context.l10n;
+    final brokers = model.segment == ExploreSegment.brokers;
+    final heads = <String>[
+      if (results != null && brokers)
+        for (final b in results.brokers.take(3))
+          '${b.broker.name}, ${WkFormat.distance(l, b.distanceMeters)}'
+      else if (results != null)
+        for (final p in results.properties.take(3))
+          '${p.title}, ${WkFormat.priceSpoken(l, p.price, monthly: p.transaction == TransactionKind.rent)}',
+    ];
+    return [l.exploreResults(count), ...heads].join('. ');
   }
 
   String _label(l, _Quick q) => switch (q) {
@@ -234,18 +246,22 @@ class _SearchOverlayState extends State<SearchOverlay> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              l.exploreResults(count),
-              style: context.text.titleMedium,
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                l.exploreResults(count),
+                style: context.text.titleMedium,
+              ),
             ),
           ),
+          AppListenButton(text: () => _spokenResults(context, results, count)),
           AppButton(
             model.view == ExploreView.map
                 ? l.exploreShowList
                 : l.exploreShowMap,
             icon: model.view == ExploreView.map ? FIcons.list : FIcons.map,
             variant: AppButtonVariant.ghost,
-            size: 36,
+            size: Touch.compact,
             onPressed: () => model.selectView(
               model.view == ExploreView.map
                   ? ExploreView.list
@@ -269,9 +285,25 @@ class _SearchOverlayState extends State<SearchOverlay> {
                 markers: brokers
                     ? [
                         for (final b in results.brokers)
-                          (b.broker.id, b.broker.position),
+                          MapMarker(
+                            id: b.broker.id,
+                            position: b.broker.position,
+                            title: b.broker.name,
+                            detail: WkFormat.distance(l, b.distanceMeters),
+                          ),
                       ]
-                    : [for (final p in results.properties) (p.id, p.position)],
+                    : [
+                        for (final p in results.properties)
+                          MapMarker(
+                            id: p.id,
+                            position: p.position,
+                            title: p.title,
+                            detail:
+                                '${WkFormat.price(l, p.price, p.transaction)}'
+                                ' · '
+                                '${WkFormat.distance(l, distanceMeters(model.position, p.position))}',
+                          ),
+                      ],
                 onSelect: brokers ? widget.onOpenBroker : widget.onOpenProperty,
               ),
             ),

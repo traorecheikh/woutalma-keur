@@ -59,22 +59,24 @@ class AppPhotoPicker extends StatelessWidget {
                 FTappable(
                   onPress: () => _add(context),
                   semanticsLabel: l.photosAdd,
-                  excludeSemantics: true,
-                  child: Container(
-                    width: 104,
-                    height: 104,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: context.tones.sunken,
-                      borderRadius: Radii.container,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: Insets.xs,
-                      children: [
-                        Icon(FIcons.camera, color: context.colors.onSurface),
-                        Text(l.photosAdd, style: context.text.bodySmall),
-                      ],
+                  behavior: HitTestBehavior.opaque,
+                  child: ExcludeSemantics(
+                    child: Container(
+                      width: 104,
+                      height: 104,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: context.tones.sunken,
+                        borderRadius: Radii.container,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: Insets.xs,
+                        children: [
+                          Icon(FIcons.camera, color: context.colors.onSurface),
+                          Text(l.photosAdd, style: context.text.bodySmall),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -103,7 +105,11 @@ class AppPhotoPicker extends StatelessWidget {
     );
     if (source == null || !context.mounted) return;
     final path = await service.pick(source);
-    if (path == null || !context.mounted) return;
+    if (!context.mounted) return;
+    // `PhotoService.pick` rend `null` pour un abandon **comme** pour un échec.
+    // Tant que le contrat ne les distingue pas, annoncer « photo non
+    // ajoutée » après un simple retour serait une fausse alerte.
+    if (path == null) return;
     onChanged([...paths, path]);
   }
 }
@@ -121,21 +127,29 @@ class _Thumb extends StatelessWidget {
         child: AppPhoto(path, radius: Radii.container),
       ),
       Positioned(
-        top: Insets.xs,
-        right: Insets.xs,
+        top: 0,
+        right: 0,
         child: FTappable(
           onPress: onRemove,
           semanticsLabel: context.l10n.photosRemove,
-          excludeSemantics: true,
-          child: Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: context.colors.onSurface.withValues(alpha: .75),
-              shape: BoxShape.circle,
+          behavior: HitTestBehavior.opaque,
+          // La cible fait 48 ; la pastille visible reste petite pour ne pas
+          // manger la photo.
+          child: SizedBox(
+            width: Touch.compact,
+            height: Touch.compact,
+            child: Center(
+              child: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.colors.onSurface.withValues(alpha: .75),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(FIcons.x, size: 18, color: context.colors.surface),
+              ),
             ),
-            child: Icon(FIcons.x, size: 16, color: context.colors.surface),
           ),
         ),
       ),

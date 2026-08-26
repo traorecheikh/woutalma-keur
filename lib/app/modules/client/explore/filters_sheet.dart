@@ -95,27 +95,23 @@ class _FiltersSheetState extends State<FiltersSheet> {
     );
   }
 
-  int get _priceIndex => _draft.maxPrice == null
-      ? _prices.length
-      : _prices
-            .indexWhere((p) => p >= _draft.maxPrice!)
-            .clamp(0, _prices.length);
-  int get _radiusIndex => _draft.radiusMeters == null
-      ? _radiiKm.length
-      : _radiiKm
-            .indexWhere((k) => k * 1000 >= _draft.radiusMeters!)
-            .clamp(0, _radiiKm.length);
+  int? get _price => _draft.maxPrice == null
+      ? null
+      : _prices.firstWhere(
+          (p) => p >= _draft.maxPrice!,
+          orElse: () => _prices.last,
+        );
+  int? get _radiusKm => _draft.radiusMeters == null
+      ? null
+      : _radiiKm.firstWhere(
+          (k) => k * 1000 >= _draft.radiusMeters!,
+          orElse: () => _radiiKm.last,
+        );
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final fr = NumberFormat('#,##0', 'fr');
-    final priceLabel = _priceIndex == _prices.length
-        ? l.filtersPriceAny
-        : l.filtersPriceValue(fr.format(_prices[_priceIndex]));
-    final radiusLabel = _radiusIndex == _radiiKm.length
-        ? l.filtersRadiusAny
-        : l.filtersRadiusValue(_radiiKm[_radiusIndex]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -144,28 +140,35 @@ class _FiltersSheetState extends State<FiltersSheet> {
           ),
         ),
         const SizedBox(height: Insets.lg),
-        _slider(
-          context,
-          l.filtersMaxPrice,
-          priceLabel,
-          _priceIndex,
-          _prices.length,
-          (i) => _update(
-            i == _prices.length
-                ? _draft.copyWith(clearMaxPrice: true)
-                : _draft.copyWith(maxPrice: _prices[i]),
-          ),
+        _label(context, l.filtersMaxPrice),
+        AppPillRow(
+          padding: EdgeInsets.zero,
+          children: [
+            for (final p in <int?>[null, ..._prices])
+              AppPill(
+                p == null
+                    ? l.filtersPriceAny
+                    : l.filtersPriceValue(fr.format(p)),
+                selected: p == _price,
+                onTap: () => _update(
+                  p == null
+                      ? _draft.copyWith(clearMaxPrice: true)
+                      : _draft.copyWith(maxPrice: p),
+                ),
+              ),
+          ],
         ),
-        _slider(
-          context,
-          l.filtersRadius,
-          radiusLabel,
-          _radiusIndex,
-          _radiiKm.length,
-          (i) => _update(
-            i == _radiiKm.length
+        const SizedBox(height: Insets.lg),
+        _label(context, l.filtersRadius),
+        AppChoice<int?>(
+          options: const [null, ..._radiiKm],
+          selected: _radiusKm,
+          label: (k) =>
+              k == null ? l.filtersRadiusAny : l.filtersRadiusValue(k),
+          onChanged: (k) => _update(
+            k == null
                 ? _draft.copyWith(clearRadius: true)
-                : _draft.copyWith(radiusMeters: _radiiKm[i] * 1000.0),
+                : _draft.copyWith(radiusMeters: k * 1000.0),
           ),
         ),
         const SizedBox(height: Insets.lg),
@@ -207,30 +210,5 @@ class _FiltersSheetState extends State<FiltersSheet> {
         color: context.tones.inkSecondary,
       ),
     ),
-  );
-
-  Widget _slider(
-    BuildContext context,
-    String label,
-    String value,
-    int index,
-    int max,
-    ValueChanged<int> onChanged,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Row(
-        children: [
-          Expanded(child: _label(context, label)),
-          Text(value, style: context.text.labelLarge),
-        ],
-      ),
-      Slider(
-        value: index.toDouble(),
-        max: max.toDouble(),
-        divisions: max,
-        onChanged: (v) => onChanged(v.round()),
-      ),
-    ],
   );
 }

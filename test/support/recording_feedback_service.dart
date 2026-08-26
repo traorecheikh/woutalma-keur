@@ -7,7 +7,9 @@ import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
 class RecordingFeedbackService implements InteractionFeedbackService {
   final List<FeedbackIntent> intents = <FeedbackIntent>[];
   final List<String> announcements = <String>[];
+  final List<String> spoken = <String>[];
   final Set<String> _consumed = <String>{};
+  FeedbackPreferences preferences = const FeedbackPreferences();
 
   int countOf(FeedbackIntent intent) =>
       intents.where((FeedbackIntent i) => i == intent).length;
@@ -15,6 +17,7 @@ class RecordingFeedbackService implements InteractionFeedbackService {
   void clear() {
     intents.clear();
     announcements.clear();
+    spoken.clear();
     _consumed.clear();
   }
 
@@ -28,6 +31,17 @@ class RecordingFeedbackService implements InteractionFeedbackService {
 
   @override
   void announce(String message) => announcements.add(message);
+
+  @override
+  Future<void> speak(String text, {bool spontaneous = false}) async {
+    announcements.add(text);
+    if (!spontaneous || preferences.guidedVoice) {
+      spoken.add(text);
+    }
+  }
+
+  @override
+  Future<void> stopSpeaking() async {}
 
   @override
   void forgetScope(String scope) {

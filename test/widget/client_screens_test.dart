@@ -226,7 +226,7 @@ void main() {
     await auth.requestCode('+221771234567');
     await auth.verify('+221771234567', '123456');
     await tester.pumpAndSettle();
-    expect(find.text('Me déconnecter'), findsOneWidget);
+    expect(find.text('Sortir de mon compte'), findsOneWidget);
   });
 
   testWidgets('G03 rend le champ téléphone', (tester) async {

@@ -144,7 +144,7 @@ abstract class AppL10n {
   /// Option d'un sélecteur facultatif laissé sans réponse.
   ///
   /// In fr, this message translates to:
-  /// **'Non précisé'**
+  /// **'Je ne sais pas'**
   String get commonUnspecified;
 
   /// Action destructive courte, dans une ligne de liste.
@@ -164,6 +164,24 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Écouter'**
   String get commonListen;
+
+  /// Ouvre la fiche du repère sélectionné sur la carte.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir'**
+  String get commonOpen;
+
+  /// Vide le champ de recherche.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer ce que j\'ai écrit'**
+  String get searchClear;
+
+  /// Position dans le carrousel, énoncée au lecteur d'écran.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo {index} sur {total}'**
+  String photoPosition(int index, int total);
 
   /// Message pendant un chargement de plus de 300 ms.
   ///
@@ -267,16 +285,16 @@ abstract class AppL10n {
   /// **'Connexion impossible. Vérifiez le réseau et réessayez.'**
   String get authFailed;
 
-  /// Oublie l'identité locale. Les données restent.
+  /// Action de déconnexion depuis les réglages.
   ///
   /// In fr, this message translates to:
-  /// **'Me déconnecter'**
+  /// **'Sortir de mon compte'**
   String get settingsSignOut;
 
   /// Titre de la confirmation de déconnexion.
   ///
   /// In fr, this message translates to:
-  /// **'Fermer la session ?'**
+  /// **'Sortir de mon compte ?'**
   String get settingsSignOutTitle;
 
   /// Conséquence exacte d'une déconnexion, dite avant de la confirmer.
@@ -480,7 +498,7 @@ abstract class AppL10n {
   /// Statut d'un bien en cours de réservation.
   ///
   /// In fr, this message translates to:
-  /// **'Réservé'**
+  /// **'Déjà pris'**
   String get statusReserved;
 
   /// Statut d'un bien qui n'est plus proposé.
@@ -564,7 +582,7 @@ abstract class AppL10n {
   /// Loyer mensuel. L'unité est ici parce qu'elle change avec le pays.
   ///
   /// In fr, this message translates to:
-  /// **'{price} F/mois'**
+  /// **'{price} F / mois'**
   String priceRent(String price);
 
   /// Prix de vente.
@@ -572,6 +590,24 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'{price} F'**
   String priceSale(String price);
+
+  /// Loyer dit à voix haute : « F » ne se prononce pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'{price} francs par mois'**
+  String priceRentSpoken(String price);
+
+  /// Prix dit à voix haute.
+  ///
+  /// In fr, this message translates to:
+  /// **'{price} francs'**
+  String priceSpoken(String price);
+
+  /// Note dite à voix haute, à la place de « 4,6 / 5 ».
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} sur 5'**
+  String ratingSpoken(String value);
 
   /// Surface d'un bien.
   ///
@@ -615,11 +651,17 @@ abstract class AppL10n {
   /// **'Aucun bien proposé pour le moment.'**
   String get brokerNoProperties;
 
-  /// Taux de réponse du courtier, en clair.
+  /// Taux de réponse en pourcentage. Remplacé par brokerRespondsOutOfTen partout où le formatage passe par WkFormat.responseRate.
   ///
   /// In fr, this message translates to:
   /// **'Répond à {percent} % des demandes'**
   String brokerResponseRate(int percent);
+
+  /// Taux de réponse compté sur dix : un pourcentage ne se lit pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répond à {count} personnes sur 10'**
+  String brokerRespondsOutOfTen(int count);
 
   /// Titre de B08 et libellé du bouton qui l'ouvre depuis B07.
   ///
@@ -957,10 +999,16 @@ abstract class AppL10n {
   /// **'Vibrations'**
   String get settingsHaptics;
 
+  /// Phrase lue à voix haute au moment où l'on allume le guidage vocal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le téléphone lira les résultats à voix haute.'**
+  String get settingsGuidedVoicePreview;
+
   /// Fait énoncer les résultats à voix haute.
   ///
   /// In fr, this message translates to:
-  /// **'Guidage vocal'**
+  /// **'Voix guidée'**
   String get settingsGuidedVoice;
 
   /// Explique pourquoi le guidage vocal ne parle pas, plutôt que de le laisser muet sans raison.
@@ -1128,7 +1176,7 @@ abstract class AppL10n {
   /// Conséquence publique du statut vendu ou loué, dite avant de valider.
   ///
   /// In fr, this message translates to:
-  /// **'Ce bien disparaîtra des recherches côté client.'**
+  /// **'Les clients ne le verront plus.'**
   String get propertyStatusImpactClosed;
 
   /// Conséquence publique des statuts disponible et réservé.
@@ -1308,7 +1356,7 @@ abstract class AppL10n {
   /// Filtre sur le rayon de recherche.
   ///
   /// In fr, this message translates to:
-  /// **'Distance'**
+  /// **'Jusqu\'où chercher'**
   String get filtersRadius;
 
   /// Option qui retire un filtre. Dite comme on la pense.
@@ -1506,7 +1554,7 @@ abstract class AppL10n {
   /// Statut d'un avis pas encore publié. Invisible du client.
   ///
   /// In fr, this message translates to:
-  /// **'En modération'**
+  /// **'On vérifie votre avis'**
   String get reviewModerationPending;
 
   /// Statut d'un avis visible des clients.
@@ -1674,7 +1722,7 @@ abstract class AppL10n {
   /// Titre de G04.
   ///
   /// In fr, this message translates to:
-  /// **'Code reçu par SMS'**
+  /// **'Le code du message'**
   String get authOtpTitle;
 
   /// Rappelle à quel numéro le code est parti.
@@ -1692,7 +1740,7 @@ abstract class AppL10n {
   /// Libellé du champ de saisie du code reçu.
   ///
   /// In fr, this message translates to:
-  /// **'Code SMS'**
+  /// **'Le code du message'**
   String get authOtpCodeLabel;
 
   /// Exemple court pour le champ OTP.
@@ -1752,7 +1800,7 @@ abstract class AppL10n {
   /// Rappelle quel numéro est identifié.
   ///
   /// In fr, this message translates to:
-  /// **'Identifié avec le {phone}'**
+  /// **'Vous êtes entré avec le numéro {phone}'**
   String settingsSignedInAs(String phone);
 
   /// Titre de B05.
@@ -1812,7 +1860,7 @@ abstract class AppL10n {
   /// Dit à quoi sert la vérification, en termes concrets.
   ///
   /// In fr, this message translates to:
-  /// **'Un profil vérifié inspire confiance et remonte dans les résultats.'**
+  /// **'Un profil vérifié inspire confiance et apparaît plus haut dans la liste.'**
   String get brokerVerificationExplain;
 
   /// Action principale de B09.
@@ -2330,6 +2378,24 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Arrêter'**
   String get voiceNoteStop;
+
+  /// État annoncé quand le message vocal démarre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture en cours'**
+  String get voiceNotePlaying;
+
+  /// État annoncé quand le message vocal est mis en pause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture en pause'**
+  String get voiceNotePaused;
+
+  /// État annoncé une fois quand le micro s'ouvre. Le compteur de secondes reste visuel : l'annoncer chaque seconde couvrirait tout le reste.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement en cours'**
+  String get voiceNoteRecordingStarted;
 
   /// Compteur pendant l'enregistrement.
   ///

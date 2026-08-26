@@ -10,6 +10,8 @@ import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
 /// l'ARB : une unité écrite en dur oblige à rouvrir chaque écran le jour où
 /// une seconde monnaie ou une seconde langue arrive.
 abstract final class WkFormat {
+  static final NumberFormat _money = NumberFormat('#,##0', 'fr');
+
   /// Distance lisible d'un coup d'œil : mètres tant qu'on peut y aller à pied,
   /// kilomètres ensuite. Jamais « 1 234 m ».
   static String distance(AppL10n l10n, double meters) {
@@ -23,12 +25,27 @@ abstract final class WkFormat {
   }
 
   /// Prix avec son unité, adaptée à la nature de la transaction.
-  static String price(AppL10n l10n, int amount, TransactionKind transaction) {
-    final String formatted = NumberFormat('#,##0', 'fr').format(amount);
-    return transaction == TransactionKind.rent
-        ? l10n.priceRent(formatted)
-        : l10n.priceSale(formatted);
+  static String price(AppL10n l10n, int amount, TransactionKind transaction) =>
+      priceAmount(l10n, amount, monthly: transaction == TransactionKind.rent);
+
+  /// Forme écrite unique : « 250 000 F » ou « 250 000 F / mois ».
+  static String priceAmount(AppL10n l10n, int amount, {bool monthly = false}) {
+    final String formatted = _money.format(amount);
+    return monthly ? l10n.priceRent(formatted) : l10n.priceSale(formatted);
   }
+
+  /// Forme parlée : « F » ne se prononce pas.
+  static String priceSpoken(AppL10n l10n, int amount, {bool monthly = false}) {
+    final String formatted = _money.format(amount);
+    return monthly
+        ? l10n.priceRentSpoken(formatted)
+        : l10n.priceSpoken(formatted);
+  }
+
+  /// « Répond à 8 personnes sur 10 » : un pourcentage ne se lit pas, une
+  /// proportion sur dix se compte sur les doigts.
+  static String responseRate(AppL10n l10n, double rate) =>
+      l10n.brokerRespondsOutOfTen((rate * 10).round().clamp(0, 10));
 
   static String transaction(AppL10n l10n, TransactionKind value) {
     return switch (value) {

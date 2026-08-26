@@ -33,7 +33,7 @@ class AppL10nFr extends AppL10n {
   String get commonNext => 'Suivant';
 
   @override
-  String get commonUnspecified => 'Non précisé';
+  String get commonUnspecified => 'Je ne sais pas';
 
   @override
   String get commonDelete => 'Supprimer';
@@ -43,6 +43,17 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get commonListen => 'Écouter';
+
+  @override
+  String get commonOpen => 'Ouvrir';
+
+  @override
+  String get searchClear => 'Effacer ce que j\'ai écrit';
+
+  @override
+  String photoPosition(int index, int total) {
+    return 'Photo $index sur $total';
+  }
 
   @override
   String get stateLoading => 'Un instant…';
@@ -109,10 +120,10 @@ class AppL10nFr extends AppL10n {
       'Connexion impossible. Vérifiez le réseau et réessayez.';
 
   @override
-  String get settingsSignOut => 'Me déconnecter';
+  String get settingsSignOut => 'Sortir de mon compte';
 
   @override
-  String get settingsSignOutTitle => 'Fermer la session ?';
+  String get settingsSignOutTitle => 'Sortir de mon compte ?';
 
   @override
   String get settingsSignOutBody =>
@@ -248,7 +259,7 @@ class AppL10nFr extends AppL10n {
   String get statusAvailable => 'Disponible';
 
   @override
-  String get statusReserved => 'Réservé';
+  String get statusReserved => 'Déjà pris';
 
   @override
   String get statusClosed => 'Vendu ou loué';
@@ -313,12 +324,27 @@ class AppL10nFr extends AppL10n {
 
   @override
   String priceRent(String price) {
-    return '$price F/mois';
+    return '$price F / mois';
   }
 
   @override
   String priceSale(String price) {
     return '$price F';
+  }
+
+  @override
+  String priceRentSpoken(String price) {
+    return '$price francs par mois';
+  }
+
+  @override
+  String priceSpoken(String price) {
+    return '$price francs';
+  }
+
+  @override
+  String ratingSpoken(String value) {
+    return '$value sur 5';
   }
 
   @override
@@ -355,6 +381,11 @@ class AppL10nFr extends AppL10n {
   @override
   String brokerResponseRate(int percent) {
     return 'Répond à $percent % des demandes';
+  }
+
+  @override
+  String brokerRespondsOutOfTen(int count) {
+    return 'Répond à $count personnes sur 10';
   }
 
   @override
@@ -548,7 +579,11 @@ class AppL10nFr extends AppL10n {
   String get settingsHaptics => 'Vibrations';
 
   @override
-  String get settingsGuidedVoice => 'Guidage vocal';
+  String get settingsGuidedVoicePreview =>
+      'Le téléphone lira les résultats à voix haute.';
+
+  @override
+  String get settingsGuidedVoice => 'Voix guidée';
 
   @override
   String get settingsGuidedVoiceSuppressed =>
@@ -644,8 +679,7 @@ class AppL10nFr extends AppL10n {
   String get propertyStatusChange => 'Changer le statut';
 
   @override
-  String get propertyStatusImpactClosed =>
-      'Ce bien disparaîtra des recherches côté client.';
+  String get propertyStatusImpactClosed => 'Les clients ne le verront plus.';
 
   @override
   String get propertyStatusImpactVisible =>
@@ -739,7 +773,7 @@ class AppL10nFr extends AppL10n {
   String get filtersMaxPrice => 'Prix maximum';
 
   @override
-  String get filtersRadius => 'Distance';
+  String get filtersRadius => 'Jusqu\'où chercher';
 
   @override
   String get filtersAny => 'Peu importe';
@@ -908,7 +942,7 @@ class AppL10nFr extends AppL10n {
       'Les clients qui vous ont joint pourront vous noter.';
 
   @override
-  String get reviewModerationPending => 'En modération';
+  String get reviewModerationPending => 'On vérifie votre avis';
 
   @override
   String get reviewModerationPublished => 'Publié';
@@ -995,7 +1029,7 @@ class AppL10nFr extends AppL10n {
   String get authPhoneFallback => 'Ou recevez un code par SMS';
 
   @override
-  String get authOtpTitle => 'Code reçu par SMS';
+  String get authOtpTitle => 'Le code du message';
 
   @override
   String authOtpSentTo(String phone) {
@@ -1006,7 +1040,7 @@ class AppL10nFr extends AppL10n {
   String get authOtpWrong => 'Code incorrect, réessayez';
 
   @override
-  String get authOtpCodeLabel => 'Code SMS';
+  String get authOtpCodeLabel => 'Le code du message';
 
   @override
   String get authOtpCodeHint => '6 chiffres';
@@ -1041,7 +1075,7 @@ class AppL10nFr extends AppL10n {
 
   @override
   String settingsSignedInAs(String phone) {
-    return 'Identifié avec le $phone';
+    return 'Vous êtes entré avec le numéro $phone';
   }
 
   @override
@@ -1075,7 +1109,7 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get brokerVerificationExplain =>
-      'Un profil vérifié inspire confiance et remonte dans les résultats.';
+      'Un profil vérifié inspire confiance et apparaît plus haut dans la liste.';
 
   @override
   String get brokerVerificationSubmit => 'Demander la vérification';
@@ -1366,6 +1400,15 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get voiceNoteStop => 'Arrêter';
+
+  @override
+  String get voiceNotePlaying => 'Lecture en cours';
+
+  @override
+  String get voiceNotePaused => 'Lecture en pause';
+
+  @override
+  String get voiceNoteRecordingStarted => 'Enregistrement en cours';
 
   @override
   String voiceNoteRecording(int seconds) {
