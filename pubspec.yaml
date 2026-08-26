@@ -21,6 +21,8 @@ dependencies:
   intl: any
   # Ouvre appel, SMS et WhatsApp dans les applications du téléphone.
   url_launcher: ^6.3.1
+  # Envoie une fiche de bien par les applications déjà installées.
+  share_plus: ^13.3.0
   # Saisie de numéro : indicatif, drapeaux et validation déjà traités.
   phone_form_field: ^10.0.0
   # Champ OTP : collage SMS, focus et accessibilité déjà traités.

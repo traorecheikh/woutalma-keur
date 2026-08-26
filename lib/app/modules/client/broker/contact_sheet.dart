@@ -1,8 +1,223 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:woutalma_keur/app/core/feedback/interaction_feedback.dart';
+import 'package:woutalma_keur/app/domain/auth_service.dart';
+import 'package:woutalma_keur/app/domain/contact_launcher.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
+import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
+
+/// Numéro sénégalais lisible : « +221 77 123 45 67 ».
+String formatPhone(String raw) {
+  final String digits = raw.replaceAll(' ', '');
+  if (!digits.startsWith('+221') || digits.length != 13) {
+    return raw;
+  }
+  final String n = digits.substring(4);
+  return '+221 ${n.substring(0, 2)} ${n.substring(2, 5)} '
+      '${n.substring(5, 7)} ${n.substring(7)}';
+}
+
+/// Le numéro, lisible et copiable.
+///
+/// Il était absent de la fiche : qui n'a pas de crédit data, ou veut appeler
+/// depuis un autre téléphone, n'avait aucun moyen de le lire.
+class BrokerPhone extends StatelessWidget {
+  const BrokerPhone(this.phone, {super.key, this.style, this.copiable = false});
+
+  final String phone;
+  final TextStyle? style;
+  final bool copiable;
+
+  @override
+  Widget build(BuildContext context) {
+    final String shown = formatPhone(phone);
+    final Widget text = Text(
+      shown,
+      style: style ?? AppText.moneyLg,
+      textAlign: TextAlign.center,
+    );
+    if (!copiable) {
+      return text;
+    }
+    return FTappable(
+      semanticsLabel: '$shown, ${context.l10n.contactPhoneCopyHint}',
+      excludeSemantics: true,
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () async {
+        await Clipboard.setData(ClipboardData(text: phone));
+        if (!context.mounted) return;
+        context.read<InteractionFeedbackService?>()?.emit(
+          FeedbackIntent.selection,
+        );
+        toast(context, context.l10n.contactPhoneCopied);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Insets.xs),
+        child: text,
+      ),
+    );
+  }
+}
+
+/// Ce que l'écran doit dire quand un canal ne s'ouvre pas.
+///
+/// Jamais le message générique de permission : l'utilisateur doit savoir quoi
+/// faire à la place.
+String channelFailureText(AppL10n l, ContactChannel channel) =>
+    switch (channel) {
+      ContactChannel.whatsapp => l.contactWhatsappMissing,
+      ContactChannel.sms => l.contactSmsMissing,
+      ContactChannel.call ||
+      ContactChannel.voiceMessage => l.contactCallMissing,
+    };
+
+enum ContactGateChoice { signIn, callAnyway }
+
+/// Demandée avant de contacter quand personne n'est identifié.
+///
+/// L'appel reste possible sans compte : le produit promet un courtier joignable
+/// en trois écrans, pas une inscription.
+abstract final class ContactGateSheet {
+  static Future<ContactGateChoice?> show(
+    BuildContext context, {
+    required Broker broker,
+  }) {
+    final l = context.l10n;
+    return showAppSheet<ContactGateChoice>(
+      context,
+      title: l.contactGateTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.contactGateBody,
+            style: context.text.bodyMedium!.copyWith(
+              color: context.tones.inkSecondary,
+            ),
+          ),
+          const SizedBox(height: Insets.md),
+          BrokerPhone(broker.phone),
+          const SizedBox(height: Insets.lg),
+          AppButton(
+            l.contactGateSignIn,
+            icon: FIcons.smartphone,
+            onPressed: () => popSheet(context, ContactGateChoice.signIn),
+          ),
+          const SizedBox(height: Insets.sm),
+          AppButton(
+            l.contactGateCallAnyway,
+            icon: FIcons.phone,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => popSheet(context, ContactGateChoice.callAnyway),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Le parcours complet de mise en relation, partagé par C02 et C03.
+Future<void> runContactFlow(
+  BuildContext context, {
+  required Broker broker,
+  required Future<ContactAttempt> Function(ContactChannel channel) contact,
+  required Future<bool> Function() callWithoutAccount,
+  required VoidCallback onSignIn,
+}) async {
+  final l = context.l10n;
+  final AuthService? auth = context.read<AuthService?>();
+  if (auth != null && auth.current == null) {
+    final ContactGateChoice? choice = await ContactGateSheet.show(
+      context,
+      broker: broker,
+    );
+    if (choice == null || !context.mounted) {
+      return;
+    }
+    if (choice == ContactGateChoice.signIn) {
+      onSignIn();
+      return;
+    }
+    final bool called = await callWithoutAccount();
+    if (!context.mounted) return;
+    if (!called) {
+      toast(context, channelFailureText(l, ContactChannel.call));
+    }
+    return;
+  }
+
+  final ContactChannel? channel = await ContactSheet.show(
+    context,
+    broker: broker,
+  );
+  if (channel == null || !context.mounted) {
+    return;
+  }
+  final ContactAttempt attempt = await contact(channel);
+  if (!context.mounted) return;
+  toast(
+    context,
+    !attempt.opened
+        ? channelFailureText(l, channel)
+        : attempt.log != null
+        ? l.contactLogged
+        : l.contactNotLogged,
+  );
+}
+
+/// Pose M05 au retour de l'application externe.
+///
+/// La feuille n'était jamais montrée : le résultat restait « tentative », donc
+/// aucun avis ne s'ouvrait jamais. Un seul passage par contact, `take` vidant
+/// l'attente.
+class ContactOutcomeOnResume extends StatefulWidget {
+  const ContactOutcomeOnResume({
+    required this.take,
+    required this.onOutcome,
+    required this.child,
+    super.key,
+  });
+
+  final ContactLog? Function() take;
+  final Future<void> Function(ContactLog log, ContactOutcome outcome) onOutcome;
+  final Widget child;
+
+  @override
+  State<ContactOutcomeOnResume> createState() => _ContactOutcomeOnResumeState();
+}
+
+class _ContactOutcomeOnResumeState extends State<ContactOutcomeOnResume> {
+  late final AppLifecycleListener _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    _listener = AppLifecycleListener(onResume: _ask);
+  }
+
+  @override
+  void dispose() {
+    _listener.dispose();
+    super.dispose();
+  }
+
+  Future<void> _ask() async {
+    final ContactLog? log = widget.take();
+    if (log == null || !mounted) {
+      return;
+    }
+    final ContactOutcome? outcome = await ContactOutcomeSheet.show(context);
+    if (outcome == null) {
+      return;
+    }
+    await widget.onOutcome(log, outcome);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
 
 abstract final class ContactSheet {
   static Future<ContactChannel?> show(
@@ -42,6 +257,11 @@ class _Channels extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
+                  BrokerPhone(
+                    broker.phone,
+                    style: AppText.moneyMd,
+                    copiable: true,
+                  ),
                   Text(
                     l.brokerResponseRate((broker.responseRate * 100).round()),
                     style: context.text.bodySmall!.copyWith(

@@ -450,7 +450,47 @@
   },
   "contactLogged": "Contact enregistré",
   "@contactLogged": {
-    "description": "Confirme que la mise en relation est tracée avant l'ouverture du canal externe."
+    "description": "Confirme que la mise en relation est tracée après l'ouverture du canal externe."
+  },
+  "contactNotLogged": "Appel lancé, non enregistré",
+  "@contactNotLogged": {
+    "description": "Le canal s'est ouvert mais la trace n'a pu être écrite nulle part."
+  },
+  "contactWhatsappMissing": "WhatsApp n'est pas installé. Appelez plutôt.",
+  "@contactWhatsappMissing": {
+    "description": "Échec d'ouverture du canal WhatsApp, faute d'application."
+  },
+  "contactSmsMissing": "Aucune application de SMS. Appelez plutôt.",
+  "@contactSmsMissing": {
+    "description": "Échec d'ouverture du canal SMS, faute d'application."
+  },
+  "contactCallMissing": "Impossible d'ouvrir le téléphone.",
+  "@contactCallMissing": {
+    "description": "Échec d'ouverture du composeur téléphonique."
+  },
+  "contactPhoneCopyHint": "Appuyez longuement pour copier le numéro",
+  "@contactPhoneCopyHint": {
+    "description": "Indication d'accessibilité sur le numéro affiché en C02."
+  },
+  "contactPhoneCopied": "Numéro copié",
+  "@contactPhoneCopied": {
+    "description": "Confirme la copie du numéro dans le presse-papiers."
+  },
+  "contactGateTitle": "Pour contacter, entrez votre numéro",
+  "@contactGateTitle": {
+    "description": "Titre de la feuille montrée avant un contact, sans session."
+  },
+  "contactGateBody": "Votre numéro sert à retrouver vos contacts et à laisser un avis.",
+  "@contactGateBody": {
+    "description": "Explication de la demande d'identification avant un contact."
+  },
+  "contactGateSignIn": "Entrer mon numéro",
+  "@contactGateSignIn": {
+    "description": "Ouvre G03 depuis la feuille d'identification avant contact."
+  },
+  "contactGateCallAnyway": "Appeler sans compte",
+  "@contactGateCallAnyway": {
+    "description": "Lance l'appel sans session ni trace. Un appel ne se refuse pas."
   },
 
   "outcomeTitle": "Avez-vous pu lui parler ?",
@@ -513,6 +553,14 @@
   "historyCallAgain": "Rappeler",
   "@historyCallAgain": {
     "description": "Recontacte directement depuis l'historique, sans rouvrir la fiche."
+  },
+  "historySignedOutTitle": "Identifiez-vous pour voir vos contacts",
+  "@historySignedOutTitle": {
+    "description": "État de C04 quand le serveur refuse la lecture faute de session."
+  },
+  "historySignedOutAction": "Entrer mon numéro",
+  "@historySignedOutAction": {
+    "description": "Ouvre G03 depuis l'historique sans session."
   },
 
   "reviewTitle": "Votre avis",
@@ -991,6 +1039,24 @@
   "propertyBrokerLabel": "Proposé par",
   "@propertyBrokerLabel": {
     "description": "Introduit le nom du courtier sur la fiche d'un bien."
+  },
+  "propertyBrokerMissing": "Ce courtier n'est plus joignable.",
+  "@propertyBrokerMissing": {
+    "description": "Motif d'indisponibilité du bouton de contact quand le bien n'a plus de courtier."
+  },
+  "propertyShare": "Envoyer à un proche",
+  "@propertyShare": {
+    "description": "Partage la fiche d'un bien par les applications du téléphone."
+  },
+  "propertyShareText": "{title} — {price} à {neighbourhood}. Courtier : {phone}",
+  "@propertyShareText": {
+    "description": "Texte partagé pour un bien : tout ce qu'il faut pour rappeler sans l'application.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "price": { "type": "String" },
+      "neighbourhood": { "type": "String" },
+      "phone": { "type": "String" }
+    }
   },
   "@propertyPreviewNotice": {
     "description": "Rappelle que l'écran montre la vue publique, pas la gestion."

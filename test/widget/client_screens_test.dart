@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import 'package:woutalma_keur/app/domain/auth_service.dart';
 import 'package:woutalma_keur/app/domain/contact_launcher.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
+import 'package:woutalma_keur/app/domain/repositories.dart';
 import 'package:woutalma_keur/app/domain/review_eligibility.dart';
 import 'package:woutalma_keur/app/modules/auth/auth_screens.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_screen.dart';
@@ -25,8 +27,40 @@ import '../support/fonts.dart';
 import '../support/pump.dart';
 
 class _NoopLauncher implements ContactLauncher {
+  final List<ContactChannel> opened = <ContactChannel>[];
+
   @override
-  Future<bool> open(ContactChannel channel, Broker broker) async => true;
+  Future<bool> open(ContactChannel channel, Broker broker) async {
+    opened.add(channel);
+    return true;
+  }
+}
+
+/// Ce que répond l'API quand personne n'est identifié.
+class _UnauthorizedContacts implements ContactRepository {
+  @override
+  Future<List<ContactLog>> all() async => throw DioException(
+    requestOptions: RequestOptions(path: '/contacts'),
+    response: Response<void>(
+      requestOptions: RequestOptions(path: '/contacts'),
+      statusCode: 401,
+    ),
+  );
+
+  @override
+  Future<ContactLog?> byId(String id) async => null;
+  @override
+  Future<ContactLog> log({
+    required String brokerId,
+    String? propertyId,
+    required ContactChannel channel,
+  }) => throw UnimplementedError();
+  @override
+  Future<List<ContactLog>> receivedBy(String brokerId) async => <ContactLog>[];
+  @override
+  Future<void> update(ContactLog contact) async {}
+  @override
+  Future<void> updateAll(List<ContactLog> contacts) async {}
 }
 
 class _Location implements LocationService {
@@ -74,7 +108,11 @@ void main() {
         tester,
         ChangeNotifierProvider<BrokerViewModel>.value(
           value: model,
-          child: BrokerScreen(onBack: () {}, onOpenProperty: (_) {}),
+          child: BrokerScreen(
+            onBack: () {},
+            onOpenProperty: (_) {},
+            onSignIn: () {},
+          ),
         ),
         surfaceSize: const Size(360, 640),
         textScale: scale,
@@ -82,6 +120,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Agence Teranga Immo'), findsWidgets);
       expect(find.text('Contacter'), findsOneWidget);
+      // Le numéro était invisible : sans crédit data, la fiche ne servait à
+      // rien.
+      expect(find.textContaining('+221'), findsWidgets);
     });
   }
 
@@ -110,6 +151,122 @@ void main() {
     await tester.tap(find.text('Appeler'));
     await tester.pumpAndSettle();
     expect(picked, ContactChannel.call);
+  });
+
+  testWidgets('sans session, C02 propose de s\'identifier ou d\'appeler', (
+    tester,
+  ) async {
+    final launcher = _NoopLauncher();
+    final contacts = InMemoryContactRepository(
+      store,
+      now: () => DateTime(2026, 1, 1),
+    );
+    final model = BrokerViewModel(
+      brokerId: 'brk-teranga',
+      brokers: InMemoryBrokerRepository(store),
+      properties: InMemoryPropertyRepository(store),
+      reviews: InMemoryReviewRepository(store),
+      contact: ContactService(contacts: contacts, launcher: launcher),
+      from: DemoSeed.clientPosition,
+    );
+    await model.load();
+    addTearDown(model.dispose);
+
+    final int loggedBefore = (await contacts.all()).length;
+    var askedToSignIn = 0;
+    await pumpWk(
+      tester,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthService>.value(
+            value: SimulatedAuthService(),
+          ),
+          ChangeNotifierProvider<BrokerViewModel>.value(value: model),
+        ],
+        child: BrokerScreen(
+          onBack: () {},
+          onOpenProperty: (_) {},
+          onSignIn: () => askedToSignIn++,
+        ),
+      ),
+      surfaceSize: const Size(360, 760),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Contacter'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pour contacter, entrez votre numéro'), findsOneWidget);
+
+    // Refuser le compte ne doit pas priver de téléphone.
+    await tester.tap(find.text('Appeler sans compte'));
+    await tester.pumpAndSettle();
+    expect(launcher.opened, [ContactChannel.call]);
+    expect((await contacts.all()).length, loggedBefore);
+    expect(askedToSignIn, 0);
+
+    await tester.tap(find.text('Contacter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Entrer mon numéro'));
+    await tester.pumpAndSettle();
+    expect(askedToSignIn, 1);
+  });
+
+  testWidgets('M05 est posée au retour de l\'application externe', (
+    tester,
+  ) async {
+    final contacts = InMemoryContactRepository(
+      store,
+      now: () => DateTime(2026, 1, 1),
+    );
+    final model = BrokerViewModel(
+      brokerId: 'brk-teranga',
+      brokers: InMemoryBrokerRepository(store),
+      properties: InMemoryPropertyRepository(store),
+      reviews: InMemoryReviewRepository(store),
+      contact: ContactService(contacts: contacts, launcher: _NoopLauncher()),
+      from: DemoSeed.clientPosition,
+    );
+    await model.load();
+    addTearDown(model.dispose);
+
+    await pumpWk(
+      tester,
+      ChangeNotifierProvider<BrokerViewModel>.value(
+        value: model,
+        child: BrokerScreen(
+          onBack: () {},
+          onOpenProperty: (_) {},
+          onSignIn: () {},
+        ),
+      ),
+      surfaceSize: const Size(360, 760),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Contacter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Appeler'));
+    await tester.pumpAndSettle();
+
+    for (final state in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pumpAndSettle();
+
+    // Sans cette question, le contact restait « tentative » et aucun avis ne
+    // s'ouvrait jamais.
+    expect(find.text('Avez-vous pu lui parler ?'), findsOneWidget);
+    await tester.tap(find.text('Oui, on a échangé').first);
+    await tester.pumpAndSettle();
+    final logged = (await contacts.all()).firstWhere(
+      (c) => c.createdAt == DateTime(2026, 1, 1),
+    );
+    expect(logged.outcome, ContactOutcome.reached);
   });
 
   testWidgets('M05 rend le résultat du contact', (tester) async {
@@ -151,13 +308,52 @@ void main() {
       tester,
       ChangeNotifierProvider<HistoryViewModel>.value(
         value: model,
-        child: HistoryScreen(onSearch: () {}, onReview: (_) {}),
+        child: HistoryScreen(
+          onSearch: () {},
+          onReview: (_) {},
+          onCallAgain: (_) {},
+          onSignIn: () {},
+        ),
       ),
       surfaceSize: const Size(360, 760),
       textScale: 1.3,
     );
     await tester.pumpAndSettle();
     expect(find.text('Avez-vous eu cette personne ?'), findsWidgets);
+    expect(find.text('Rappeler'), findsWidgets);
+  });
+
+  testWidgets('C04 sans session invite à s\'identifier', (tester) async {
+    final model = HistoryViewModel(
+      contacts: _UnauthorizedContacts(),
+      brokers: InMemoryBrokerRepository(store),
+      eligibility: ReviewEligibilityService(
+        InMemoryContactRepository(store, now: DateTime.now),
+      ),
+    );
+    await model.load();
+    addTearDown(model.dispose);
+    expect(model.signedOut, isTrue);
+
+    var asked = 0;
+    await pumpWk(
+      tester,
+      ChangeNotifierProvider<HistoryViewModel>.value(
+        value: model,
+        child: HistoryScreen(
+          onSearch: () {},
+          onReview: (_) {},
+          onCallAgain: (_) {},
+          onSignIn: () => asked++,
+        ),
+      ),
+      surfaceSize: const Size(360, 760),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Identifiez-vous pour voir vos contacts'), findsOneWidget);
+    await tester.tap(find.text('Entrer mon numéro'));
+    await tester.pumpAndSettle();
+    expect(asked, 1);
   });
 
   testWidgets('C05 passe des étoiles au commentaire', (tester) async {

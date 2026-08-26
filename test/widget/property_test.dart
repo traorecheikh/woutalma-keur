@@ -87,11 +87,52 @@ void main() {
     expect(find.byIcon(FIcons.play), findsOneWidget);
   });
 
-  testWidgets('en aperçu, le contact est inactif', (tester) async {
+  testWidgets('en aperçu, le contact est inactif et dit pourquoi', (
+    tester,
+  ) async {
     await pumpProperty(tester, fresh(), preview: true);
     final button = tester.widget<AppButton>(
       find.widgetWithText(AppButton, 'Contacter'),
     );
     expect(button.onPressed, isNull);
+    expect(
+      find.text(
+        'Aperçu : le bouton est celui des clients, il ne fait rien ici.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('sans courtier, le contact reste visible et motivé', (
+    tester,
+  ) async {
+    await pumpProperty(
+      tester,
+      Property(
+        id: 'prp-orphan',
+        brokerId: 'brk-disparu',
+        kind: PropertyKind.land,
+        transaction: TransactionKind.sale,
+        title: 'Terrain sans courtier',
+        price: 12000000,
+        position: const GeoPoint(14.6952, -17.4611),
+        neighbourhood: 'Mermoz',
+        createdAt: DateTime(2026, 8, 15),
+      ),
+    );
+    final button = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Contacter'),
+    );
+    expect(button.onPressed, isNull);
+    expect(find.text('Ce courtier n\'est plus joignable.'), findsOneWidget);
+  });
+
+  testWidgets('la fiche propose d\'envoyer le bien à un proche', (
+    tester,
+  ) async {
+    await pumpProperty(tester, fresh());
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(find.text('Envoyer à un proche'), findsOneWidget);
   });
 }

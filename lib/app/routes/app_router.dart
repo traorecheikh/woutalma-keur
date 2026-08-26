@@ -205,6 +205,15 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
                               AppRoutes.reviewPath(entry.contact.id),
                               extra: entry,
                             ),
+                            // Rappeler rouvre la fiche du courtier avec la
+                            // feuille de contact déjà ouverte.
+                            onCallAgain: (ContactEntry entry) => inner.push(
+                              _contactLocation(entry.contact.brokerId),
+                            ),
+                            onSignIn: () => inner.push(
+                              AppRoutes.authPhone,
+                              extra: _authRequest(inner, deps),
+                            ),
                           ),
                         ),
                       ),
@@ -249,9 +258,14 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
               from: deps.clientPosition.position,
             )..load(),
             child: BrokerScreen(
-              onBack: () => context.pop(),
+              onBack: () => _leave(context),
               onOpenProperty: (String pid) =>
                   context.push(AppRoutes.propertyPath(pid)),
+              autoContact: state.uri.queryParameters['contact'] == '1',
+              onSignIn: () => context.push(
+                _authLocation(_contactLocation(id)),
+                extra: _authRequest(context, deps),
+              ),
             ),
           );
         },
@@ -295,9 +309,14 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
               from: deps.clientPosition.position,
             )..load(),
             child: PropertyScreen(
-              onBack: () => context.pop(),
+              onBack: () => _leave(context),
               onOpenBroker: (String bid) =>
                   context.push(AppRoutes.brokerPath(bid)),
+              autoContact: state.uri.queryParameters['contact'] == '1',
+              onSignIn: () => context.push(
+                _authLocation('${AppRoutes.propertyPath(id)}?contact=1'),
+                extra: _authRequest(context, deps),
+              ),
             ),
           );
         },
@@ -313,11 +332,12 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
             final String reason => AuthRequest(reason: reason),
             _ => AuthRequest(reason: context.l10n.authPhoneReasonContact),
           };
+          final String? returnTo = state.uri.queryParameters['returnTo'];
           return PhoneScreen(
             reason: request.reason,
             asBroker: request.asBroker,
             onBack: () => context.pop(),
-            onSignedIn: () => context.go(_postAuthRoute(deps)),
+            onSignedIn: () => context.go(_afterAuth(deps, returnTo)),
             onCodeSent: (String phone, String? code, bool asBroker) =>
                 context.push(
                   AppRoutes.authOtp,
@@ -325,6 +345,7 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
                     'phone': phone,
                     'code': code,
                     'asBroker': asBroker,
+                    'returnTo': returnTo,
                   },
                 ),
           );
@@ -345,7 +366,8 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
             simulatedCode: args['code'] as String?,
             asBroker: args['asBroker'] == true,
             onBack: () => context.pop(),
-            onVerified: () => context.go(_postAuthRoute(deps)),
+            onVerified: () =>
+                context.go(_afterAuth(deps, args['returnTo'] as String?)),
           );
         },
       ),
@@ -665,6 +687,33 @@ GoRouter buildRouter(AppDependencies deps, {Duration? sessionLandingWindow}) {
 ///   « Se connecter » qu'elle venait de quitter. On repasse en client, ce qui
 ///   est la vérité de son compte, plutôt que de la garder dans une porte
 ///   tournante.
+/// La fiche d'un courtier, feuille de contact déjà ouverte.
+String _contactLocation(String brokerId) =>
+    '${AppRoutes.brokerPath(brokerId)}?contact=1';
+
+/// G03 avec la promesse de revenir là d'où l'on vient.
+String _authLocation(String returnTo) =>
+    '${AppRoutes.authPhone}?returnTo=${Uri.encodeComponent(returnTo)}';
+
+/// Une fiche poussée depuis l'accueil se dépile ; la même atteinte par un lien
+/// profond ou un retour d'identification n'a rien sous elle.
+void _leave(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+    return;
+  }
+  context.go(AppRoutes.explore);
+}
+
+/// Après G03/G04 : là où l'on voulait aller, sinon la racine du rôle.
+///
+/// Sans cette reprise, quelqu'un qui s'identifiait pour contacter un courtier
+/// atterrissait sur l'accueil et devait retrouver la fiche seul.
+String _afterAuth(AppDependencies deps, String? returnTo) {
+  final String home = _postAuthRoute(deps);
+  return returnTo == null || returnTo.isEmpty ? home : returnTo;
+}
+
 String _postAuthRoute(AppDependencies deps) =>
     deps.syncRoleWithSession() == UserRole.broker
     ? AppRoutes.brokerHome

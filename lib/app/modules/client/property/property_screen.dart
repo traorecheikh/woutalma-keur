@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:woutalma_keur/app/core/state/mutation_state.dart';
 import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/contact_launcher.dart';
@@ -47,105 +48,159 @@ class PropertyViewModel extends ChangeNotifier {
   ScreenState<PropertyDetail> _state =
       const ScreenState<PropertyDetail>.initial();
   MutationState _contactState = const MutationState.idle();
+  ContactLog? _pendingOutcome;
   ScreenState<PropertyDetail> get state => _state;
   MutationState get contactState => _contactState;
+
+  ContactLog? takePendingOutcome() {
+    final pending = _pendingOutcome;
+    _pendingOutcome = null;
+    return pending;
+  }
 
   Future<void> load() async {
     _state = const ScreenState<PropertyDetail>.loading();
     notifyListeners();
-    final property = await _properties.byId(_propertyId);
-    if (property == null) {
-      _state = const ScreenState<PropertyDetail>.error(WkFailure.notFound);
+    final Property? property;
+    final Broker? broker;
+    try {
+      property = await _properties.byId(_propertyId);
+      if (property == null) {
+        _state = const ScreenState<PropertyDetail>.error(WkFailure.notFound);
+        notifyListeners();
+        return;
+      }
+      broker = await _brokers.byId(property.brokerId);
+    } on DioException catch (e) {
+      // Sans cette garde, une coupure laissait le squelette tourner sans fin.
+      _state = ScreenState<PropertyDetail>.error(
+        e.response == null ? WkFailure.network : WkFailure.unknown,
+      );
+      notifyListeners();
+      return;
+    } on Object {
+      _state = const ScreenState<PropertyDetail>.error(WkFailure.unknown);
       notifyListeners();
       return;
     }
     _state = ScreenState<PropertyDetail>.data(
       PropertyDetail(
         property: property,
-        broker: await _brokers.byId(property.brokerId),
+        broker: broker,
         distanceMeters: distanceMeters(_from, property.position),
       ),
     );
     notifyListeners();
   }
 
-  Future<bool> contactVia(ContactChannel channel) async {
+  Future<ContactAttempt> contactVia(ContactChannel channel) async {
     final detail = _state.valueOrNull;
     final broker = detail?.broker;
-    if (detail == null || broker == null || _contactState.isSubmitting)
-      return false;
+    if (detail == null || broker == null || _contactState.isSubmitting) {
+      return const ContactAttempt(log: null, opened: false);
+    }
     _contactState = const MutationState.submitting();
     notifyListeners();
-    late final ContactAttempt attempt;
-    try {
-      attempt = await _contact.contact(
-        broker: broker,
-        channel: channel,
-        propertyId: detail.property.id,
-      );
-    } on DioException catch (e) {
-      _contactState = MutationState.failure(
-        e.response?.statusCode == 401
-            ? WkFailure.permission
-            : e.response == null
-            ? WkFailure.network
-            : WkFailure.unknown,
-      );
-      notifyListeners();
-      return false;
-    } on Object {
-      _contactState = const MutationState.failure(WkFailure.unknown);
-      notifyListeners();
-      return false;
-    }
+    final attempt = await _contact.contact(
+      broker: broker,
+      channel: channel,
+      propertyId: detail.property.id,
+    );
+    _pendingOutcome = attempt.log;
     _contactState = attempt.opened
         ? const MutationState.success()
         : const MutationState.failure(WkFailure.unknown);
     notifyListeners();
-    return attempt.opened;
+    return attempt;
+  }
+
+  Future<bool> callWithoutAccount() async {
+    final broker = _state.valueOrNull?.broker;
+    if (broker == null) return false;
+    return _contact.open(ContactChannel.call, broker);
+  }
+
+  Future<void> recordOutcome(ContactLog log, ContactOutcome outcome) async {
+    try {
+      await _contact.recordOutcome(log, outcome);
+    } on Object {
+      // Le résultat n'est pas l'action principale : son échec ne remplace pas
+      // la fiche par une erreur.
+    }
   }
 }
 
-class PropertyScreen extends StatelessWidget {
+class PropertyScreen extends StatefulWidget {
   const PropertyScreen({
     super.key,
     required this.onBack,
     required this.onOpenBroker,
+    this.onSignIn,
+    this.autoContact = false,
     this.publicPreview = false,
   });
   final VoidCallback onBack;
   final void Function(String brokerId) onOpenBroker;
+  final VoidCallback? onSignIn;
+  final bool autoContact;
   final bool publicPreview;
+
+  @override
+  State<PropertyScreen> createState() => _PropertyScreenState();
+}
+
+class _PropertyScreenState extends State<PropertyScreen> {
+  bool _autoContactDone = false;
 
   @override
   Widget build(BuildContext context) {
     final model = context.watch<PropertyViewModel>();
     final detail = model.state.valueOrNull;
     final l = context.l10n;
-    return AppScaffold(
-      onBack: onBack,
-      headerTitle: publicPreview ? l.propertyPreviewTitle : null,
-      bottom: detail?.broker == null
-          ? null
-          : AppButton(
-              l.contactAction,
-              icon: FIcons.phone,
-              variant: AppButtonVariant.call,
-              loading: model.contactState.isSubmitting,
-              onPressed: publicPreview
-                  ? null
-                  : () => _contact(context, model, detail!.broker!),
-            ),
-      body: model.state.map(
-        initial: () => const SizedBox.shrink(),
-        loading: () => const AppSkeleton(rows: 3, height: 140),
-        empty: () =>
-            AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
-        error: (f) => failureState(context, f, onRetry: model.load),
-        data: (d) => _Body(
-          detail: d,
-          publicPreview: publicPreview,
-          onOpenBroker: onOpenBroker,
+    final broker = detail?.broker;
+
+    if (widget.autoContact &&
+        !_autoContactDone &&
+        broker != null &&
+        !widget.publicPreview) {
+      _autoContactDone = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _contact(context, model, broker);
+      });
+    }
+
+    return ContactOutcomeOnResume(
+      take: model.takePendingOutcome,
+      onOutcome: model.recordOutcome,
+      child: AppScaffold(
+        onBack: widget.onBack,
+        headerTitle: widget.publicPreview ? l.propertyPreviewTitle : null,
+        // Le bouton reste, désactivé et motivé : le retirer laissait la fiche
+        // sans aucune explication de ce qu'on ne peut plus y faire.
+        bottom: detail == null
+            ? null
+            : _ContactBar(
+                disabledReason: widget.publicPreview
+                    ? l.propertyPreviewContactDisabled
+                    : broker == null
+                    ? l.propertyBrokerMissing
+                    : null,
+                loading: model.contactState.isSubmitting,
+                onPressed: widget.publicPreview || broker == null
+                    ? null
+                    : () => _contact(context, model, broker),
+              ),
+        body: model.state.map(
+          initial: () => const SizedBox.shrink(),
+          loading: () => const AppSkeleton(rows: 3, height: 140),
+          empty: () =>
+              AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
+          error: (f) => failureState(context, f, onRetry: model.load),
+          data: (d) => _Body(
+            detail: d,
+            publicPreview: widget.publicPreview,
+            onOpenBroker: widget.onOpenBroker,
+          ),
         ),
       ),
     );
@@ -155,21 +210,51 @@ class PropertyScreen extends StatelessWidget {
     BuildContext context,
     PropertyViewModel model,
     Broker broker,
-  ) async {
-    final channel = await ContactSheet.show(context, broker: broker);
-    if (channel == null || !context.mounted) return;
-    final opened = await model.contactVia(channel);
-    if (!context.mounted) return;
-    toast(
-      context,
-      opened
-          ? context.l10n.contactLogged
-          : failureText(
-              context.l10n,
-              model.contactState is MutationFailure
-                  ? (model.contactState as MutationFailure).failure
-                  : WkFailure.unknown,
-            ),
+  ) => runContactFlow(
+    context,
+    broker: broker,
+    contact: model.contactVia,
+    callWithoutAccount: model.callWithoutAccount,
+    onSignIn: widget.onSignIn ?? () {},
+  );
+}
+
+class _ContactBar extends StatelessWidget {
+  const _ContactBar({
+    required this.disabledReason,
+    required this.loading,
+    required this.onPressed,
+  });
+  final String? disabledReason;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = AppButton(
+      context.l10n.contactAction,
+      icon: FIcons.phone,
+      variant: AppButtonVariant.call,
+      loading: loading,
+      onPressed: onPressed,
+    );
+    if (disabledReason == null) {
+      return button;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(hint: disabledReason, child: button),
+        const SizedBox(height: Insets.sm),
+        Text(
+          disabledReason!,
+          style: context.text.bodySmall!.copyWith(
+            color: context.tones.inkSecondary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
@@ -274,6 +359,28 @@ class _Body extends StatelessWidget {
               if (p.description.isNotEmpty) ...[
                 const SizedBox(height: Insets.xl),
                 Text(p.description, style: context.text.bodyLarge),
+              ],
+              if (b != null) ...[
+                const SizedBox(height: Insets.xl),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: AppButton(
+                    l.propertyShare,
+                    icon: FIcons.share2,
+                    variant: AppButtonVariant.ghost,
+                    size: 44,
+                    onPressed: () => SharePlus.instance.share(
+                      ShareParams(
+                        text: l.propertyShareText(
+                          p.title,
+                          WkFormat.price(l, p.price, p.transaction),
+                          p.neighbourhood,
+                          formatPhone(b.phone),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ],
           ),

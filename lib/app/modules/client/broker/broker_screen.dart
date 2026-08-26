@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:woutalma_keur/app/core/state/mutation_state.dart';
-import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/ranking.dart';
 import 'package:woutalma_keur/app/modules/client/broker/broker_view_model.dart';
@@ -11,39 +9,67 @@ import 'package:woutalma_keur/app/modules/client/explore/cards.dart';
 import 'package:woutalma_keur/app/shared/formatters.dart';
 import 'package:woutalma_keur/app/ui/ui.dart';
 
-class BrokerScreen extends StatelessWidget {
+class BrokerScreen extends StatefulWidget {
   const BrokerScreen({
     required this.onBack,
     required this.onOpenProperty,
+    required this.onSignIn,
+    this.autoContact = false,
     super.key,
   });
   final VoidCallback onBack;
   final void Function(String propertyId) onOpenProperty;
+
+  /// Ouvre G03 en promettant de revenir ici, feuille de contact rouverte.
+  final VoidCallback onSignIn;
+
+  /// Vrai au retour de l'identification : la personne voulait contacter, on
+  /// reprend où elle en était plutôt que de la laisser sur l'accueil.
+  final bool autoContact;
+
+  @override
+  State<BrokerScreen> createState() => _BrokerScreenState();
+}
+
+class _BrokerScreenState extends State<BrokerScreen> {
+  bool _autoContactDone = false;
 
   @override
   Widget build(BuildContext context) {
     final model = context.watch<BrokerViewModel>();
     final detail = model.state.valueOrNull;
     final l = context.l10n;
-    return AppScaffold(
-      onBack: onBack,
-      headerTitle: detail?.broker.name,
-      bottom: detail == null
-          ? null
-          : AppButton(
-              l.contactAction,
-              icon: FIcons.phone,
-              variant: AppButtonVariant.call,
-              loading: model.contactState.isSubmitting,
-              onPressed: () => _contact(context, model, detail.broker),
-            ),
-      body: model.state.map(
-        initial: () => const SizedBox.shrink(),
-        loading: () => const AppSkeleton(rows: 3, height: 140),
-        empty: () =>
-            AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
-        error: (f) => failureState(context, f, onRetry: model.load),
-        data: (d) => _Body(detail: d, onOpenProperty: onOpenProperty),
+
+    if (widget.autoContact && !_autoContactDone && detail != null) {
+      _autoContactDone = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _contact(context, model, detail.broker);
+      });
+    }
+
+    return ContactOutcomeOnResume(
+      take: model.takePendingOutcome,
+      onOutcome: model.recordOutcome,
+      child: AppScaffold(
+        onBack: widget.onBack,
+        headerTitle: detail?.broker.name,
+        bottom: detail == null
+            ? null
+            : AppButton(
+                l.contactAction,
+                icon: FIcons.phone,
+                variant: AppButtonVariant.call,
+                loading: model.contactState.isSubmitting,
+                onPressed: () => _contact(context, model, detail.broker),
+              ),
+        body: model.state.map(
+          initial: () => const SizedBox.shrink(),
+          loading: () => const AppSkeleton(rows: 3, height: 140),
+          empty: () =>
+              AppState(kind: AppStateKind.empty, title: l.stateEmptyTitle),
+          error: (f) => failureState(context, f, onRetry: model.load),
+          data: (d) => _Body(detail: d, onOpenProperty: widget.onOpenProperty),
+        ),
       ),
     );
   }
@@ -52,23 +78,13 @@ class BrokerScreen extends StatelessWidget {
     BuildContext context,
     BrokerViewModel model,
     Broker broker,
-  ) async {
-    final channel = await ContactSheet.show(context, broker: broker);
-    if (channel == null || !context.mounted) return;
-    final opened = await model.contactVia(channel);
-    if (!context.mounted) return;
-    toast(
-      context,
-      opened
-          ? context.l10n.contactLogged
-          : failureText(
-              context.l10n,
-              model.contactState is MutationFailure
-                  ? (model.contactState as MutationFailure).failure
-                  : WkFailure.unknown,
-            ),
-    );
-  }
+  ) => runContactFlow(
+    context,
+    broker: broker,
+    contact: model.contactVia,
+    callWithoutAccount: model.callWithoutAccount,
+    onSignIn: widget.onSignIn,
+  );
 }
 
 class _Body extends StatelessWidget {
@@ -103,6 +119,8 @@ class _Body extends StatelessWidget {
                 style: context.text.headlineMedium,
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: Insets.sm),
+              BrokerPhone(b.phone, copiable: true),
               const SizedBox(height: Insets.md),
               Wrap(
                 spacing: Insets.sm,

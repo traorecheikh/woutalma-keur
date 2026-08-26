@@ -44,10 +44,17 @@ class HistoryViewModel extends ChangeNotifier {
   ScreenState<List<ContactEntry>> _state =
       const ScreenState<List<ContactEntry>>.initial();
 
+  bool _signedOut = false;
+
   ScreenState<List<ContactEntry>> get state => _state;
+
+  /// Le serveur refuse la lecture faute de session. Ce n'est pas une panne :
+  /// l'écran doit inviter à s'identifier, pas afficher « Une erreur ».
+  bool get signedOut => _signedOut;
 
   Future<void> load() async {
     _state = const ScreenState<List<ContactEntry>>.loading();
+    _signedOut = false;
     notifyListeners();
 
     // Sans ce try/catch, une lecture qui échoue produisait une erreur
@@ -79,8 +86,13 @@ class HistoryViewModel extends ChangeNotifier {
           ? const ScreenState<List<ContactEntry>>.empty()
           : ScreenState<List<ContactEntry>>.data(entries);
     } on DioException catch (error) {
+      _signedOut = error.response?.statusCode == 401;
       _state = ScreenState<List<ContactEntry>>.error(
-        error.response == null ? WkFailure.network : WkFailure.unknown,
+        _signedOut
+            ? WkFailure.permission
+            : error.response == null
+            ? WkFailure.network
+            : WkFailure.unknown,
       );
     } on Object {
       _state = const ScreenState<List<ContactEntry>>.error(WkFailure.unknown);
