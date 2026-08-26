@@ -148,7 +148,7 @@ class SettingsScreen extends StatelessWidget {
       label: (r) => _roleLabel(context, r),
       icon: _roleIcon,
     );
-    if (picked == null || picked == model.role) return;
+    if (picked == null) return;
     model.setRole(picked);
     onRoleChanged();
   }

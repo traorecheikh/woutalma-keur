@@ -983,24 +983,25 @@ class AppSkeleton extends StatelessWidget {
   final double height;
   @override
   Widget build(BuildContext context) => Semantics(
-    liveRegion: true,
     label: context.l10n.stateLoading,
-    child: ListView.separated(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Insets.page,
-        vertical: Insets.sm,
-      ),
-      itemCount: rows,
-      separatorBuilder: (_, _) => const SizedBox(height: Insets.md),
-      itemBuilder: (_, _) => FCard.raw(
-        style: FCardStyleDelta.delta(
-          decoration: DecorationDelta.boxDelta(
-            color: context.tones.sunken,
-            borderRadius: Radii.control,
-            boxShadow: const [],
-          ),
+    child: ExcludeSemantics(
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Insets.page,
+          vertical: Insets.sm,
         ),
-        child: SizedBox(height: height, width: double.infinity),
+        itemCount: rows,
+        separatorBuilder: (_, _) => const SizedBox(height: Insets.md),
+        itemBuilder: (_, _) => FCard.raw(
+          style: FCardStyleDelta.delta(
+            decoration: DecorationDelta.boxDelta(
+              color: context.tones.sunken,
+              borderRadius: Radii.control,
+              boxShadow: const [],
+            ),
+          ),
+          child: SizedBox(height: height, width: double.infinity),
+        ),
       ),
     ),
   );
