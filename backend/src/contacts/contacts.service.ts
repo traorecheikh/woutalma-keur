@@ -29,7 +29,11 @@ export class ContactsService {
       });
       return mapContactLog(row);
     } catch (error) {
-      if (dto.clientRequestId && error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (
+        dto.clientRequestId &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         const existing = await this.prisma.contactLog.findFirst({
           where: { clientId, clientRequestId: dto.clientRequestId },
           include: { review: { select: { id: true } } },

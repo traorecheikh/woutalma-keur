@@ -98,14 +98,14 @@ void main() {
   });
 
   test('modifier un bien existant n\'hérite pas d\'un brouillon', () async {
-    drafts.saved = PropertyDraft(
+    drafts.saved = const PropertyDraft(
       id: 'prp-1',
       kind: PropertyKind.studio,
       transaction: TransactionKind.rent,
       title: 'Studio Ngor',
       description: '',
       priceText: '150000',
-      photos: const <String>[],
+      photos: <String>[],
     );
 
     final PropertyEditorViewModel model = editor(

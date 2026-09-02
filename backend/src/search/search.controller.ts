@@ -2,7 +2,11 @@ import { Controller, Get, Query, ValidationPipe } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 import { SearchQueryDto } from './dto/search-query.dto';
-import { BrokerSearchResultsDto, PropertySearchResultsDto, SearchSuggestionsDto } from './dto/search-results.dto';
+import {
+  BrokerSearchResultsDto,
+  PropertySearchResultsDto,
+  SearchSuggestionsDto,
+} from './dto/search-results.dto';
 
 @ApiTags('search')
 @Controller('search')

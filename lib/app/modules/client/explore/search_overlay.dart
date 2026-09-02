@@ -4,6 +4,7 @@ import 'package:woutalma_keur/app/core/state/screen_state.dart';
 import 'package:woutalma_keur/app/domain/entities.dart';
 import 'package:woutalma_keur/app/domain/location_service.dart';
 import 'package:woutalma_keur/app/domain/ranking.dart';
+import 'package:woutalma_keur/app/l10n/generated/app_l10n.dart';
 import 'package:woutalma_keur/app/modules/client/explore/cards.dart';
 import 'package:woutalma_keur/app/modules/client/explore/explore_view_model.dart';
 import 'package:woutalma_keur/app/modules/client/explore/filters_sheet.dart';
@@ -192,7 +193,7 @@ class _SearchOverlayState extends State<SearchOverlay> {
     return [l.exploreResults(count), ...heads].join('. ');
   }
 
-  String _label(l, _Quick q) => switch (q) {
+  String _label(AppL10n l, _Quick q) => switch (q) {
     _Quick.rent => l.transactionRent,
     _Quick.sale => l.transactionSale,
     _ => WkFormat.propertyKind(l, PropertyKind.values.byName(q.name)),
@@ -206,10 +207,12 @@ class _SearchOverlayState extends State<SearchOverlay> {
   Widget _body(BuildContext context) {
     final l = context.l10n;
     final state = model.state;
-    if (!widget.showAll && model.filters.isEmpty)
+    if (!widget.showAll && model.filters.isEmpty) {
       return _Browse(onPick: (v) => _query.text = v);
-    if (state.isLoading || state is ScreenInitial<ExploreResults>)
+    }
+    if (state.isLoading || state is ScreenInitial<ExploreResults>) {
       return const AppSkeleton(rows: 3, height: 220);
+    }
     final failure = state.map(
       initial: () => null,
       loading: () => null,
@@ -217,12 +220,13 @@ class _SearchOverlayState extends State<SearchOverlay> {
       error: (f) => f,
       data: (_) => null,
     );
-    if (failure != null)
+    if (failure != null) {
       return failureState(
         context,
         failure,
         onRetry: () => model.search(_query.text),
       );
+    }
     final results = state.valueOrNull;
     final count = results?.countFor(model.segment) ?? 0;
     if (results == null || count == 0) {

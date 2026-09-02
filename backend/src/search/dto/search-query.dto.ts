@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsLatitude, IsLongitude, IsOptional, IsPositive, IsString, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsLatitude,
+  IsLongitude,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { PropertyKind, TransactionKind } from '@prisma/client';
 
 /// Mirrors lib/app/domain/discovery.dart's DiscoveryFilters, plus the

@@ -113,12 +113,7 @@ export class AuthService {
       throw new UnauthorizedException('Unknown user');
     }
 
-    return this.issueSession(
-      user.id,
-      user.activeRole,
-      user.brokerProfile?.id ?? null,
-      payload.prv === 'dev',
-    );
+    return this.issueSession(user.id, user.activeRole, user.brokerProfile?.id ?? null, payload.prv === 'dev');
   }
 
   private async sessionFor(identity: VerifiedIdentity, isDev: boolean): Promise<AuthSessionDto> {

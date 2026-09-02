@@ -84,12 +84,13 @@ class AppScaffold extends StatelessWidget {
         Expanded(child: body),
       ],
     );
-    if (onRefresh != null)
+    if (onRefresh != null) {
       content = RefreshIndicator(
         onRefresh: onRefresh!,
         color: context.colors.onSurface,
         child: content,
       );
+    }
     return Material(
       type: MaterialType.transparency,
       child: FScaffold(
@@ -702,8 +703,9 @@ class AppChoice<T> extends StatelessWidget {
           icon: icon?.call(o),
         ),
     ];
-    if (!scroll)
+    if (!scroll) {
       return Wrap(spacing: Insets.md, runSpacing: Insets.md, children: pills);
+    }
     // Hauteur intrinsèque : une boîte figée coupait la rangée dès ×1.3.
     return AppPillRow(children: pills);
   }
@@ -1008,10 +1010,12 @@ class AppSkeleton extends StatelessWidget {
 }
 
 String resolvePhoto(String path) {
-  if (path.startsWith('demo:'))
+  if (path.startsWith('demo:')) {
     return 'assets/seed/photos/${path.substring(5).replaceAll(':', '-')}.webp';
-  if (path.startsWith('api:'))
+  }
+  if (path.startsWith('api:')) {
     return '${AppConfig.apiBaseUrl}/properties/photos/${path.substring(4)}';
+  }
   return path;
 }
 

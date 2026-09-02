@@ -17,12 +17,14 @@ import 'package:woutalma_keur/app/ui/ui.dart';
 /// Android d'entrée de gamme échoue à les diffuser. On télécharge donc une
 /// fois dans le cache, puis on lit un fichier local.
 Future<Source> voiceNoteSource(String asset) async {
-  if (asset.startsWith('api:') && !kIsWeb)
+  if (asset.startsWith('api:') && !kIsWeb) {
     return DeviceFileSource(await _download(asset.substring(4)));
-  if (asset.startsWith('api:'))
+  }
+  if (asset.startsWith('api:')) {
     return UrlSource(
       '${AppConfig.apiBaseUrl}/properties/voice-notes/${asset.substring(4)}',
     );
+  }
   if (asset.startsWith('http')) return UrlSource(asset);
   return DeviceFileSource(asset);
 }
@@ -36,8 +38,9 @@ Future<String> _download(String id) async {
     Uri.parse('${AppConfig.apiBaseUrl}/properties/voice-notes/$id'),
   );
   final response = await request.close();
-  if (response.statusCode != 200)
+  if (response.statusCode != 200) {
     throw HttpException('${response.statusCode}', uri: request.uri);
+  }
   // Fichier d'attente puis renommage : une coupure de réseau laisserait
   // sinon un fichier tronqué que la lecture suivante réutiliserait.
   final partial = File('${file.path}.part');
@@ -96,7 +99,9 @@ class _PlayerState extends State<AppVoiceNotePlayer> {
 
   @override
   void dispose() {
-    for (final s in _subs) unawaited(s.cancel());
+    for (final s in _subs) {
+      unawaited(s.cancel());
+    }
     unawaited(_player.dispose());
     super.dispose();
   }
@@ -264,8 +269,9 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() => _seconds++);
-      if (_seconds >= widget.constraints.maxDuration.inSeconds)
+      if (_seconds >= widget.constraints.maxDuration.inSeconds) {
         unawaited(_stop());
+      }
     });
   }
 
@@ -295,8 +301,9 @@ class _RecorderState extends State<AppVoiceNoteRecorder> {
 
   void _delete() {
     final a = widget.asset;
-    if (a != null && !a.startsWith('api:') && !kIsWeb)
+    if (a != null && !a.startsWith('api:') && !kIsWeb) {
       unawaited(File(a).delete().catchError((_) => File(a)));
+    }
     widget.onChanged(null);
   }
 

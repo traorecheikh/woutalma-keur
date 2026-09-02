@@ -206,13 +206,13 @@ void main() {
       );
 
       await repo.save(
-        Broker(
+        const Broker(
           id: 'brk-1',
           kind: BrokerKind.individual,
           name: 'Moussa',
           phone: '+221771112233',
-          position: const GeoPoint(14.7, -17.47),
-          coverage: const <String>['Yoff'],
+          position: GeoPoint(14.7, -17.47),
+          coverage: <String>['Yoff'],
         ),
       );
 

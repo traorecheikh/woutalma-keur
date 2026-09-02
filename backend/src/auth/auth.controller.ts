@@ -5,11 +5,7 @@ import { AuthSessionDto } from './dto/auth-session.dto';
 import { GoogleSignInDto } from './dto/google-sign-in.dto';
 import { DevSignInDto } from './dto/dev-sign-in.dto';
 import { RefreshSessionDto } from './dto/refresh-session.dto';
-import {
-  DevRequestCodeDto,
-  DevRequestCodeResponseDto,
-  DevVerifyCodeDto,
-} from './dto/dev-otp.dto';
+import { DevRequestCodeDto, DevRequestCodeResponseDto, DevVerifyCodeDto } from './dto/dev-otp.dto';
 
 @ApiTags('auth')
 @Controller('auth')

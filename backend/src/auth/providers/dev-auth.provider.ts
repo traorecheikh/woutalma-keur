@@ -96,7 +96,9 @@ export class DevAuthProvider implements AuthProvider {
   /// où le code est de toute façon rendu dans la réponse.
   codeFor(phone: string): string {
     this.assertEnabled();
-    const digest = createHmac('sha256', this.secret ?? '').update(normalisePhone(phone)).digest();
+    const digest = createHmac('sha256', this.secret ?? '')
+      .update(normalisePhone(phone))
+      .digest();
     return (digest.readUInt32BE(0) % 1_000_000).toString().padStart(6, '0');
   }
 

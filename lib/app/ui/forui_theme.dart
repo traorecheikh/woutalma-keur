@@ -448,11 +448,11 @@ FThemeData buildForuiTheme(Brightness brightness, {bool reduceMotion = false}) {
           touch: true,
         ).apply([
           FVariantOperation.all(
-            FHeaderStyleDelta.delta(
-              padding: const EdgeInsetsGeometryDelta.value(
+            const FHeaderStyleDelta.delta(
+              padding: EdgeInsetsGeometryDelta.value(
                 EdgeInsets.symmetric(horizontal: Insets.sm),
               ),
-              constraints: const BoxConstraints(minHeight: 52),
+              constraints: BoxConstraints(minHeight: 52),
               titleTextStyle: TextStyleDelta.delta(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,

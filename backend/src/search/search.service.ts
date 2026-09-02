@@ -4,12 +4,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { distanceMetersSql, selectLatLng } from '../common/postgis';
 import { mapBrokerRow, BrokerRow } from '../brokers/broker-row.mapper';
 import { mapPropertyRow, PropertyRow } from '../properties/property-row.mapper';
-import { BrokerListingDto } from './dto/broker-listing.dto';
-import { PropertyDto } from '../properties/dto/property.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { rankingScoreSql } from './ranking.sql';
 import { textSearchQuerySql, textSearchRankSql, textSearchVectorSql } from './text-match.sql';
-import { BrokerSearchResultsDto, PropertySearchResultsDto, SearchSuggestionsDto } from './dto/search-results.dto';
+import {
+  BrokerSearchResultsDto,
+  PropertySearchResultsDto,
+  SearchSuggestionsDto,
+} from './dto/search-results.dto';
 
 @Injectable()
 export class SearchService {
