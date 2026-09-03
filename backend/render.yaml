@@ -51,7 +51,13 @@ services:
         value: 15m
       - key: JWT_REFRESH_TOKEN_TTL
         value: 30d
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_TOKEN_TTL
+        value: 8h
       - key: DEV_AUTH_ENABLED
-        value: "true"
+        value: 'true'
       - key: NODE_VERSION
-        value: 22.11.0
+        value: 22.23.2

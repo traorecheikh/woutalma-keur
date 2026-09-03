@@ -28,6 +28,7 @@ generator client {
 enum Role {
   CLIENT
   BROKER
+  ADMIN
 }
 
 enum BrokerKind {

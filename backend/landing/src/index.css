@@ -1,0 +1,148 @@
+@import 'tailwindcss';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Charte LIC (gnawalma/apps/web) : bleu = action, orange = filet d'accent seulement. */
+:root {
+  --background: #fafaf9;
+  --foreground: #0b0b0c;
+  --card: #fafaf9;
+  --card-foreground: #0b0b0c;
+  --popover: #fafaf9;
+  --popover-foreground: #0b0b0c;
+  --primary: #1171b8;
+  --primary-foreground: #fafaf9;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #0b0b0c;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #f4f4f5;
+  --accent-foreground: #0b0b0c;
+  --destructive: #a62a1f;
+  --border: #e7e7ea;
+  --input: #e7e7ea;
+  --ring: #1171b8;
+  --radius: 0.25rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ink: #0b0b0c;
+  --color-ink-secondary: #52525b;
+  --color-on-ink: #fafaf9;
+  --color-on-ink-secondary: #a6a6b0;
+  --color-hairline-ink: #2c2c34;
+  --color-brand-orange: #e64922;
+  --color-brand-blue-deep: #0d5a94;
+  --color-on-blue-secondary: #cfe3f3;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+  --radius-4xl: 4px;
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../../../assets/fonts/PlusJakartaSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../../../assets/fonts/PlusJakartaSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../../../assets/fonts/PlusJakartaSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../../../assets/fonts/PlusJakartaSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+    font-synthesis: none;
+  }
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a,
+  button {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility display {
+  font-size: clamp(3rem, 2rem + 6vw, 7.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+@utility heading {
+  font-size: clamp(2rem, 1.25rem + 2.5vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+@utility rule {
+  font-size: clamp(1.5rem, 1rem + 2vw, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}

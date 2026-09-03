@@ -19,5 +19,7 @@
     "noFallthroughCasesInSwitch": true,
     "resolveJsonModule": true,
     "esModuleInterop": true
-  }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["admin", "admin-dist", "landing", "landing-dist", "dist", "node_modules"]
 }

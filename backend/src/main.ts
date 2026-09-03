@@ -1,12 +1,19 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { buildOpenApiDocument } from './openapi-document';
+import { join } from 'node:path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.useStaticAssets(join(process.cwd(), 'admin-dist'), { prefix: '/admin/' });
+  // Marketing site at the root. express.static falls through on a miss, so
+  // /api, /healthz, /admin-api and every controller route still resolve.
+  app.useStaticAssets(join(process.cwd(), 'landing-dist'));
 
   // Property photos travel as base64 inside the JSON body (no object storage
   // on the free tier), so the default 100kb limit is far too small — and an

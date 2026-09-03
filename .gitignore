@@ -33,6 +33,11 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Web builds (backend)
+backend/admin-dist/
+backend/landing-dist/
+backend/landing/raw/
+
 # Symbolication related
 app.*.symbols
 
