@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { TextEffect } from '@/components/ui/text-effect';
 import { Android } from '@/components/ui/android';
-import { Eyebrow } from '@/components/phone-story';
+import { Eyebrow } from '@/components/section-label';
 import { access } from '@/content/fr';
 
 const words = access.spoken.split(' ').length;
@@ -50,21 +50,32 @@ function SpokenDemo() {
 
 export function Accessibility() {
   return (
-    <section className="mx-auto grid max-w-[80rem] gap-12 px-6 py-24 lg:grid-cols-12 lg:py-32">
-      <div className="lg:col-span-6">
-        <Eyebrow>{access.eyebrow}</Eyebrow>
-        <h2 className="heading mt-4 max-w-[16ch]">{access.title}</h2>
-        <p className="mt-6 max-w-[38rem] text-lg leading-relaxed text-muted-foreground">{access.body}</p>
-        <div className="mt-12">
-          <SpokenDemo />
+    <section>
+      <div className="mx-auto max-w-[80rem] px-6 py-20 lg:py-28">
+        <div className="grid gap-x-12 gap-y-6 lg:grid-cols-12">
+          <div className="lg:col-span-6">
+            <Eyebrow>{access.eyebrow}</Eyebrow>
+            <h2 className="heading mt-5 max-w-[16ch]">{access.title}</h2>
+          </div>
+          <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-5 lg:col-start-8 lg:self-end">{access.body}</p>
+        </div>
+        <div className="mt-12 grid gap-10 border-t pt-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-8">
+            <SpokenDemo />
+          </div>
+          <div className="mx-auto w-[min(190px,55%)] lg:col-span-3 lg:col-start-10 lg:mx-0 lg:w-full lg:max-w-[190px] lg:justify-self-end">
+            <Android src={access.screen.src} alt={access.screen.alt} />
+          </div>
         </div>
       </div>
-      <div className="relative lg:col-span-5 lg:col-start-8">
-        <img src={access.photo.src} alt={access.photo.alt} width={1200} height={800} loading="lazy" className="aspect-[4/5] w-full rounded-md object-cover" />
-        <div className="absolute inset-x-0 -bottom-8 mx-auto w-[58%] max-w-[280px]">
-          <Android src={access.screen.src} alt={access.screen.alt} />
-        </div>
-      </div>
+      <img
+        src={access.photo.src}
+        alt={access.photo.alt}
+        width={1200}
+        height={800}
+        loading="lazy"
+        className="h-[clamp(10rem,28svh,18rem)] w-full border-t-2 border-brand-orange object-cover"
+      />
     </section>
   );
 }

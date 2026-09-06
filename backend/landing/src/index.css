@@ -106,7 +106,6 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'ss01', 'cv11';
   }
   h1,
   h2,

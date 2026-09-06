@@ -12,8 +12,7 @@ export const hero = {
   lead: 'Trouvez un contact pertinent et appelez-le en trois écrans maximum. Location, achat ou terrain, à Dakar.',
   caption: (version: string) => `Gratuit · version ${version} · aucun compte requis pour explorer.`,
   secondary: 'Voir comment ça marche',
-  screen: { src: '/screens/c01-explorer.webp', alt: "Accueil de l'application : quartier actuel, recherche et courtiers de confiance à proximité" },
-  photo: { src: '/photos/apartment-ngor-coast.webp', alt: '' },
+  photo: { src: '/photos/house-medina-street.webp', alt: '' },
 };
 
 export const clientStory = {
@@ -58,7 +57,7 @@ export const access = {
   body: "Chaque résultat se lit à voix haute d'un geste. Les actions font 56 points de haut, les pictogrammes accompagnent toujours un mot, et l'application garde une copie locale pour les réseaux lents.",
   spoken: '3 résultats. Maison à Plateau, 1 000 000 francs par mois. Appartement à Point E, 150 000 francs par mois. Appartement à Mermoz, 20 000 000 francs.',
   screen: { src: '/screens/c04-resultats.webp', alt: 'Résultats de recherche avec le bouton Écouter' },
-  photo: { src: '/photos/house-medina-street.webp', alt: '' },
+  photo: { src: '/photos/apartment-ngor-coast.webp', alt: '' },
 };
 
 export const brokerStory = {
