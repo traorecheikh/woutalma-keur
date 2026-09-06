@@ -31,8 +31,10 @@ services:
     # npm install, not npm ci: npm ci has a known bug (npm/cli#4828) where it
     # silently skips platform-specific optional dependencies — hit here on
     # rolldown's linux-x64-gnu binding despite the lockfile listing it
-    # correctly. npm install is unaffected.
-    buildCommand: npm install && npx prisma generate && npm run build
+    # correctly. Switching to npm install alone did not clear it because
+    # Render restores a cached node_modules from the earlier broken ci runs;
+    # wipe it before installing so the cache can't carry the gap forward.
+    buildCommand: rm -rf node_modules && npm install && npx prisma generate && npm run build
     # Migrations re-run on every boot. Intentional redundancy: when the free
     # database expires at day 30 and is recreated, a redeploy re-migrates
     # without anyone remembering to do it by hand. No-op when nothing pends.
