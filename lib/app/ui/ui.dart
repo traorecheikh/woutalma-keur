@@ -813,7 +813,7 @@ class AppMoney extends StatelessWidget {
   );
 }
 
-enum AppTone { neutral, success, warning, danger, accent }
+enum AppTone { neutral, success, warning, danger, accent, accentSecondary }
 
 class AppTag extends StatelessWidget {
   const AppTag(this.text, {super.key, this.tone = AppTone.neutral, this.icon});
@@ -829,6 +829,10 @@ class AppTag extends StatelessWidget {
       AppTone.warning => (t.warning, t.warning.withValues(alpha: .12)),
       AppTone.danger => (t.danger, t.danger.withValues(alpha: .12)),
       AppTone.accent => (t.accent, t.accent.withValues(alpha: .12)),
+      AppTone.accentSecondary => (
+        t.accentSecondary,
+        t.accentSecondary.withValues(alpha: .12),
+      ),
     };
     return FBadge(
       style: FBadgeStyle(

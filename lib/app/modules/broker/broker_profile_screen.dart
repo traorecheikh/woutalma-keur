@@ -113,7 +113,7 @@ class _Body extends StatelessWidget {
                           if (broker.pinned)
                             AppTag(
                               l.badgePinned,
-                              tone: AppTone.accent,
+                              tone: AppTone.accentSecondary,
                               icon: FIcons.pin,
                             ),
                         ],

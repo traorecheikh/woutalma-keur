@@ -3,12 +3,18 @@ version: 1.0.0
 name: Woutalma Keur
 description: Annuaire immobilier géolocalisé et vocal-first reliant un client aux courtiers et agences proches de lui.
 colors:
-  primary: "#0B3B66"
+  primary: "#1171B8"
   on-primary: "#FFFFFF"
-  primary-container: "#DCE7F2"
-  on-primary-container: "#06253F"
+  primary-container: "#E7F1F8"
+  on-primary-container: "#0D5A94"
   primary-dark: "#7FB3E0"
   on-primary-dark: "#0B0F14"
+  secondary: "#E64922"
+  on-secondary: "#FFFFFF"
+  secondary-container: "#FDECE9"
+  on-secondary-container: "#B83010"
+  secondary-dark: "#E64922"
+  on-secondary-dark: "#0B0F14"
   background: "#F3F5F7"
   surface: "#FFFFFF"
   surface-variant: "#E9EDF2"
@@ -38,7 +44,7 @@ colors:
   warning-container: "#FFF1CC"
   on-warning-container: "#352300"
   status-available: "#0F7B3F"
-  status-reserved: "#0B3B66"
+  status-reserved: "#1171B8"
   status-closed: "#59616B"
 typography:
   display-lg:
@@ -338,31 +344,44 @@ Trois lois priment sur toutes les autres :
 3. **Rien n'existe uniquement en couleur.** Chaque état porte un pictogramme **et** un mot.
 
 Répartition **60-30-10** : 60 % de fond gris `#F3F5F7`, 30 % de surfaces blanches, 10 % de
-marine. Au-delà de 10 %, le bouton principal cesse d'être lu comme *le* bouton.
+couleur de marque (bleu + orange combinés). Au-delà de 10 %, le bouton principal cesse d'être lu
+comme *le* bouton.
 
 ## Colors
 
-### Pourquoi le marine, et pourquoi rien d'autre
+### Bleu LIC comme seule couleur d'action, orange LIC en accent secondaire restreint
 
-La contrainte décisive n'est pas esthétique, elle est fonctionnelle : **dans cette catégorie, le
-vert et le rouge ne sont pas disponibles.** Ils appartiennent aux boutons Appeler et WhatsApp,
-qui sont l'action centrale du produit. Property Finder, Bayut et Zillow font tous ce constat :
-leur barre de contact est rouge et verte, et leur marque vit ailleurs.
+La contrainte fonctionnelle d'origine reste entière : **dans cette catégorie, le vert et le rouge
+ne sont pas disponibles.** Ils appartiennent aux boutons Appeler et WhatsApp, qui sont l'action
+centrale du produit. Property Finder, Bayut et Zillow font tous ce constat : leur barre de contact
+est rouge et verte, et leur marque vit ailleurs.
 
-S'y ajoutent trois exclusions locales : le cyan clair appartient à Wave, l'orange à Orange Money,
-le rouge à Free. Sur un téléphone d'Afrique de l'Ouest, ces trois applications sont installées ;
-reprendre leur teinte crée une confusion d'appartenance.
+S'y ajoutent deux exclusions locales toujours actives : le cyan clair appartient à Wave, le rouge à
+Free. Sur un téléphone d'Afrique de l'Ouest, ces applications sont installées ; reprendre leur
+teinte crée une confusion d'appartenance.
 
-Reste le marine — qui se trouve être la convention de l'immobilier mondial (Nawy, Zillow, Bayut).
-Ici, « attendu » est un atout : le produit vend de la confiance à des gens qui n'en ont pas.
+Le bleu `#1171B8` — couleur primaire de la charte LIC — reste la seule couleur d'action, dans le
+même rôle que jouait le marine : boutons, onglet actif, bordure de champ focalisé, chip
+sélectionné, sélection de note. Il conserve la même lecture « immobilier mondial digne de
+confiance » (Nawy, Zillow, Bayut).
 
-- **`#0B3B66` Marine** — la seule couleur d'action. Boutons primaires, onglet actif, bordure de
-  champ focalisé, chip sélectionné. **11.5:1 sur blanc**, largement au-delà de l'AAA. Aucun
-  rapport avec le cyan clair de Wave.
-- **`#DCE7F2` Marine pâle** — le seul endroit où la marque occupe une surface : fond de chip
-  sélectionné et de badge. Texte `#06253F` dessus, **12.5:1**.
-- **`#7FB3E0` Marine clair** — variante mode sombre uniquement, **8.6:1** sur `#0B0F14`. En
-  sombre, le texte du bouton primaire passe en **encre**, pas en blanc.
+**L'orange `#E64922` de la charte LIC entre à titre d'accent secondaire, strictement borné au
+badge « mis en avant / épinglé » (pictogramme épingle ou étincelles)** — jamais sur une action, un
+statut de bien, la navigation ou tout élément qui a besoin d'être distingué d'Orange Money à vue.
+Cette exception est délibérée : le badge porte toujours un pictogramme et un mot, ce qui suffit à
+éviter la confusion que l'exclusion générale de l'orange visait à prévenir. Tout nouvel usage de
+l'orange doit repasser par cette même vérification avant d'être ajouté.
+
+- **`#1171B8` Bleu LIC** — la seule couleur d'action. Boutons primaires, onglet actif, bordure de
+  champ focalisé, chip sélectionné. **~5.1:1 sur blanc** (icône/graphique, AA non-texte largement
+  couvert). Remplace le marine `#0B3B66` pour aligner l'app sur la charte graphique LIC.
+- **`#E7F1F8` Bleu pâle** — le seul endroit où la marque bleue occupe une surface : fond de chip
+  sélectionné et de badge. Texte `#0D5A94` dessus, **~6.3:1**.
+- **`#7FB3E0` Bleu clair** — variante mode sombre uniquement, **8.6:1** sur `#0B0F14`. En sombre,
+  le texte du bouton primaire passe en **encre**, pas en blanc.
+- **`#B83010` Orange LIC (texte/icône)** — badge « mis en avant / épinglé » uniquement, sur fond
+  `#FDECE9`. **~5.5:1**, AA texte normal. Variante mode sombre : `#E64922` (orange brut LIC),
+  **~4.8:1** sur fond sombre.
 
 ### Neutres
 
@@ -410,7 +429,7 @@ Trois statuts, aucune teinte nouvelle, chacun avec pictogramme et mot :
 | Statut | Couleur | Support obligatoire |
 |:--|:--|:--|
 | Disponible | `#0F7B3F` sur `#E1F2E8` | pictogramme + le mot « Disponible » |
-| Réservé | `#0B3B66` sur `#DCE7F2` | pictogramme + le mot « Réservé » |
+| Réservé | `#1171B8` sur `#E7F1F8` | pictogramme + le mot « Réservé » |
 | Vendu / loué | `#59616B` sur `#E9EDF2` | pictogramme + le mot |
 
 Une partie des utilisateurs ne distingue pas les teintes, une autre ne lit pas du tout. Les deux
@@ -489,7 +508,7 @@ sélecteurs compacts ; les cercles aux avatars, icônes seules et au bouton voca
 
 ## Components
 
-**Bouton primaire** — rectangle arrondi marine, texte blanc, hauteur minimale 64. Un seul par écran. L'état de
+**Bouton primaire** — rectangle arrondi bleu, texte blanc, hauteur minimale 64. Un seul par écran. L'état de
 chargement remplace le libellé par un indicateur sans changer la largeur.
 
 **Bouton Appeler et bouton WhatsApp** — vert `#0F7B3F` texte blanc, et vert de marque `#25D366`
@@ -497,8 +516,8 @@ texte encre. Ce sont les deux seules dérogations à la règle « une seule coul
 sont des marques externes que l'utilisateur reconnaît avant même de lire.
 
 **Bouton vocal** — cercle de 96, le plus gros élément interactif de l'écran d'accueil, placé en
-bas à droite dans la zone du pouce. Trois états distinguables sans texte : repos marine, écoute
-rouge avec onde animée, traitement marine avec points. Le passage en écoute est confirmé par un
+bas à droite dans la zone du pouce. Trois états distinguables sans texte : repos bleu, écoute
+rouge avec onde animée, traitement bleu avec points. Le passage en écoute est confirmé par un
 retour haptique — il ne faut pas avoir à regarder.
 
 **Carte courtier** — surface blanche, rayon 8, hauteur minimale 96. Ordre de lecture : avatar,
@@ -512,11 +531,12 @@ attraper en premier** — elles sont typographiquement plus fortes que le reste.
 **Étoiles et note** — étoiles pleines en encre, vides en `outline`, cible de 56 par étoile en
 saisie. Le chiffre est toujours affiché.
 
-**Badges** — vérifié (marine pâle), disponible (vert pâle), réservé (marine pâle), vendu/loué
-(gris). Chacun porte un pictogramme et un mot.
+**Badges** — vérifié (bleu pâle), disponible (vert pâle), réservé (bleu pâle), vendu/loué (gris),
+mis en avant / épinglé (orange, seul badge à utiliser l'accent secondaire). Chacun porte un
+pictogramme et un mot.
 
 **Champ de saisie** — surface blanche, bordure 1.5, rayon 12, hauteur minimale 64, texte `body-lg`. Focus :
-bordure marine 2 px. Une valeur stable et valide affiche une coche verte et une aide positive ;
+bordure bleue 2 px. Une valeur stable et valide affiche une coche verte et une aide positive ;
 une erreur affiche bordure rouge **plus** message correctif **plus** pictogramme. La hauteur utile
 est réservée pour éviter qu'un message déplace le champ sous le doigt.
 
@@ -532,7 +552,7 @@ détruit.
 Un écran vide est le moment où un non-lecteur décroche : c'est là que la voix compte le plus.
 
 **Barre de navigation basse** — surface blanche, hauteur 72, pictogramme et libellé toujours
-visibles, actif en marine. Les onglets changent selon le rôle, client ou courtier.
+visibles, actif en bleu. Les onglets changent selon le rôle, client ou courtier.
 
 **Feedback et mouvement** — toute action reçoit immédiatement un état pressé tonal. Sélections et
 validations apparaissent en 140 ms ; remplacement de contenu et progression en 220 ms ; une
@@ -543,8 +563,10 @@ animation ne change la taille stable d'un contrôle. Si la plateforme réduit le
 
 ## Do's and Don'ts
 
-**Do** garder le marine sous 10 % de la surface de l'écran.
-**Don't** teinter un fond de section en marine : le bouton primaire y perdrait son statut.
+**Do** garder bleu + orange sous 10 % combinés de la surface de l'écran, orange limité au badge mis
+en avant / épinglé.
+**Don't** teinter un fond de section en bleu ou en orange : le bouton primaire y perdrait son
+statut, et l'orange y recréerait la confusion Orange Money que son usage restreint évite.
 
 **Do** laisser le vert et le rouge aux seuls boutons Appeler, WhatsApp et aux erreurs.
 **Don't** les utiliser pour décorer quoi que ce soit — leur rareté est ce qui les rend lisibles.
@@ -573,3 +595,4 @@ animation ne change la taille stable d'un contrôle. Si la plateforme réduit le
 |---|---|---|
 | 2026-08-25 | **Système d'interface remplacé** : `forui` + icônes Lucide, police embarquée Plus Jakarta Sans, primitives `App*` dans `lib/app/ui/ui.dart`, fond gris clair `#F6F7F9`, cartes blanches à rayon 24 avec une ombre douce, bouton principal en encre, marine `#0B3B66` réservé à l'accent (onglet actif, liens, sélection). Les composants `Wk*`, le catalogue S02 et le mode démonstration sont retirés. | L'interface précédente lisait comme un gabarit Material et l'accueil montrait une liste de résultats. Référence assumée : Airbnb, même système que Gnawalma. Les jetons de l'en-tête YAML ci-dessus restent la source des couleurs sémantiques (appel, WhatsApp, statuts) ; la typographie système est abandonnée. |
 | 2026-08-25 | Accueil C01 = recherche, catégories, rangées horizontales ; résultats et filtres dans M14 ; « Mes biens » en cartes avec glissement latéral et appui long pour les actions. | Un écran de découverte ne montre pas une liste de résultats ; les actions d'un bien doivent être atteignables sans ouvrir la fiche. |
+| 2026-09-03 | Accent aligné sur la charte graphique LIC : marine `#0B3B66` remplacé par bleu LIC `#1171B8` partout où l'accent existait déjà (boutons, onglet actif, statut réservé, sélection, étoiles, repère de carte). Orange LIC `#E64922`/`#B83010` introduit **uniquement** comme accent secondaire du badge « mis en avant / épinglé » (`AppTone.accentSecondary`) — jamais sur une action, un statut, la navigation. | Demande explicite d'aligner l'app sur la charte LIC (bleu/orange). L'exclusion de l'orange pour cause de collision avec Orange Money reste valable pour toute action ou statut ; elle ne s'applique pas à un badge secondaire qui porte déjà pictogramme + mot. Répartition 60-30-10 inchangée : bleu + orange restent sous 10 % combinés. |

@@ -26,7 +26,8 @@ docs/
     ├── README.md                  when a screen earns its own contract, approval procedure
     ├── client-discovery.md        C01
     ├── broker-detail.md           C02
-    └── property-editor.md         B03
+    ├── property-editor.md         B03
+    └── admin-moderation.md        console web
 ```
 
 Read only the sources relevant to the change, in this order of authority:

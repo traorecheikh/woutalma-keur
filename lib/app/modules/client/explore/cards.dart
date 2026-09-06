@@ -256,7 +256,7 @@ class BrokerCard extends StatelessWidget {
               if (b.pinned)
                 AppTag(
                   l.badgePinned,
-                  tone: AppTone.accent,
+                  tone: AppTone.accentSecondary,
                   icon: FIcons.sparkles,
                 ),
               AppTag(

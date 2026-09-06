@@ -134,15 +134,15 @@ charge le seed ou une base vide. Un échec ne doit jamais laisser un mélange de
 
 ## 6. Données principales
 
-| Entité | Données essentielles |
-|:--|:--|
-| Utilisateur | identité locale, téléphone, rôle actif, langue, préférences |
-| CourtierAgence | type, identité, coordonnées, zone, vérification, taux de réponse |
-| Bien | propriétaire, type, transaction, contenu, prix, caractéristiques, position, photos, statut |
-| Avis | client, courtier, contact éligible, notes, commentaire, réponse, modération, dates |
-| ContactLog | client, courtier, bien facultatif, canal, date, résultat, éligibilité avis |
-| ActivityEvent | consultation/contact, courtier, bien facultatif, date, état lu |
-| AppSettings | langue, rôle, mode, thème, texte, mode léger, vocal, sons, vibrations, notifications, version seed |
+| Entité         | Données essentielles                                                                               |
+| :------------- | :------------------------------------------------------------------------------------------------- |
+| Utilisateur    | identité locale, téléphone, rôle actif, langue, préférences                                        |
+| CourtierAgence | type, identité, coordonnées, zone, vérification, taux de réponse                                   |
+| Bien           | propriétaire, type, transaction, contenu, prix, caractéristiques, position, photos, statut         |
+| Avis           | client, courtier, contact éligible, notes, commentaire, réponse, modération, dates                 |
+| ContactLog     | client, courtier, bien facultatif, canal, date, résultat, éligibilité avis                         |
+| ActivityEvent  | consultation/contact, courtier, bien facultatif, date, état lu                                     |
+| AppSettings    | langue, rôle, mode, thème, texte, mode léger, vocal, sons, vibrations, notifications, version seed |
 
 Les schémas Isar définitifs et migrations sont décidés au moment de la première tranche verticale,
 pas dans ce document produit.
@@ -210,8 +210,9 @@ connecté à cette API, `demo` reste inchangé. Le §7 (l. 144, budget « moins 
 Livré en tranche verticale (Phase 1, voir le plan d'implémentation archivé) : lecture
 courtier/bien, recherche classée server-side (portage exact de la formule de `RankingService`),
 journalisation de contact et éligibilité d'avis server-side, authentification Google Sign-In.
-Différé aux tranches suivantes : lien magique e-mail, notifications FCM, console de modération,
-écriture courtier/bien distante.
+Livré ensuite : écriture courtier/bien distante et console de modération séparée à `/admin`, avec
+approbation/refus des vérifications et publication/rejet des avis. Restent différés : lien magique
+e-mail et notifications FCM.
 
 ## 9. Indicateurs futurs
 

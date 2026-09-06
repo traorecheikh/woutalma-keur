@@ -6,6 +6,7 @@ Ils restent **Draft** jusqu'à validation d'une capture sur petit Android et iPh
 1. `client-discovery.md` — recherche, voix, filtres et résultats.
 2. `broker-detail.md` — confiance, biens et contact persistant.
 3. `property-editor.md` — publication guidée d'un bien.
+4. `admin-moderation.md` — vérification des profils et modération des avis sur le web.
 
 `../UX-FLOWS.md` reste le registre complet de tous les écrans. On crée un nouveau contrat séparé
 uniquement lorsqu'un écran devient une référence réutilisée ou qu'il porte assez d'états pour que
