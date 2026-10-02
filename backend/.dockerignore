@@ -1,0 +1,8 @@
+node_modules
+dist
+admin-dist
+landing-dist
+.env
+.env.*
+!.env.example
+.git

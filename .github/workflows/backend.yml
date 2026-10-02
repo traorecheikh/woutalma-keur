@@ -1,0 +1,50 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: woutalma
+          POSTGRES_PASSWORD: woutalma
+          POSTGRES_DB: woutalma
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U woutalma -d woutalma"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://woutalma:woutalma@localhost:5432/woutalma?schema=public
+      JWT_SECRET: ci-secret
+      ADMIN_EMAIL: ci@example.com
+      ADMIN_PASSWORD: ci-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.node-version
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate && npx prisma migrate deploy
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS -X POST "${{ secrets.DOKPLOY_DEPLOY_URL }}"
