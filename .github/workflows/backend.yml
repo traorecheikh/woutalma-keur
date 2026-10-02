@@ -38,7 +38,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npx prisma generate && npx prisma migrate deploy
-      - run: npm run lint
+      - run: npx eslint "src/**/*.ts"
       - run: npm run build
       - run: npm test
 

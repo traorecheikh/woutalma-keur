@@ -10,9 +10,7 @@ import { AdminService } from './admin.service';
     AuthModule,
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60_000, limit: 120 }],
-      storage: process.env.REDIS_URL
-        ? new ThrottlerStorageRedisService(process.env.REDIS_URL)
-        : undefined,
+      storage: process.env.REDIS_URL ? new ThrottlerStorageRedisService(process.env.REDIS_URL) : undefined,
     }),
   ],
   controllers: [AdminController],
